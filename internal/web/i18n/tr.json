@@ -1,5 +1,5 @@
 {
-  "%d MB free of %d MB": "%d MB / %d MB boş",
+  "%d MB free of %d MB": "%d MB boş (toplam %d MB)",
   "%d WordPress sites found.": "%d WordPress sitesi bulundu.",
   "%d d %d h": "%d g %d sa",
   "%d days ago": "%d gün önce",
