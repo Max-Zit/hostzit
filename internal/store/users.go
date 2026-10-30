@@ -304,3 +304,22 @@ func (s *Store) ResetTwoFactor(ctx context.Context, userID int64) error {
 	_, err = s.db.Exec(ctx, `DELETE FROM sessions WHERE user_id=$1`, userID)
 	return err
 }
+
+// StaffByEmail finds an administrator, operator or viewer by e-mail address.
+func (s *Store) StaffByEmail(ctx context.Context, email string) (*User, error) {
+	u, err := scanUser(s.db.QueryRow(ctx, `SELECT `+userCols+` FROM users WHERE role<>'customer' AND lower(email)=lower($1) AND email<>''`, strings.TrimSpace(email)))
+	if err != nil {
+		return nil, notFound(err)
+	}
+	return u, nil
+}
+
+// SetEmail stores the e-mail address of a user.
+func (s *Store) SetEmail(ctx context.Context, id int64, email string) error {
+	e, err := CleanEmail(email)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec(ctx, `UPDATE users SET email=$2 WHERE id=$1`, id, e)
+	return err
+}

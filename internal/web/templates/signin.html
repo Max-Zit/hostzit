@@ -1,0 +1,25 @@
+{{template "app" .}}
+{{define "content"}}
+{{$c := .Data.C}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+<section class="panel">
+  <h2>{{template "icon" "key"}}{{.T "Company sign-in for administrators"}}</h2>
+  <p class="muted small">{{.T "Administrators can sign in with your identity provider (OpenID Connect: Microsoft Entra ID, Google Workspace, Keycloak, Authentik …). The administrator must exist in HostZit with the same e-mail address; nobody else gets in."}}</p>
+  <form method="post" action="/settings/signin" class="stack">
+    <label>{{.T "Issuer"}}<input name="issuer" value="{{$c.Issuer}}" class="mono" spellcheck="false" placeholder="https://login.microsoftonline.com/TENANT/v2.0"><small>{{.T "Empty: company sign-in off."}}</small></label>
+    <div class="cols">
+      <label>{{.T "Client ID"}}<input name="client_id" value="{{$c.ClientID}}" class="mono" spellcheck="false"></label>
+      <label>{{.T "Client secret"}} <small>{{if .Data.HasSecret}}{{.T "saved; empty keeps it"}}{{end}}</small><input type="password" name="client_secret" autocomplete="off"></label>
+    </div>
+    <label>{{.T "Button text"}}<input name="label" value="{{$c.Label}}" maxlength="60" placeholder="{{.T "Sign in with Microsoft"}}"></label>
+    <label class="check"><input type="checkbox" name="trust_mfa" {{if $c.TrustMFA}}checked{{end}}><span>{{.T "The identity provider asks the second factor (HostZit does not ask again)"}}</span></label>
+    <p class="small muted">{{.T "Redirect address to register at the provider:"}} <code>{{.Data.Redirect}}</code></p>
+    <div><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+</section>
+</div>
+</div>
+{{end}}

@@ -250,6 +250,7 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 type loginData struct {
 	Username string
 	Next     string
+	OIDC     string // label of the company sign-in button ("" = none)
 }
 
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -258,6 +259,9 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	d := &loginData{Next: safeNext(r.FormValue("next"))}
+	if c := s.oidcSettings(r.Context()); c.enabled() && panelOf(r) == PanelAdmin {
+		d.OIDC = orDefault(c.Label, "Company sign-in")
+	}
 	p := &Page{Title: "Sign in", Data: d}
 	if r.Method == http.MethodGet {
 		if userFrom(r) != nil {

@@ -7,4 +7,5 @@
   <label>{{.T "Password"}}<input type="password" name="password" required autocomplete="current-password"></label>
   <button class="primary">{{.T "Sign in"}}</button>
 </form>
+{{with .Data.OIDC}}<p class="center mt"><a class="btn secondary" href="/login/oidc?next={{$.Data.Next}}">{{template "icon" "key"}}{{$.T .}}</a></p>{{end}}
 {{end}}

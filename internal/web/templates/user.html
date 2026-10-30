@@ -6,6 +6,7 @@
   <h2>{{.T "Account"}}</h2>
   <form method="post" action="/users/{{.Data.U.ID}}" class="stack">
     <label>{{.T "Full name"}}<input name="display_name" value="{{.Data.U.DisplayName}}"></label>
+    <label>{{.T "E-mail"}} <small>{{.T "for company sign-in and notices"}}</small><input type="email" name="email" value="{{.Data.U.Email}}"></label>
     {{template "rolefield" (rowOf $ .Data.U.Role)}}
     {{if not .Data.Self}}<label class="check"><input type="checkbox" name="disabled" value="1" {{if .Data.U.Disabled}}checked{{end}}>{{.T "Disabled (cannot sign in; open sessions end)"}}</label>{{else}}<input type="hidden" name="disabled" value="">{{end}}
     <div><button class="primary">{{.T "Save"}}</button></div>

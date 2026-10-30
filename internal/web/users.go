@@ -106,6 +106,10 @@ func (s *Server) handleUserUpdate(w http.ResponseWriter, r *http.Request) {
 		s.showUser(w, r, http.StatusBadRequest, u, storeErr(err))
 		return
 	}
+	if err := s.store.SetEmail(r.Context(), u.ID, r.FormValue("email")); err != nil {
+		s.showUser(w, r, http.StatusBadRequest, u, storeErr(err))
+		return
+	}
 	s.audit(r, "user.update", "user:"+u.Username, "role %s, disabled %v", role, disabled)
 	s.redirect(w, r, "/users/"+strconv.FormatInt(u.ID, 10), "Saved.")
 }
