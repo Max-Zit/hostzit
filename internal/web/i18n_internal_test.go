@@ -77,8 +77,7 @@ func TestCatalogsComplete(t *testing.T) {
 	for _, l := range Languages[1:] {
 		var missing []string
 		for k := range texts {
-			// Only Serbian must be complete; other languages fall back to English.
-			if l.Code == "sr" && catalogs[l.Code][k] == "" {
+			if catalogs[l.Code][k] == "" {
 				missing = append(missing, k)
 			}
 		}
