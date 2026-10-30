@@ -15,4 +15,18 @@ func (h *Helper) registerMore() {
 	h.ops["mail.queue"] = op{handle(h.mailQueue), false}
 	h.ops["firewall"] = op{handle(h.firewall), true}
 	h.ops["malware.scan"] = op{handle(h.malwareScan), false}
+	for _, f := range moreOps {
+		f(h)
+	}
 }
+
+func init() {
+	moreOps = append(moreOps, func(h *Helper) {
+		h.ops["import.list"] = op{handle(h.importList), false}
+		h.ops["import.stage"] = op{handle(h.importStage), false}
+		h.ops["db.import"] = op{handle(h.dbImport), false}
+		h.ops["backup.create"] = op{handle(h.backupCreate), false}
+	})
+}
+
+var moreOps []func(*Helper)

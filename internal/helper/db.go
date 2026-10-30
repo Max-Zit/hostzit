@@ -5,6 +5,7 @@ import (
 	"crypto/sha1" // #nosec G505 -- MariaDB's mysql_native_password format, not our own hashing
 	"encoding/hex"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -68,6 +69,9 @@ type dbUserArgs struct {
 	Password  string   `json:"password,omitempty"` // empty = keep
 	Databases []string `json:"databases"`
 	MaxConn   int      `json:"max_conn"`
+	// Hash sets a mysql_native_password hash instead of a password
+	// (users moved from another server keep their passwords).
+	Hash string `json:"hash,omitempty"`
 }
 
 // dbUser creates or updates a database user with access to some of the
@@ -89,7 +93,12 @@ func (h *Helper) dbUser(ctx context.Context, a dbUserArgs) (any, error) {
 	}
 	u := "'" + a.User + "'@'localhost'"
 	var q strings.Builder
-	if a.Password != "" {
+	if a.Hash != "" {
+		if !nativeHashRE.MatchString(a.Hash) {
+			return nil, userErr("invalid password hash")
+		}
+		fmt.Fprintf(&q, "CREATE USER IF NOT EXISTS %s IDENTIFIED BY PASSWORD '%s'; ALTER USER %s IDENTIFIED BY PASSWORD '%s'; ", u, a.Hash, u, a.Hash)
+	} else if a.Password != "" {
 		if len(a.Password) < 10 || len(a.Password) > 200 {
 			return nil, userErr("the database password must be 10–200 characters")
 		}
@@ -152,3 +161,5 @@ func (h *Helper) dbUsage(ctx context.Context, a accountName) (any, error) {
 	}
 	return res, nil
 }
+
+var nativeHashRE = regexp.MustCompile(`^\*[0-9A-F]{40}$`)

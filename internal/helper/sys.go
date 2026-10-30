@@ -232,3 +232,15 @@ func (o *OS) Symlink(target, path string) error {
 }
 
 func (o *OS) ReadDir(path string) ([]os.DirEntry, error) { return os.ReadDir(o.p(path)) }
+
+// runToFile runs a program with its output going straight into f (large
+// database dumps).
+func runToFile(ctx context.Context, f *os.File, name string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, name, args...) // #nosec G204 -- fixed programs, validated arguments, no shell
+	cmd.Stdout = f
+	var errb bytes.Buffer
+	cmd.Stderr = &errb
+	cmd.Env = []string{"PATH=/usr/sbin:/usr/bin:/sbin:/bin", "LANG=C.UTF-8", "HOME=/root"}
+	err := cmd.Run()
+	return errb.String(), err
+}

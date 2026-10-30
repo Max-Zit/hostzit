@@ -48,6 +48,7 @@
     <a href="/dns" class="{{if eq .Nav "dns"}}on{{end}}">{{template "icon" "network"}}{{.T "DNS zones"}}</a>
     <a href="/server" class="{{if eq .Nav "server"}}on{{end}}">{{template "icon" "rack"}}{{.T "Server"}}</a>
     <a href="/jobs" class="{{if eq .Nav "jobs"}}on{{end}}">{{template "icon" "clock"}}{{.T "Jobs"}}</a>
+    {{if .User.IsAdmin}}<a href="/import" class="{{if eq .Nav "import"}}on{{end}}">{{template "icon" "upload"}}{{.T "Import"}}</a>{{end}}
     {{if .User.IsAdmin}}
     <span class="navlabel">{{.T "Administration"}}</span>
     <a href="/users" class="{{if eq .Nav "users"}}on{{end}}">{{template "icon" "key"}}{{.T "Administrators"}}</a>
@@ -67,6 +68,7 @@
     <a href="/access" class="{{if eq .Nav "access"}}on{{end}}">{{template "icon" "terminal"}}{{.T "SFTP and SSH"}}</a>
     <a href="/cron" class="{{if eq .Nav "cron"}}on{{end}}">{{template "icon" "clock"}}{{.T "Scheduled jobs"}}</a>
     <a href="/security" class="{{if eq .Nav "security"}}on{{end}}">{{template "icon" "shield"}}{{.T "Security"}}</a>
+    <a href="/backups" class="{{if eq .Nav "backups"}}on{{end}}">{{template "icon" "download"}}{{.T "Backups"}}</a>
     <a href="/usage" class="{{if eq .Nav "usage"}}on{{end}}">{{template "icon" "disk"}}{{.T "Usage"}}</a>
     <a href="/docs" class="{{if eq .Nav "docs"}}on{{end}}">{{template "icon" "book"}}{{.T "User guide"}}</a>
   </nav>{{end}}
