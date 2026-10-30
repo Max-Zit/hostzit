@@ -65,6 +65,7 @@ func run() error {
 	devPanelHTTP := flag.String("dev-http-panel", "", "also serve the customer panel over plain HTTP on this loopback address (development only)")
 	apiSocket := flag.String("api-socket", "/run/hostzit-api/api.sock", "local API socket for EmailZit on this server (DNS API without a token; only root and the emailzit user); used when its folder exists")
 	devNo2FA := flag.Bool("dev-no-2fa", false, "sign in with the password only (development only, needs --dev-embedded-db)")
+	testNo2FA := flag.Bool("test-no-2fa", false, "lab and test servers: sign in with the password only (every page shows a warning; never on a production server)")
 	devFakeHelper := flag.Bool("dev-fake-helper", false, "run the helper in-process against a fake system in the data directory (development only)")
 	helperSocket := flag.String("helper-socket", helper.SocketPath, "socket of hostzit-helper")
 	resetACL := flag.Bool("reset-allowlist", false, "allow the admin panel again from the private networks and exit")
@@ -166,10 +167,10 @@ func run() error {
 	if challenges != "" {
 		srv.ACMEChallengeDir = challenges
 	}
-	if *devNo2FA {
+	if *devNo2FA || *testNo2FA {
 		srv.DevNo2FA = true
-		log.Warn("TEST MODE: two-factor sign-in is switched off (--dev-no-2fa); never use this on a production server")
-		_ = st.Audit(ctx, "-", "local", "settings.2fa.off", "server", "server started with --dev-no-2fa: sign-in with the password only")
+		log.Warn("TEST MODE: two-factor sign-in is switched off (--dev-no-2fa / --test-no-2fa); never use this on a production server")
+		_ = st.Audit(ctx, "-", "local", "settings.2fa.off", "server", "server started without two-factor sign-in (test mode): sign-in with the password only")
 	}
 	net0, err := srv.Network(ctx)
 	if err != nil {
