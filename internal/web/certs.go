@@ -74,6 +74,7 @@ func (s *Server) certRound(ctx context.Context) {
 	if hs.ACME == "" {
 		return
 	}
+	s.panelCertRound(ctx, hs)
 	sites, err := s.store.CertsDue(ctx)
 	if err != nil {
 		s.log.Warn("certificate check failed", "err", err)
@@ -164,85 +165,12 @@ func (s *Server) issueCert(ctx context.Context, hs HostingSettings, x *store.Sit
 		return err
 	}
 	_ = s.store.SetCert(ctx, x.ID, "pending", "", nil, nil)
-	cl, err := s.acmeClient(ctx, hs)
-	if err != nil {
-		return err
-	}
-	order, err := cl.AuthorizeOrder(ctx, acme.DomainIDs(names...))
-	if err != nil {
-		return fmt.Errorf("order: %w", err)
-	}
-	var written []string
-	defer func() {
-		for _, f := range written {
-			_ = os.Remove(f)
-		}
-	}()
-	for _, u := range order.AuthzURLs {
-		z, err := cl.GetAuthorization(ctx, u)
-		if err != nil {
-			return err
-		}
-		if z.Status == acme.StatusValid {
-			continue
-		}
-		var ch *acme.Challenge
-		for _, c := range z.Challenges {
-			if c.Type == "http-01" {
-				ch = c
-			}
-		}
-		if ch == nil {
-			return fmt.Errorf("%s: the CA offers no HTTP challenge", z.Identifier.Value)
-		}
-		resp, err := cl.HTTP01ChallengeResponse(ch.Token)
-		if err != nil {
-			return err
-		}
-		if strings.ContainsAny(ch.Token, "/\\.") {
-			return errors.New("invalid challenge token")
-		}
-		f := filepath.Join(s.ACMEChallengeDir, ch.Token)
-		if err := os.WriteFile(f, []byte(resp), 0o644); err != nil { // #nosec G306 -- nginx must read the answer
-			return fmt.Errorf("challenge file: %w", err)
-		}
-		written = append(written, f)
-		if _, err := cl.Accept(ctx, ch); err != nil {
-			return err
-		}
-		if _, err := cl.WaitAuthorization(ctx, z.URI); err != nil {
-			return fmt.Errorf("%s: %w", z.Identifier.Value, err)
-		}
-	}
-	if order, err = cl.WaitOrder(ctx, order.URI); err != nil {
-		return err
-	}
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return err
-	}
-	csr, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{Subject: pkix.Name{CommonName: names[0]}, DNSNames: names}, key)
-	if err != nil {
-		return err
-	}
-	der, _, err := cl.CreateOrderCert(ctx, order.FinalizeURL, csr, true)
-	if err != nil {
-		return fmt.Errorf("certificate: %w", err)
-	}
-	var chain []byte
-	for _, c := range der {
-		chain = append(chain, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: c})...)
-	}
-	kd, err := x509.MarshalECPrivateKey(key)
-	if err != nil {
-		return err
-	}
-	leaf, err := x509.ParseCertificate(der[0])
+	chain, keyPEM, leaf, err := s.obtainCert(ctx, hs, names)
 	if err != nil {
 		return err
 	}
 	if err := s.call(ctx, "system", "cert.install", map[string]any{"account": x.Account, "id": x.ID, "fullchain": string(chain),
-		"key": string(pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: kd}))}, nil); err != nil {
+		"key": string(keyPEM)}, nil); err != nil {
 		return err
 	}
 	na := leaf.NotAfter
@@ -255,4 +183,85 @@ func (s *Server) issueCert(ctx context.Context, hs HostingSettings, x *store.Sit
 	}
 	_ = s.store.Audit(ctx, "system", "local", "cert.issue", "site:"+x.Domain, "certificate for "+strings.Join(names, ", ")+" until "+na.Format("2006-01-02"))
 	return nil
+}
+
+// obtainCert gets a certificate for names from the CA (HTTP-01 through
+// the shared challenge folder that nginx serves on port 80).
+func (s *Server) obtainCert(ctx context.Context, hs HostingSettings, names []string) (chain, keyPEM []byte, leaf *x509.Certificate, err error) {
+	cl, err := s.acmeClient(ctx, hs)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	order, err := cl.AuthorizeOrder(ctx, acme.DomainIDs(names...))
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("order: %w", err)
+	}
+	var written []string
+	defer func() {
+		for _, f := range written {
+			_ = os.Remove(f)
+		}
+	}()
+	for _, u := range order.AuthzURLs {
+		z, err := cl.GetAuthorization(ctx, u)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		if z.Status == acme.StatusValid {
+			continue
+		}
+		var ch *acme.Challenge
+		for _, c := range z.Challenges {
+			if c.Type == "http-01" {
+				ch = c
+			}
+		}
+		if ch == nil {
+			return nil, nil, nil, fmt.Errorf("%s: the CA offers no HTTP challenge", z.Identifier.Value)
+		}
+		resp, err := cl.HTTP01ChallengeResponse(ch.Token)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		if strings.ContainsAny(ch.Token, "/\\.") {
+			return nil, nil, nil, errors.New("invalid challenge token")
+		}
+		f := filepath.Join(s.ACMEChallengeDir, ch.Token)
+		if err := os.WriteFile(f, []byte(resp), 0o644); err != nil { // #nosec G306 -- nginx must read the answer
+			return nil, nil, nil, fmt.Errorf("challenge file: %w", err)
+		}
+		written = append(written, f)
+		if _, err := cl.Accept(ctx, ch); err != nil {
+			return nil, nil, nil, err
+		}
+		if _, err := cl.WaitAuthorization(ctx, z.URI); err != nil {
+			return nil, nil, nil, fmt.Errorf("%s: %w", z.Identifier.Value, err)
+		}
+	}
+	if order, err = cl.WaitOrder(ctx, order.URI); err != nil {
+		return nil, nil, nil, err
+	}
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	csr, err := x509.CreateCertificateRequest(rand.Reader, &x509.CertificateRequest{Subject: pkix.Name{CommonName: names[0]}, DNSNames: names}, key)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	der, _, err := cl.CreateOrderCert(ctx, order.FinalizeURL, csr, true)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("certificate: %w", err)
+	}
+	for _, c := range der {
+		chain = append(chain, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: c})...)
+	}
+	kd, err := x509.MarshalECPrivateKey(key)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if leaf, err = x509.ParseCertificate(der[0]); err != nil {
+		return nil, nil, nil, err
+	}
+	return chain, pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: kd}), leaf, nil
 }

@@ -164,6 +164,7 @@ func run() error {
 	}
 	srv.Version = version
 	srv.DataDir = *dataDir
+	srv.LoadPanelCert()
 	if challenges != "" {
 		srv.ACMEChallengeDir = challenges
 	}
@@ -213,7 +214,7 @@ func run() error {
 		}
 		l := tls.NewListener(&netacl.Listener{Listener: raw, List: acl, OnRefuse: func(remote string) {
 			log.Debug("connection refused by allow-list", "listener", name, "remote", remote)
-		}}, tlsutil.ServerConfig(cert))
+		}}, srv.PanelTLS(cert))
 		hs := &http.Server{Handler: h, ReadHeaderTimeout: 10 * time.Second, ReadTimeout: 5 * time.Minute, WriteTimeout: 5 * time.Minute,
 			IdleTimeout: 120 * time.Second, MaxHeaderBytes: 64 << 10, ErrorLog: slog.NewLogLogger(log.Handler(), slog.LevelDebug)}
 		servers = append(servers, hs)

@@ -535,10 +535,15 @@ type hostingSettingsData struct {
 	PHP []string
 	// Secondaries is the state of each secondary name server.
 	Secondaries []secondaryState
+	// PanelCert is the certificate of the panels from the CA.
+	PanelCert  PanelCertState
+	PanelNames []string
 }
 
 func (s *Server) showHostingSettings(w http.ResponseWriter, r *http.Request, status int, h HostingSettings, errMsg string) {
 	d := &hostingSettingsData{H: h, NS: strings.Join(h.Nameservers, "\n"), PHP: s.phpVersions(r.Context())}
+	_ = s.store.GetSetting(r.Context(), settingPanelCert, &d.PanelCert)
+	d.PanelNames = panelNames(h)
 	if status == http.StatusOK && len(h.Secondaries) > 0 {
 		d.Secondaries = s.secondaryStates(r.Context(), h)
 	}

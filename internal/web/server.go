@@ -7,6 +7,7 @@ package web
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"html/template"
@@ -18,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/max-zit/hostzit/internal/helper"
@@ -61,9 +63,11 @@ type Server struct {
 	// ACMEChallengeDir is where HTTP-01 answers are written (shared with nginx).
 	ACMEChallengeDir string
 
-	acmeMu  sync.Mutex
-	jobs    sync.WaitGroup
-	applyMu sync.Map // customer id → *sync.Mutex (one change at a time per account)
+	acmeMu sync.Mutex
+	// panelCert is the CA certificate of the panels (nil: self-signed only).
+	panelCert atomic.Pointer[tls.Certificate]
+	jobs      sync.WaitGroup
+	applyMu   sync.Map // customer id → *sync.Mutex (one change at a time per account)
 }
 
 // New creates the server.
