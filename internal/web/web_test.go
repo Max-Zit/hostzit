@@ -23,6 +23,7 @@ import (
 
 	"golang.org/x/crypto/ssh"
 
+	"github.com/max-zit/hostzit/internal/backup"
 	"github.com/max-zit/hostzit/internal/helper"
 	"github.com/max-zit/hostzit/internal/store"
 	"github.com/max-zit/hostzit/internal/testdb"
@@ -533,3 +534,49 @@ func TestAPI(t *testing.T) {
 }
 
 func toJSON(v any) string { b, _ := json.Marshal(v); return string(b) }
+
+func TestConsoleBackup(t *testing.T) {
+	e := newEnv(t)
+	a := e.setupAdmin()
+	a.ok("/packages/new", url.Values{"name": {"P"}, "slug": {"p"}, "max_sites": {"1"}, "max_dbs": {"1"}, "max_zones": {"1"}, "disk_mb": {"100"}, "inodes": {"0"},
+		"cpu_percent": {"0"}, "memory_mb": {"0"}, "processes": {"0"}, "io_weight": {"100"}, "php_workers": {"2"}, "php_memory_mb": {"128"}, "upload_mb": {"8"}, "mail_per_hour": {"0"}})
+	a.ok("/customers/new", url.Values{"username": {"keepme"}, "package": {"1"}, "password": {"keep me password 1"}})
+	_ = os.WriteFile(filepath.Join(e.srv.DataDir, "secret.key"), bytes.Repeat([]byte{7}, 32), 0o600)
+	a.page("/settings/backup")
+	a.ok("/settings/backup", url.Values{"passphrase": {"backup passphrase 1"}, "passphrase2": {"backup passphrase 1"}})
+	ents, _ := os.ReadDir(filepath.Join(e.srv.DataDir, "backups"))
+	if len(ents) != 1 {
+		t.Fatal("no nightly backup made")
+	}
+	f, err := os.Open(filepath.Join(e.srv.DataDir, "backups", ents[0].Name()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	head := make([]byte, 7)
+	_, _ = f.Read(head)
+	if !backup.IsEncrypted(head) {
+		t.Fatal("backup not encrypted")
+	}
+	_, _ = f.Seek(0, 0)
+	if _, err := backup.Inspect(f, "wrong passphrase 1"); err == nil {
+		t.Fatal("wrong passphrase accepted")
+	}
+	_, _ = f.Seek(0, 0)
+	url2 := testdb.URL(t)
+	dir := t.TempDir()
+	if _, err := backup.Restore(context.Background(), f, "backup passphrase 1", dir, func(ctx context.Context, r io.Reader) error { return store.RestoreDump(ctx, url2, r) }); err != nil {
+		t.Fatal(err)
+	}
+	st2, err := store.Open(context.Background(), url2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st2.Close()
+	if c, err := st2.CustomerByRef(context.Background(), "keepme"); err != nil || c.Username != "keepme" {
+		t.Fatal("customer not restored", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "secret.key")); err != nil {
+		t.Fatal("secret key not restored")
+	}
+}

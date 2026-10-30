@@ -25,7 +25,10 @@ import (
 
 	embeddedpostgres "github.com/fergusstrange/embedded-postgres"
 
+	"golang.org/x/term"
+
 	"github.com/max-zit/hostzit/internal/auth"
+	"github.com/max-zit/hostzit/internal/backup"
 	"github.com/max-zit/hostzit/internal/helper"
 	"github.com/max-zit/hostzit/internal/logfile"
 	"github.com/max-zit/hostzit/internal/netacl"
@@ -66,6 +69,8 @@ func run() error {
 	resetACL := flag.Bool("reset-allowlist", false, "allow the admin panel again from the private networks and exit")
 	unblock := flag.String("unblock-ip", "", "lift the sign-in block of an address (or \"all\") and exit")
 	showVersion := flag.Bool("version", false, "print the version and exit")
+	restore := flag.String("restore", "", "restore a panel backup (.hzb) into the database and the data directory and exit (stop the service first)")
+	passFile := flag.String("passphrase-file", "", "file with the backup passphrase (default: HOSTZIT_BACKUP_PASSPHRASE, else asked)")
 	flag.Parse()
 
 	if *showVersion {
@@ -98,6 +103,9 @@ func run() error {
 	}
 	if *dbURL == "" {
 		return errors.New("database URL required (--db or HOSTZIT_DB)")
+	}
+	if *restore != "" {
+		return restoreBackup(ctx, *restore, *passFile, *dataDir, *dbURL)
 	}
 	st, err := store.Open(ctx, *dbURL)
 	if err != nil {
@@ -331,4 +339,38 @@ func startEmbeddedDB(dir string) (*embeddedpostgres.EmbeddedPostgres, string, er
 		return nil, "", err
 	}
 	return pg, fmt.Sprintf("postgres://postgres:postgres@127.0.0.1:%d/hostzit?sslmode=disable", port), nil
+}
+
+func restoreBackup(ctx context.Context, file, passFile, dataDir, dbURL string) error {
+	pass := os.Getenv("HOSTZIT_BACKUP_PASSPHRASE")
+	if passFile != "" {
+		b, err := os.ReadFile(passFile) // #nosec G304 -- the administrator names the file
+		if err != nil {
+			return err
+		}
+		pass = strings.TrimRight(string(b), "\r\n")
+	}
+	if pass == "" {
+		fmt.Print("Backup passphrase: ")
+		b, err := term.ReadPassword(int(os.Stdin.Fd())) // #nosec G115 -- a file descriptor
+		fmt.Println()
+		if err != nil {
+			return err
+		}
+		pass = string(b)
+	}
+	f, err := os.Open(file) // #nosec G304 -- the administrator names the file
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	m, err := backup.Restore(ctx, f, pass, dataDir, func(ctx context.Context, r io.Reader) error {
+		return store.RestoreDump(ctx, dbURL, r)
+	})
+	if err != nil {
+		return fmt.Errorf("restore: %w", err)
+	}
+	fmt.Printf("Restored the panel backup of %s (HostZit %s, %d files). Start the service, then use \"Set up again\" for each customer in the admin panel.\n",
+		m.Created.Local().Format("2006-01-02 15:04"), m.ServerVersion, len(m.Files))
+	return nil
 }

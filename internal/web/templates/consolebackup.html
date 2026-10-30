@@ -1,0 +1,28 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+<section class="panel">
+  <h2>{{template "icon" "disk"}}{{.T "Nightly backups of the panel"}}</h2>
+  <p class="muted small">{{.T "The panel database (customers, packages, websites, DNS zones, settings) and the keys of the data directory, encrypted with your passphrase. The files and databases of the customers are not in it: back them up with BackupZit or the account backups."}}</p>
+  {{if .Data.HasPass}}<p><span class="badge ok"><i></i>{{.T "on"}}</span> {{.T "Every night into %s, the newest %d are kept." .Data.Dir .Data.Keep}}</p>{{end}}
+  <form method="post" action="/settings/backup" class="stack">
+    <div class="cols">
+      <label>{{if .Data.HasPass}}{{.T "New passphrase"}}{{else}}{{.T "Passphrase"}}{{end}}<input type="password" name="passphrase" required minlength="12" autocomplete="new-password"></label>
+      <label>{{.T "Repeat the passphrase"}}<input type="password" name="passphrase2" required minlength="12" autocomplete="new-password"></label>
+    </div>
+    <p class="small muted">{{.T "Without the passphrase a backup cannot be restored. Keep it outside this server."}}</p>
+    <div><button class="primary">{{if .Data.HasPass}}{{.T "Change and make a backup"}}{{else}}{{.T "Switch on"}}{{end}}</button></div>
+  </form>
+  {{with .Data.Files}}<div class="table-wrap mt"><table><tbody>{{range .}}<tr><td class="mono small">{{.Name}}</td><td class="num">{{bytes .Size}}</td><td class="muted">{{$.Time .ModTime}}</td></tr>{{end}}</tbody></table></div>{{end}}
+</section>
+<section class="panel">
+  <h2>{{template "icon" "download"}}{{.T "Download a backup now"}}</h2>
+  <form method="post" action="/settings/backup/download" class="row"><input type="password" name="passphrase" required minlength="12" autocomplete="new-password" placeholder="{{.T "Passphrase for this file"}}" aria-label="{{.T "Passphrase"}}"><button class="secondary">{{template "icon" "download"}}{{.T "Download"}}</button></form>
+  <p class="small muted">{{.T "Restore on a new server: install HostZit, stop the hostzit-server service, run hostzit-server --restore FILE (the passphrase is asked), start the service and set up the accounts again from the admin panel."}}</p>
+</section>
+</div>
+</div>
+{{end}}

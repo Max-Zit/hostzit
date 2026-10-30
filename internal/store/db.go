@@ -72,8 +72,19 @@ func (s *Store) migrate(ctx context.Context) error {
 		return err
 	}
 	defer tx.Rollback(ctx)
-	// Only one server instance migrates at a time.
-	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(7263001)`); err != nil {
+	if err := migrateTx(ctx, tx, 0); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+// migrationLock keeps two servers (or a restore) from migrating at once.
+const migrationLock = 7263501
+
+// migrateTx applies the pending migrations in tx, up to version upTo
+// (0: all of them).
+func migrateTx(ctx context.Context, tx pgx.Tx, upTo int) error {
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock($1)`, migrationLock); err != nil {
 		return err
 	}
 	if _, err := tx.Exec(ctx, `CREATE TABLE IF NOT EXISTS schema_migrations (version int PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`); err != nil {
@@ -83,32 +94,59 @@ func (s *Store) migrate(ctx context.Context) error {
 	if err := tx.QueryRow(ctx, `SELECT COALESCE(max(version),0) FROM schema_migrations`).Scan(&cur); err != nil {
 		return err
 	}
-	names, err := fs.Glob(migrations, "migrations/*.sql")
+	list, err := migrationFiles()
 	if err != nil {
 		return err
 	}
-	sort.Strings(names)
-	for _, n := range names {
-		base := strings.TrimPrefix(n, "migrations/")
-		v, err := strconv.Atoi(strings.SplitN(base, "_", 2)[0])
-		if err != nil {
-			return fmt.Errorf("migration %s: bad name", n)
-		}
-		if v <= cur {
+	for _, m := range list {
+		if m.version <= cur || (upTo > 0 && m.version > upTo) {
 			continue
 		}
-		sqlText, err := migrations.ReadFile(n)
+		sqlText, err := migrations.ReadFile(m.path)
 		if err != nil {
 			return err
 		}
 		if _, err := tx.Exec(ctx, string(sqlText)); err != nil {
-			return fmt.Errorf("migration %s: %w", base, err)
+			return fmt.Errorf("migration %s: %w", strings.TrimPrefix(m.path, "migrations/"), err)
 		}
-		if _, err := tx.Exec(ctx, `INSERT INTO schema_migrations(version) VALUES($1)`, v); err != nil {
+		if _, err := tx.Exec(ctx, `INSERT INTO schema_migrations(version) VALUES($1)`, m.version); err != nil {
 			return err
 		}
 	}
-	return tx.Commit(ctx)
+	return nil
+}
+
+type migrationFile struct {
+	path    string
+	version int
+}
+
+// migrationFiles lists the embedded migrations in order.
+func migrationFiles() ([]migrationFile, error) {
+	names, err := fs.Glob(migrations, "migrations/*.sql")
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(names)
+	out := make([]migrationFile, 0, len(names))
+	for _, n := range names {
+		base := strings.TrimPrefix(n, "migrations/")
+		v, err := strconv.Atoi(strings.SplitN(base, "_", 2)[0])
+		if err != nil {
+			return nil, fmt.Errorf("migration %s: bad name", n)
+		}
+		out = append(out, migrationFile{n, v})
+	}
+	return out, nil
+}
+
+// SchemaVersion is the newest migration this program knows.
+func SchemaVersion() int {
+	list, _ := migrationFiles()
+	if len(list) == 0 {
+		return 0
+	}
+	return list[len(list)-1].version
 }
 
 func notFound(err error) error {
