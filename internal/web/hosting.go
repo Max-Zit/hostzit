@@ -173,6 +173,9 @@ func (s *Server) applyCustomer(ctx context.Context, by string, c *store.Customer
 	}
 	err = s.call(ctx, by, "account.apply", a, nil)
 	_ = s.store.MarkCustomerApplied(ctx, c.ID, err)
+	if err == nil {
+		go s.syncWebUIDs(context.WithoutCancel(ctx), c)
+	}
 	return err
 }
 
@@ -408,6 +411,8 @@ func (s *Server) deleteAccount(ctx context.Context, by string, c *store.Customer
 	if err := s.call(ctx, by, "account.delete", map[string]any{"name": c.Username, "number": c.Number}, nil); err != nil {
 		return err
 	}
+	c.Status = store.StatusTerminated
+	s.syncWebUIDs(ctx, c)
 	return s.store.DeleteCustomer(ctx, c.ID)
 }
 

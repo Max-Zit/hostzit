@@ -580,3 +580,30 @@ func TestConsoleBackup(t *testing.T) {
 		t.Fatal("secret key not restored")
 	}
 }
+
+func TestEmailZitLink(t *testing.T) {
+	e := newEnv(t)
+	got := make(chan string, 4)
+	ez := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		got <- r.Method + " " + r.URL.Path + " " + r.Header.Get("Authorization") + " " + string(b)
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer ez.Close()
+	a := e.setupAdmin()
+	a.ok("/packages/new", url.Values{"name": {"P"}, "slug": {"p"}, "max_sites": {"1"}, "max_dbs": {"1"}, "max_zones": {"1"}, "disk_mb": {"100"}, "inodes": {"0"},
+		"cpu_percent": {"0"}, "memory_mb": {"0"}, "processes": {"0"}, "io_weight": {"100"}, "php_workers": {"2"}, "php_memory_mb": {"128"}, "upload_mb": {"8"}, "mail_per_hour": {"0"}})
+	a.ok("/settings/emailzit", url.Values{"url": {ez.URL}, "token": {"ezt_test123"}, "insecure": {"on"}})
+	a.ok("/customers/new", url.Values{"username": {"mailer"}, "package": {"1"}, "password": {"mailer password 1"}})
+	select {
+	case m := <-got:
+		if !strings.HasPrefix(m, "PUT /api/v1/customers/") || !strings.Contains(m, "/web-uids Bearer ezt_test123") || !strings.Contains(m, `"uids":[1000001]`) {
+			t.Fatal(m)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("EmailZit was not told the uid")
+	}
+	if !strings.Contains(a.page("/"), ez.URL+"/") {
+		t.Fatal("no switch to EmailZit")
+	}
+}

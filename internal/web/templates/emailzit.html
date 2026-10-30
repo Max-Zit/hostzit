@@ -1,0 +1,19 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+<section class="panel">
+  <h2>{{template "icon" "mail"}}EmailZit</h2>
+  <p class="muted small">{{.T "EmailZit is the mail hosting of MaxZit. Linked, it learns which hosting account each website belongs to, so mail from the websites counts against the right customer, and both panels show a switch to the other."}}</p>
+  <form method="post" action="/settings/emailzit" class="stack">
+    <label>{{.T "Address of the EmailZit panel"}}<input name="url" value="{{.Data.L.URL}}" class="mono" spellcheck="false" placeholder="https://mail.example.com:8444"><small>{{.T "Empty: no link."}}</small></label>
+    <label>{{.T "EmailZit API token"}} <small>{{if .Data.HasToken}}{{.T "saved; empty keeps it"}}{{else}}{{.T "with the scope customers:write"}}{{end}}</small><input type="password" name="token" autocomplete="off" class="mono" placeholder="ezt_…"></label>
+    <label class="check"><input type="checkbox" name="insecure" {{if .Data.L.Insecure}}checked{{end}}><span>{{.T "Accept EmailZit's self-signed certificate"}}</span></label>
+    <div><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+</section>
+</div>
+</div>
+{{end}}

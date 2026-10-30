@@ -97,6 +97,8 @@ type Page struct {
 	Customer *store.Customer
 	// Acting is the administrator working in this customer panel.
 	Acting string
+	// MailURL is the linked EmailZit panel (product switch).
+	MailURL string
 	// Crumb is an optional link above the title.
 	Crumb, CrumbURL string
 	Data            any
@@ -281,6 +283,9 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, name
 	p.Path = r.URL.RequestURI()
 	p.Host = r.Host
 	p.Panel = panelOf(r)
+	if p.User != nil {
+		p.MailURL = s.emailzitLink(r.Context()).URL
+	}
 	if x := sessionFrom(r); x != nil {
 		p.Acting = x.ActingAdmin
 	}

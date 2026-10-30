@@ -906,3 +906,4 @@ body.graph-full { overflow: hidden; }
 .meter .w85,.meter .w90,.meter .w95,.meter .w100{background:#dc2626}.meter .w75,.meter .w80{background:#d97706}
 .guest-sub{text-align:center;margin:-.5rem 0 1rem}.kv{display:grid;grid-template-columns:max-content 1fr;gap:.35rem 1rem}.kv dt{color:var(--muted,#64748b)}.kv dd{margin:0}.files td.name a{word-break:break-all}textarea.code-edit{width:100%;min-height:60vh;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem}.ds{word-break:break-all}.check{display:flex;gap:.5rem;align-items:flex-start}.check input{margin-top:.2rem}.spark{width:100%;height:60px}.warnbox{border-left:4px solid #d97706}
 .spark polyline{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke}
+.side .switch{margin:0 .75rem .5rem;justify-content:flex-start}

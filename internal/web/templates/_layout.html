@@ -14,6 +14,7 @@
 <body class="app">
 <aside class="side" id="side">
   <a class="brand" href="/">{{template "logo"}}<span>Host<b>Zit</b></span></a>
+  {{with .MailURL}}<a class="btn ghost sm switch" href="{{.}}/" title="{{$.T "Open EmailZit"}}">{{template "icon" "mail"}}EmailZit</a>{{end}}
   {{if .IsAdminPanel}}{{template "adminnav" .}}{{else}}{{template "customernav" .}}{{end}}
   <div class="side-foot"><a class="support-link" href="https://portal.maxzit.com/tickets/new?product=hostzit&amp;version={{.Version}}" target="_blank" rel="noopener" title="{{.T "Paid support by MaxZit: open a ticket in the customer portal"}}">{{template "icon" "support"}} {{.T "Contact support"}}</a>{{if .IsAdminPanel}}<a class="bug-link" href="https://github.com/Max-Zit/hostzit/issues/new?template=bug_report.yml&amp;version={{.Version}}" target="_blank" rel="noopener">{{template "icon" "bug"}} {{.T "Report a bug"}}</a>{{end}}HostZit {{.Version}}<br>{{.T "AGPLv3 · self-hosted"}}</div>
 </aside>
@@ -98,6 +99,7 @@
   <a href="/settings/security" class="{{if eq .Title "Sign-in and security"}}on{{end}}">{{template "icon" "lock"}}<span>{{.T "Sign-in and security"}}<small>{{.T "Session length, blocked addresses"}}</small></span></a>
   <a href="/settings/updates" class="{{if eq .Title "Updates"}}on{{end}}">{{template "icon" "download"}}<span>{{.T "Updates"}}<small>{{.T "Signed new versions"}}</small></span></a>
   <a href="/settings/backup" class="{{if eq .Title "Panel backup"}}on{{end}}">{{template "icon" "disk"}}<span>{{.T "Panel backup"}}<small>{{.T "Nightly encrypted backups of the panel"}}</small></span></a>
+  <a href="/settings/emailzit" class="{{if eq .Title "EmailZit"}}on{{end}}">{{template "icon" "link"}}<span>EmailZit<small>{{.T "Link to the mail hosting"}}</small></span></a>
   <a href="/settings/mail" class="{{if eq .Title "Notifications"}}on{{end}}">{{template "icon" "mail"}}<span>{{.T "Notifications"}}<small>{{.T "E-mail to administrators and customers"}}</small></span></a>
 </nav>{{end}}
 
