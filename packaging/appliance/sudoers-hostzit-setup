@@ -1,0 +1,1 @@
+hzadmin ALL=(root) NOPASSWD: /usr/local/sbin/hostzit-setup

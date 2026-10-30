@@ -1,0 +1,15 @@
+[Unit]
+Description=Set up HostZit on the first start of the appliance
+After=network-online.target
+Wants=network-online.target
+Before=getty@tty1.service
+ConditionPathExists=!/var/lib/hostzit/.appliance-ready
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/hostzit-firstboot
+RemainAfterExit=yes
+TimeoutStartSec=30min
+
+[Install]
+WantedBy=multi-user.target

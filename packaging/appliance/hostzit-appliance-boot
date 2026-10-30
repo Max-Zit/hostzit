@@ -1,0 +1,82 @@
+#!/bin/sh
+# Runs at every start of the HostZit appliance (as root):
+#  - grows the root file system when the VM disk was enlarged,
+#  - writes the text of the login screen (/etc/issue).
+# "hostzit-appliance-boot issue" only rewrites the screen text.
+
+log() { echo "hostzit-appliance-boot: $*"; }
+
+# grow_root extends the partition of the root file system (and the extended
+# partition around it on MBR disks), the LVM volume group and the root
+# volume to the end of the disk.
+grow_root() {
+    src=$(findmnt -no SOURCE /) || return 0
+    case "$src" in
+    /dev/mapper/* | /dev/dm-*)
+        lv=$src
+        vg=$(lvs --noheadings -o vg_name "$lv" 2>/dev/null | tr -d ' ')
+        pv=$(pvs --noheadings -o pv_name -S vg_name="$vg" 2>/dev/null | tr -d ' ' | head -1)
+        ;;
+    *) lv=""; pv=$src ;;
+    esac
+    [ -b "$pv" ] || return 0
+    part=$(basename "$(readlink -f "$pv")")
+    [ -f "/sys/class/block/$part/partition" ] || return 0
+    num=$(cat "/sys/class/block/$part/partition")
+    disk=/dev/$(basename "$(readlink -f "/sys/class/block/$part/..")")
+    total=$(blockdev --getsz "$disk")
+    end=$(($(cat "/sys/class/block/$part/start") + $(cat "/sys/class/block/$part/size")))
+    # Less than 100 MiB after the partition: nothing to do.
+    [ $((total - end)) -gt 204800 ] || return 0
+    log "$disk has $(((total - end) / 2048)) MiB unused; growing $pv"
+    if sfdisk -d "$disk" | grep -q '^label: gpt'; then
+        sfdisk -q --relocate gpt-bak-std "$disk" || return 1
+    fi
+    if [ "$num" -ge 5 ]; then
+        ext=$(sfdisk -d "$disk" | awk '/type=(f|5|85)([, ]|$)/ { sub(/ .*/, "", $1); print $1; exit }')
+        [ -n "$ext" ] && { echo ', +' | sfdisk -q --no-reread --no-tell-kernel -N "${ext##*[!0-9]}" "$disk" || return 1; }
+    fi
+    echo ', +' | sfdisk -q --no-reread --no-tell-kernel -N "$num" "$disk" || return 1
+    partx -u "$disk" || return 1
+    if [ -n "$lv" ]; then
+        pvresize -q "$pv" && lvextend -q -r -l +100%FREE "$lv" || return 1
+    else
+        resize2fs "$pv" >/dev/null 2>&1 || return 1
+    fi
+    log "root file system now $(df -h / | awk 'NR == 2 { print $2 }')"
+}
+
+# write_issue shows the panel addresses and, until the first administrator
+# exists, the setup token.
+write_issue() {
+    tok=/var/lib/hostzit/panel/setup-token.txt
+    if [ -f "$tok" ]; then
+        setup="Setup token:   $(cat "$tok")
+                 Open the admin panel, enter the token and create the
+                 first administrator."
+    elif [ -f /var/lib/hostzit/.appliance-ready ]; then
+        setup="Sign in with your HostZit administrator."
+    else
+        setup="HostZit is being set up (a few minutes on the first start)."
+    fi
+    # \4 is the current IPv4 address, filled in by the login prompt.
+    cat > /etc/issue <<ISSUE
+HostZit hosting appliance - \n
+
+  Admin panel:     https://\4:8442
+  Customer panel:  https://\4:8443
+  $setup
+
+  Setup menu:      sign in here as hzadmin (first password: hostzit,
+                   must be changed) - network, host name, time zone.
+
+ISSUE
+}
+
+case "${1:-}" in
+issue) write_issue ;;
+*)
+    grow_root || log "could not grow the root file system"
+    write_issue
+    ;;
+esac

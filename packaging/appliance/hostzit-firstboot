@@ -1,0 +1,20 @@
+#!/bin/sh
+# First start of the HostZit appliance: SSH keys, then the normal HostZit
+# setup (install.sh) with the package from the ISO, then the login screen.
+set -e
+LOG=/var/log/hostzit-firstboot.log
+if ! ls /etc/ssh/ssh_host_*_key >/dev/null 2>&1; then
+    ssh-keygen -A
+    systemctl reset-failed ssh.service 2>/dev/null || true
+    systemctl restart ssh 2>/dev/null || true
+fi
+# Wait for the network, so the panel's certificate names the address.
+for i in $(seq 120); do
+    ip -4 route get 1.1.1.1 >/dev/null 2>&1 && break
+    sleep 1
+done
+pkg=$(ls /root/hostzit-install/hostzit_*_amd64.deb | head -1)
+/root/hostzit-install/install.sh --package "$pkg" >"$LOG" 2>&1
+for i in $(seq 60); do [ -f /var/lib/hostzit/panel/setup-token.txt ] && break; sleep 1; done
+/usr/local/sbin/hostzit-appliance-boot issue || true
+touch /var/lib/hostzit/.appliance-ready

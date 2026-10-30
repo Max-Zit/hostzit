@@ -3,6 +3,7 @@
 #
 #   install.sh [--mode shared|dedicated] [--version X.Y.Z | --local DIR] [--no-dns] [--php "8.3 8.4"]
 #   install.sh --dns-only --primary IP --catalog NAME   (second name server only)
+#   install.sh --package hostzit_X_amd64.deb          (HostZit from a local package, e.g. the appliance)
 #
 # Installs the server software HostZit drives (nginx, PHP-FPM, MariaDB,
 # PowerDNS, PostgreSQL, OpenSSH, quota tools, WP-CLI), creates the hostzit
@@ -11,7 +12,7 @@
 # freshly built binaries). Run it as root on a fresh server.
 set -euo pipefail
 
-MODE=shared LOCAL="" DNS=1 PHPS="" HZ_VERSION="" DNSONLY=0 PRIMARY="" CATALOG=""
+MODE=shared LOCAL="" DNS=1 PHPS="" HZ_VERSION="" DNSONLY=0 PRIMARY="" CATALOG="" PACKAGE=""
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--mode) MODE=$2; shift 2 ;;
@@ -19,6 +20,7 @@ while [ $# -gt 0 ]; do
 	--no-dns) DNS=0; shift ;;
 	--php) PHPS=$2; shift 2 ;;
 	--version) HZ_VERSION=$2; shift 2 ;;
+	--package) PACKAGE=$2; shift 2 ;;
 	--dns-only) DNSONLY=1; shift ;;
 	--primary) PRIMARY=$2; shift 2 ;;
 	--catalog) CATALOG=$2; shift 2 ;;
@@ -95,7 +97,8 @@ EOF
 fi
 
 say "Installing server software"
-apt-get update -q
+# the appliance may start without internet: its packages are already there
+apt-get update -q || echo "WARNING: the package lists could not be updated (no internet?); using the installed ones"
 pkgs="openssl nginx libnginx-mod-http-modsecurity modsecurity-crs mariadb-server postgresql openssh-server quota curl ca-certificates unzip nftables fail2ban"
 [ "$DNS" = 1 ] && pkgs="$pkgs pdns-server pdns-backend-sqlite3 sqlite3"
 if [ -z "$PHPS" ]; then
@@ -178,7 +181,9 @@ fi
 
 say "HostZit programs"
 install -d /usr/lib/hostzit
-if [ -n "$LOCAL" ]; then
+if [ -n "$PACKAGE" ]; then
+	apt-get -y -q install "$(readlink -f "$PACKAGE")"
+elif [ -n "$LOCAL" ]; then
 	install -m 0755 "$LOCAL/hostzit-server" /usr/bin/hostzit-server
 	install -m 0755 "$LOCAL/hostzit-helper" /usr/lib/hostzit/hostzit-helper
 	install -m 0644 "$LOCAL/hostzit-server.service" "$LOCAL/hostzit-helper.service" "$LOCAL/hostzit-firewall.service" /etc/systemd/system/

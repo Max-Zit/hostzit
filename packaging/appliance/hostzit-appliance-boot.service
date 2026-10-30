@@ -1,0 +1,11 @@
+[Unit]
+Description=HostZit appliance start (disk size, login screen)
+After=local-fs.target hostzit-server.service
+Before=getty@tty1.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/hostzit-appliance-boot
+
+[Install]
+WantedBy=multi-user.target

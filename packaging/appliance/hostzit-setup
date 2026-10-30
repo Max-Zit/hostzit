@@ -1,0 +1,92 @@
+#!/bin/sh
+# HostZit appliance setup menu (on the server's own screen, as root via
+# sudo). Network and time zone go through the same root helper as the
+# admin panel (Settings → System), so the checks and the automatic undo of a
+# network that does not work are the same.
+T="HostZit appliance"
+HELPER=/usr/lib/hostzit/hostzit-helper
+
+msg() { whiptail --title "$T" --msgbox "$1" 16 74; }
+
+# helper OP JSON: runs an operation of the root helper and shows the answer.
+helper() {
+    out=$("$HELPER" call "$1" "$2" 2>&1) && msg "Done.
+
+$out" || msg "That did not work:
+
+$out"
+}
+
+current_ip() { ip -4 -o addr show scope global | awk '{print $4}' | head -1; }
+
+network() {
+    mode=$(whiptail --title "$T" --menu "Network of the appliance (now $(current_ip))" 14 74 2 \
+        dhcp "Automatic address (DHCP)" static "Static address" 3>&1 1>&2 2>&3) || return
+    host=$(hostname)
+    if [ "$mode" = dhcp ]; then
+        helper system.network "{\"dhcp\":true,\"hostname\":\"$host\"}"
+        return
+    fi
+    addr=$(whiptail --title "$T" --inputbox "Address with network size (e.g. 192.168.1.20/24)" 10 74 "$(current_ip)" 3>&1 1>&2 2>&3) || return
+    gw=$(whiptail --title "$T" --inputbox "Gateway" 10 74 "$(ip -4 route show default | awk '{print $3; exit}')" 3>&1 1>&2 2>&3) || return
+    dns=$(whiptail --title "$T" --inputbox "DNS servers (one to three, separated by spaces)" 10 74 "$gw" 3>&1 1>&2 2>&3) || return
+    list=""
+    for d in $dns; do
+        case "$d" in *[!0-9.]*) msg "Not an IPv4 address: $d"; return ;; esac
+        list="$list${list:+,}\"$d\""
+    done
+    case "$addr$gw" in *[!0-9./]*) msg "Use digits, dots and the /size only."; return ;; esac
+    helper system.network "{\"dhcp\":false,\"address\":\"$addr\",\"gateway\":\"$gw\",\"dns\":[$list],\"hostname\":\"$host\"}"
+}
+
+host_name() {
+    name=$(whiptail --title "$T" --inputbox "Host name (letters, digits, hyphens)" 10 74 "$(hostname)" 3>&1 1>&2 2>&3) || return
+    case "$name" in ""|-*|*-|*[!A-Za-z0-9-]*) msg "Use letters, digits and hyphens."; return ;; esac
+    hostnamectl set-hostname "$name" && sed -i "s/^127\.0\.1\.1.*/127.0.1.1\t$name/" /etc/hosts
+    msg "The host name is now $name."
+}
+
+time_zone() {
+    z=$(whiptail --title "$T" --inputbox "Time zone (e.g. Europe/Belgrade, Europe/Berlin, UTC)" 10 74 "$(timedatectl show -p Timezone --value)" 3>&1 1>&2 2>&3) || return
+    case "$z" in *[!A-Za-z0-9_/+-]*) msg "Not a time zone: $z"; return ;; esac
+    helper system.timezone "{\"zone\":\"$z\"}"
+}
+
+panel_info() {
+    ip=$(current_ip | cut -d/ -f1)
+    tok=""
+    [ -f /var/lib/hostzit/panel/setup-token.txt ] && tok="
+Setup token: $(cat /var/lib/hostzit/panel/setup-token.txt)
+Open the admin panel, enter the token and create the first administrator."
+    [ -f /var/lib/hostzit/.appliance-ready ] || tok="$tok
+HostZit is still being set up (log: /var/log/hostzit-firstboot.log)."
+    msg "Admin panel:     https://$ip:8442
+Customer panel:  https://$ip:8443
+$tok"
+}
+
+while true; do
+    c=$(whiptail --title "$T" --menu "Address: $(current_ip)   Admin panel: https://$(current_ip | cut -d/ -f1):8442" 20 74 9 \
+        1 "Network (DHCP or static address)" \
+        2 "Host name" \
+        3 "Time zone" \
+        4 "Panel addresses and setup token" \
+        5 "Allow the admin panel from all private networks again" \
+        6 "Lift all sign-in blocks" \
+        7 "Command line" \
+        8 "Restart the appliance" \
+        9 "Shut down the appliance" 3>&1 1>&2 2>&3) || exit 0
+    case "$c" in
+    1) network ;;
+    2) host_name ;;
+    3) time_zone ;;
+    4) panel_info ;;
+    5) su hostzit -s /bin/sh -c "set -a; . /etc/hostzit/server.env; /usr/bin/hostzit-server --data-dir /var/lib/hostzit/panel --reset-allowlist" >/dev/null 2>&1 &&
+           systemctl restart hostzit-server && msg "The admin panel allows the private networks again." || msg "That did not work; see journalctl -u hostzit-server." ;;
+    6) su hostzit -s /bin/sh -c "set -a; . /etc/hostzit/server.env; /usr/bin/hostzit-server --data-dir /var/lib/hostzit/panel --unblock-ip all" >/dev/null 2>&1 &&
+           msg "All sign-in blocks are lifted." || msg "That did not work; see journalctl -u hostzit-server." ;;
+    7) exit 0 ;;
+    8) whiptail --title "$T" --yesno "Restart the appliance now?" 8 60 && systemctl reboot ;;
+    9) whiptail --title "$T" --yesno "Shut down the appliance now?" 8 60 && systemctl poweroff ;;
+    esac
+done
