@@ -1,0 +1,12 @@
+/bin/
+*.exe
+*.msi
+*.test
+*.out
+.gotmp/
+.devdata/
+/dist/
+credentials.txt
+node_modules/
+NOTES.md
+NOTES.md

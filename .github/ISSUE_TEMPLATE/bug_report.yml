@@ -1,0 +1,52 @@
+name: Bug report
+description: Something does not work as described in the guide
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Security problems** must not be reported here — use [Report a vulnerability](https://github.com/Max-Zit/hostzit/security/advisories/new) instead. Never paste passwords or customer data.
+  - type: input
+    id: version
+    attributes:
+      label: HostZit version
+      description: Panel version (bottom of the sidebar).
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Admin panel (server, packages, accounts)
+        - Customer panel
+        - Websites, PHP and HTTPS
+        - WordPress toolkit
+        - Domains and DNS
+        - Databases
+        - Files, SFTP and cron jobs
+        - Isolation and limits
+        - Security (firewall, WAF, malware scan)
+        - cPanel import / migration
+        - Installation / updates / API
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Server (appliance, Debian version, VM or dedicated), number of accounts, browser.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Remove domain names, addresses and anything secret you do not want to share.
+      render: text
