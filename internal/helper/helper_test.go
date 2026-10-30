@@ -162,6 +162,24 @@ func TestAccountApply(t *testing.T) {
 	}
 }
 
+// The helper can start before the package's setup creates the web group:
+// the group is looked up later, and root is never used in its place.
+func TestWebGroupLookedUpLate(t *testing.T) {
+	h, fr, _, _ := newTest(t)
+	h.WebGID = 0
+	fr.fail["getent group hostzit-web"] = true
+	if r := call(t, h, "account.apply", testAccount()); r.OK {
+		t.Fatal("account applied without the web group")
+	}
+	delete(fr.fail, "getent group hostzit-web")
+	if gid, err := h.webGID(context.Background()); err != nil || gid != 990 {
+		t.Fatalf("web group: %d %v", gid, err)
+	}
+	if r := call(t, h, "account.apply", testAccount()); !r.OK {
+		t.Fatalf("apply: %+v", r)
+	}
+}
+
 func TestAccountApplyRefuses(t *testing.T) {
 	h, fr, _, _ := newTest(t)
 	fr.users["passwd:shop"] = "shop:x:1001:1001::/home/shop:/bin/bash"

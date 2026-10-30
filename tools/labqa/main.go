@@ -183,6 +183,7 @@ func main() {
 	panel := flag.String("panel", "https://192.168.101.170:8443", "customer panel")
 	creds := flag.String("creds", "credentials.txt", "credentials file")
 	ip := flag.String("ip", "192.168.101.170", "server address (DNS records)")
+	php := flag.String("php", "8.4", "default PHP version (8.2 on Debian 12)")
 	flag.Parse()
 	a := newClient(*admin)
 	must(adminLogin(a, *creds))
@@ -194,7 +195,7 @@ func main() {
 	switch args[0] {
 	case "setup":
 		_, err := a.post("/settings/hosting", url.Values{"mode": {"shared"}, "server_name": {"hz-test.hostzit.test"}, "ipv4": {*ip}, "nameservers": {"ns1.hostzit.test\nns2.hostzit.test"},
-			"default_php": {"8.4"}, "grace_days": {"14"}, "spf": {"v=spf1 a mx ~all"}, "panel_url": {*panel}})
+			"default_php": {*php}, "grace_days": {"14"}, "spf": {"v=spf1 a mx ~all"}, "panel_url": {*panel}})
 		must(err)
 		_, body, _, _ := a.do("GET", "/packages", nil)
 		if !strings.Contains(body, "wp-basic") {

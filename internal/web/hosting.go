@@ -122,7 +122,11 @@ func (h *HostingSettings) Validate() error {
 func (s *Server) hostingSettings(ctx context.Context) HostingSettings {
 	h := defaultHosting()
 	if err := s.store.GetSetting(ctx, settingHosting, &h); err != nil || h.Validate() != nil {
-		return defaultHosting()
+		h = defaultHosting()
+		// not saved yet: the newest PHP of this server (Debian 12 has 8.2, 13 has 8.4)
+		if in, err := s.serverInfo(ctx); err == nil && len(in.PHPVersions) > 0 {
+			h.DefaultPHP = in.PHPVersions[len(in.PHPVersions)-1]
+		}
 	}
 	return h
 }

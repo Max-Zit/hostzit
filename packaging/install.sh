@@ -152,9 +152,11 @@ else
 	apt-get -y -q install "$WORK/$PKG"
 fi
 systemctl daemon-reload
-systemctl enable --now hostzit-helper
-sleep 1
+# setup first (groups, folders), then (re)start the helper so it knows them
 /usr/lib/hostzit/hostzit-helper setup >/dev/null
+systemctl enable hostzit-helper >/dev/null 2>&1
+systemctl restart hostzit-helper
+sleep 1
 systemctl enable hostzit-server hostzit-firewall >/dev/null 2>&1
 systemctl restart hostzit-server
 sleep 3

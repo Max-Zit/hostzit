@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -557,6 +558,10 @@ func (s *Server) handleHostingSettingsSave(w http.ResponseWriter, r *http.Reques
 	}
 	if err := h.Validate(); err != nil {
 		s.showHostingSettings(w, r, http.StatusBadRequest, h, err.Error())
+		return
+	}
+	if !slices.Contains(s.phpVersions(r.Context()), h.DefaultPHP) {
+		s.showHostingSettings(w, r, http.StatusBadRequest, h, "This PHP version is not installed.")
 		return
 	}
 	if err := s.store.SetSetting(r.Context(), settingHosting, h); err != nil {

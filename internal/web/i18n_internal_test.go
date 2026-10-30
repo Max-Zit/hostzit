@@ -9,7 +9,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-
 )
 
 // uiTexts collects the English texts of the console: template {{.T "…"}}

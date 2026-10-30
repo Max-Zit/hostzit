@@ -33,6 +33,19 @@ func (h *Helper) lookupID(ctx context.Context, db, name string) (int, bool) {
 	return id, err == nil
 }
 
+// webGID is the id of the web server's group. The helper may have started
+// before the package's setup created the group, so it is looked up again
+// until known; root (0) is never used in its place.
+func (h *Helper) webGID(ctx context.Context) (int, error) {
+	if h.WebGID > 0 {
+		return h.WebGID, nil
+	}
+	if id, ok := h.lookupID(ctx, "group", h.WebGroup); ok && id > 0 {
+		return id, nil
+	}
+	return 0, fmt.Errorf("the group %s is missing: run hostzit-helper setup", h.WebGroup)
+}
+
 // accountApply creates or updates an account: user, groups, home layout,
 // private tmp, cage, cgroup slice, PHP masters, quota, lock state.
 func (h *Helper) accountApply(ctx context.Context, a hosting.Account) (any, error) {
@@ -40,6 +53,10 @@ func (h *Helper) accountApply(ctx context.Context, a hosting.Account) (any, erro
 		return nil, userErr(err.Error())
 	}
 	uid, _ := hosting.UID(a.Number)
+	webGID, err := h.webGID(ctx)
+	if err != nil {
+		return nil, err
+	}
 	if gid, ok := h.lookupID(ctx, "group", a.Name); ok && gid != uid {
 		return nil, userErr(fmt.Sprintf("a group %s with another id already exists on the server", a.Name))
 	} else if !ok {
@@ -84,7 +101,7 @@ func (h *Helper) accountApply(ctx context.Context, a hosting.Account) (any, erro
 		p := strings.TrimSuffix(home+"/"+d.Path, "/")
 		gid := uid
 		if d.WebGr {
-			gid = h.WebGID
+			gid = webGID
 		}
 		if err := h.Sys.Mkdir(p, os.FileMode(d.Mode), uid, gid); err != nil {
 			return nil, fmt.Errorf("home %s: %w", p, err)
@@ -111,13 +128,12 @@ func (h *Helper) accountApply(ctx context.Context, a hosting.Account) (any, erro
 	if h.Sys.Exists("/usr/sbin/emailzit-sendmail") {
 		a.Sendmail = "/usr/sbin/emailzit-sendmail"
 	}
-	if err := h.buildCage(ctx, a, uid); err != nil {
+	if err := h.buildCage(ctx, a, uid, webGID); err != nil {
 		return nil, fmt.Errorf("cage: %w", err)
 	}
 
 	// systemd: slice, cage mounts, PHP masters.
 	files := map[string]string{}
-	var err error
 	if files[systemdDir+hosting.SliceName(a.Name)], err = hosting.SliceUnit(a); err != nil {
 		return nil, err
 	}
@@ -201,7 +217,7 @@ func (h *Helper) setQuota(ctx context.Context, a hosting.Account) string {
 
 // buildCage creates the cage's directories, links, device nodes and the
 // generated /etc files, then mounts it (again).
-func (h *Helper) buildCage(ctx context.Context, a hosting.Account, uid int) error {
+func (h *Helper) buildCage(ctx context.Context, a hosting.Account, uid, webGID int) error {
 	root := hosting.CageDir(a.Name)
 	if err := h.Sys.Mkdir("/var/lib/hostzit/cages", 0o711, 0, 0); err != nil {
 		return err
@@ -214,7 +230,7 @@ func (h *Helper) buildCage(ctx context.Context, a hosting.Account, uid int) erro
 			return err
 		}
 	}
-	if err := h.Sys.Mkdir(root+"/.sock", 0o750, uid, h.WebGID); err != nil {
+	if err := h.Sys.Mkdir(root+"/.sock", 0o750, uid, webGID); err != nil {
 		return err
 	}
 	for _, l := range hosting.SortedNames(hosting.CageSymlinks) {
@@ -233,7 +249,7 @@ func (h *Helper) buildCage(ctx context.Context, a hosting.Account, uid int) erro
 	if err != nil {
 		return err
 	}
-	group, err := hosting.CageGroup(a, h.WebGID)
+	group, err := hosting.CageGroup(a, webGID)
 	if err != nil {
 		return err
 	}
