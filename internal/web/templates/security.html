@@ -1,0 +1,36 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+<section class="panel">
+  <h2>{{.T "Sessions and sign-in protection"}}</h2>
+  <form method="post" action="/settings/security" class="stack">
+    <div class="cols">
+      <label>{{.T "Session length (hours)"}}<input type="number" name="session_hours" value="{{.Data.X.SessionHours}}" min="1" max="24" required></label>
+      <label>{{.T "Sign out after inactivity (minutes)"}}<input type="number" name="idle_minutes" value="{{.Data.X.IdleMinutes}}" min="5" max="480" required></label>
+    </div>
+    <div class="cols">
+      <label>{{.T "Failed sign-ins before a block"}}<input type="number" name="max_attempts" value="{{.Data.X.MaxAttempts}}" min="3" max="50" required></label>
+      <label>{{.T "Counting period (minutes)"}}<input type="number" name="window_minutes" value="{{.Data.X.WindowMinutes}}" min="1" max="1440" required></label>
+      <label>{{.T "Block length (minutes)"}}<input type="number" name="block_minutes" value="{{.Data.X.BlockMinutes}}" min="1" max="10080" required><small>{{.T "Doubles for every repeated block within a day (up to 7 days)."}}</small></label>
+    </div>
+    <label class="check"><input type="checkbox" name="customer_2fa" {{if .Data.X.Customer2FA}}checked{{end}}><span>{{.T "Customers must use two-factor sign-in too"}}</span></label>
+    <p class="small muted">{{.T "Administrators always need two-factor sign-in; customers can switch it on in their panel. Sign-ins from the server itself (127.0.0.1) are never blocked."}}</p>
+    <div><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+</section>
+<section class="panel">
+  <h2>{{.T "Blocked addresses"}}</h2>
+  {{if .Data.Blocks}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Address"}}</th><th>{{.T "Until"}}</th><th class="num">{{.T "Blocks today"}}</th><th class="hide-sm">{{.T "Reason"}}</th><th></th></tr></thead>
+    <tbody>{{range .Data.Blocks}}<tr><td><code>{{.IP}}</code></td><td>{{$.Time .Until}}</td><td class="num">{{.Strikes}}</td><td class="hide-sm muted">{{.Reason}}</td>
+      <td class="actions"><form method="post" action="/settings/security/unblock"><input type="hidden" name="ip" value="{{.IP}}"><button class="ghost sm">{{$.T "Unblock"}}</button></form></td></tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<p class="muted">{{.T "No address is blocked."}}</p>{{end}}
+</section>
+</div>
+</div>
+{{end}}

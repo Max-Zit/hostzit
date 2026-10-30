@@ -1,0 +1,10 @@
+{{template "app" .}}
+{{define "content"}}<div class="docs">{{template "docnav" .}}<article class="doc">
+<h1>{{.T "Search the guide"}}</h1>
+<form method="get" action="/docs/search" class="docsearch-big"><input type="search" name="q" value="{{.Data.Q}}" placeholder="{{.T "e.g. enrollment code, SNMPv3, maintenance"}}" aria-label="{{.T "Search the guide"}}" autofocus><button class="primary">{{.T "Search"}}</button></form>
+{{if .Data.Q}}{{if .Data.Hits}}
+<ol class="search-hits">
+{{range .Data.Hits}}<li><a href="/docs/{{.Slug}}{{if .Anchor}}#{{.Anchor}}{{end}}"><b>{{.Page}}</b>{{if .Heading}} › {{.Heading}}{{end}}</a><p class="small">{{.Snippet}}</p></li>
+{{end}}</ol>
+{{else}}<p class="muted">{{.T "Nothing in the guide contains all of these words. Try fewer or other words."}}</p>{{end}}{{end}}
+</article></div>{{end}}

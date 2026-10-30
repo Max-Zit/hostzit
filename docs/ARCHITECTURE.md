@@ -204,7 +204,7 @@ account; WordPress itself is downloaded from wordpress.org at install time.
   back to live (all or DB only/files only), clone between sites.
 - Health: vulnerable plugins/themes (free vulnerability feed, license to
   check), outdated PHP, big tables, cron status.
-- Performance: nginx FastCGI cache with purge on content change, Redis object
+- Performance: **page cache per site** (nginx FastCGI cache, on/off, lifetime, "Clear cache" button, bypass for logged-in users, cart/checkout, POST and query strings; purge after updates), Redis object
   cache per account (later).
 
 ## 7. DNS

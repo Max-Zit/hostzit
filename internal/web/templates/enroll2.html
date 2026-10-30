@@ -1,0 +1,15 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Set up two-factor sign-in"}}</h1>
+<section class="panel">
+<p class="muted">{{.T "Scan the code with an authenticator app (Microsoft Authenticator, Google Authenticator, Authy, 1Password, Bitwarden …), then enter the code it shows."}}</p>
+<div class="enroll">
+  {{with .Data.QR}}{{template "qr" .}}{{end}}
+  <div><p class="small muted">{{.T "Or enter this key by hand:"}}</p><p><code class="secret" data-copy-text>{{.Data.Secret}}</code></p></div>
+</div>
+<form method="post" action="/account/2fa" class="row">
+  <input name="code" required autofocus inputmode="numeric" autocomplete="one-time-code" maxlength="7" class="code" aria-label="{{.T "Code from the app"}}" placeholder="123456">
+  <button class="primary">{{.T "Confirm"}}</button>
+</form>
+</section>
+{{end}}

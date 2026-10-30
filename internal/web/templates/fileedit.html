@@ -1,0 +1,13 @@
+{{template "app" .}}
+{{define "content"}}
+<div class="pagehead"><h1 class="mono">{{.Data.Path}}</h1><a class="btn secondary" href="/files/download?path={{.Data.Path}}">{{template "icon" "download"}}{{.T "Download"}}</a></div>
+{{if .Data.Binary}}
+<p class="muted">{{.T "This file is not text; download it to open it."}}</p>
+{{else}}
+<form method="post" action="/files/edit" class="stack">
+  <input type="hidden" name="path" value="{{.Data.Path}}">
+  <textarea name="text" class="code-edit" spellcheck="false" aria-label="{{.T "Content"}}">{{.Data.Text}}</textarea>
+  <div class="row"><button class="primary">{{.T "Save"}}</button><a class="btn ghost" href="/files?path={{.Data.Dir}}">{{.T "Back"}}</a></div>
+</form>
+{{end}}
+{{end}}

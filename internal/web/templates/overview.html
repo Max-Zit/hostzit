@@ -1,0 +1,36 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Overview"}}</h1>
+<div class="grid">
+  <a class="stat" href="/customers"><span class="si">{{template "icon" "users"}}</span><b>{{index .Data.Counts "active"}}</b><span>{{.T "Active customers"}}</span></a>
+  <a class="stat {{if index .Data.Counts "suspended"}}warn{{end}}" href="/customers?status=suspended"><span class="si">{{template "icon" "lock"}}</span><b>{{index .Data.Counts "suspended"}}</b><span>{{.T "Suspended"}}</span></a>
+  <a class="stat" href="/sites"><span class="si">{{template "icon" "globe"}}</span><b>{{.Data.Sites}}</b><span>{{.T "Websites"}}</span></a>
+  <a class="stat" href="/dns"><span class="si">{{template "icon" "network"}}</span><b>{{.Data.Zones}}</b><span>{{.T "DNS zones"}}</span></a>
+  <a class="stat" href="/packages"><span class="si">{{template "icon" "package"}}</span><b>{{.Data.Packages}}</b><span>{{.T "Packages"}}</span></a>
+</div>
+{{if .Data.Problems}}
+<section class="panel warnbox">
+  <h2>{{template "icon" "alert"}}{{.T "To do"}}</h2>
+  <ul>{{range .Data.Problems}}<li>{{$.T .}}</li>{{end}}</ul>
+</section>
+{{end}}
+<section class="panel">
+  <div class="titlebar"><h2>{{template "icon" "rack"}}{{.T "Server"}}</h2><a class="btn ghost sm" href="/server">{{.T "Details"}}</a></div>
+  {{with .Data.Info}}
+  <dl class="kv">
+    <dt>{{$.T "System"}}</dt><dd>{{.OS}} · {{.Kernel}}</dd>
+    <dt>{{$.T "Mode"}}</dt><dd>{{if eq $.Data.Hosting.Mode "dedicated"}}{{$.T "Dedicated server (one customer)"}}{{else}}{{$.T "Shared hosting"}}{{end}}</dd>
+    <dt>{{$.T "Load"}}</dt><dd>{{.Load}} · {{$.T "up %s" .Uptime}}</dd>
+    <dt>{{$.T "Memory"}}</dt><dd>{{$.T "%d MB free of %d MB" .MemAvailMB .MemTotalMB}}</dd>
+    <dt>PHP</dt><dd>{{join .PHPVersions ", "}}</dd>
+    <dt>{{$.T "Services"}}</dt><dd>{{range $k, $v := .Services}}<span class="badge {{if eq $v "active"}}ok{{else}}bad{{end}}"><i></i>{{$k}}</span> {{end}}</dd>
+  </dl>
+  {{else}}<p class="err-text">{{.T .Data.InfoErr}}</p>{{end}}
+</section>
+{{with .Data.Jobs}}
+<section class="panel">
+  <div class="titlebar"><h2>{{template "icon" "clock"}}{{$.T "Recent jobs"}}</h2><a class="btn ghost sm" href="/jobs">{{$.T "All jobs"}}</a></div>
+  <div class="table-wrap"><table><tbody>{{range .}}<tr><td>{{.Kind}}</td><td class="muted">{{.Detail}}</td><td>{{template "badge" (st $ .Status)}}</td><td class="muted small">{{$.Ago .CreatedAt}}</td></tr>{{end}}</tbody></table></div>
+</section>
+{{end}}
+{{end}}

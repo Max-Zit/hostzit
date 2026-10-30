@@ -1,0 +1,23 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Domains and DNS"}}</h1>
+{{with .Data.NS}}
+<section class="panel">
+  <p>{{$.T "To host the DNS of a domain here, enter these name servers at your domain registrar:"}}</p>
+  <ul class="codes">{{range .}}<li><code>{{.}}</code></li>{{end}}</ul>
+</section>
+{{end}}
+<section class="panel">
+  <h2>{{template "icon" "network"}}{{.T "DNS zones"}}</h2>
+  {{if .Data.Zones}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Zone"}}</th><th class="num">{{.T "Records"}}</th><th>DNSSEC</th><th></th></tr></thead>
+    <tbody>{{range .Data.Zones}}<tr><td><a href="/dns/{{.ID}}"><b>{{.Name}}</b></a></td><td class="num">{{.Records}}</td><td>{{if .DNSSEC}}<span class="badge ok"><i></i>{{$.T "signed"}}</span>{{else}}<span class="muted">—</span>{{end}}</td><td class="small err-text">{{.ApplyError}}</td></tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<p class="muted">{{.T "No DNS zones yet."}}</p>{{end}}
+  <form method="post" action="/dns" class="row mt">
+    <input name="zone" required placeholder="example.com" spellcheck="false" autocapitalize="none" aria-label="{{.T "Domain"}}">
+    <button class="primary">{{template "icon" "plus"}}{{.T "Add DNS zone"}}</button>
+  </form>
+</section>
+{{end}}

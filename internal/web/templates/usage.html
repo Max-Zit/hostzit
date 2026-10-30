@@ -1,0 +1,40 @@
+{{template "app" .}}
+{{define "content"}}
+{{$p := .Data.P}}
+<h1>{{.T "Usage"}}</h1>
+{{with .Data.Last}}
+<div class="cards2">
+<section class="panel">
+  <h2>{{template "icon" "disk"}}{{$.T "Storage"}}</h2>
+  <dl class="kv">
+    <dt>{{$.T "Disk"}}</dt><dd>{{kb .DiskKB}}{{if $p.Limits.DiskMB}} / {{mb $p.Limits.DiskMB}}{{template "meter" (pct5 .DiskKB (mul (i64 $p.Limits.DiskMB) 1024))}}{{end}}</dd>
+    <dt>{{$.T "Files"}}</dt><dd>{{.Inodes}}{{if $p.Limits.Inodes}} / {{$p.Limits.Inodes}}{{template "meter" (pct5 .Inodes (i64 $p.Limits.Inodes))}}{{end}}</dd>
+    <dt>{{$.T "Databases"}}</dt><dd>{{bytes .DBB}}</dd>
+  </dl>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "cpu"}}{{$.T "Right now"}}</h2>
+  <dl class="kv">
+    <dt>{{$.T "Memory"}}</dt><dd>{{bytes .MemoryB}}{{if $p.Limits.MemoryMB}} / {{mb $p.Limits.MemoryMB}}{{template "meter" (pct5 .MemoryB (mul (i64 $p.Limits.MemoryMB) 1048576))}}{{end}}</dd>
+    <dt>{{$.T "Processes"}}</dt><dd>{{.Tasks}}{{if $p.Limits.Processes}} / {{$p.Limits.Processes}}{{end}}</dd>
+    <dt>{{$.T "Measured"}}</dt><dd class="muted">{{$.Ago .At}}</dd>
+  </dl>
+</section>
+</div>
+{{else}}<p class="muted">{{.T "No measurement yet (every 10 minutes)."}}</p>{{end}}
+{{if .Data.DBs}}
+<section class="panel">
+  <h2>{{template "icon" "database"}}{{.T "Databases"}}</h2>
+  <div class="table-wrap"><table><tbody>{{range .Data.DBs}}<tr><td class="mono">{{.Name}}</td><td class="num">{{bytes .SizeB}}</td></tr>{{end}}</tbody></table></div>
+</section>
+{{end}}
+<section class="panel">
+  <h2>{{template "icon" "clock"}}{{.T "Last 7 days"}}</h2>
+  {{if .Data.Samples}}
+  <div class="table-wrap scroll-y"><table>
+    <thead><tr><th>{{.T "Time"}}</th><th class="num">{{.T "Disk"}}</th><th class="num">{{.T "Memory"}}</th><th class="num hide-sm">{{.T "Processes"}}</th></tr></thead>
+    <tbody>{{range .Data.Samples}}<tr><td class="muted small">{{$.Time .At}}</td><td class="num">{{kb .DiskKB}}</td><td class="num">{{bytes .MemoryB}}</td><td class="num hide-sm">{{.Tasks}}</td></tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<p class="muted">{{.T "No data yet."}}</p>{{end}}
+</section>
+{{end}}

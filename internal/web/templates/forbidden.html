@@ -1,0 +1,4 @@
+{{if .User}}{{template "app" .}}{{else}}{{template "guest" .}}{{end}}
+{{define "content"}}
+<div class="empty">{{template "icon" "lock"}}<h1>{{.T "Not allowed"}}</h1><p>{{.T "Your role does not allow this. Ask an administrator."}}</p><a href="/">{{.T "Back to the overview"}}</a></div>
+{{end}}

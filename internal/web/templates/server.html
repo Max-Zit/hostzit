@@ -1,0 +1,36 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Server"}}</h1>
+{{with .Data.Info}}
+<div class="cards2">
+<section class="panel">
+  <h2>{{template "icon" "rack"}}{{$.T "System"}}</h2>
+  <dl class="kv">
+    <dt>{{$.T "Operating system"}}</dt><dd>{{.OS}}</dd>
+    <dt>{{$.T "Kernel"}}</dt><dd>{{.Kernel}}</dd>
+    <dt>{{$.T "Up"}}</dt><dd>{{.Uptime}}</dd>
+    <dt>{{$.T "Load"}}</dt><dd>{{.Load}}</dd>
+    <dt>{{$.T "Memory"}}</dt><dd>{{$.T "%d MB free of %d MB" .MemAvailMB .MemTotalMB}}</dd>
+    <dt>{{$.T "Disk quotas"}}</dt><dd>{{if .Quota}}<span class="badge ok"><i></i>{{$.T "active"}}</span>{{else}}<span class="badge bad"><i></i>{{$.T "not active"}}</span>{{end}}</dd>
+    <dt>cgroups v2</dt><dd>{{if .CgroupV2}}<span class="badge ok"><i></i>{{$.T "active"}}</span>{{else}}<span class="badge bad"><i></i>{{$.T "missing"}}</span>{{end}}</dd>
+  </dl>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "package"}}{{$.T "Programs"}}</h2>
+  <dl class="kv">
+    <dt>PHP</dt><dd>{{join .PHPVersions ", "}}</dd>
+    {{range $k, $v := .Programs}}<dt>{{$k}}</dt><dd>{{if $v}}{{$v}}{{else}}<span class="muted">{{$.T "not installed"}}</span>{{end}}</dd>{{end}}
+  </dl>
+</section>
+</div>
+<section class="panel">
+  <h2>{{template "icon" "disk"}}{{$.T "Disks"}}</h2>
+  <div class="table-wrap"><table><tbody>{{range .Disks}}<tr><td class="mono">{{.Mount}}</td><td>{{bytes (mul .UsedMB 1048576)}} / {{bytes (mul .SizeMB 1048576)}}{{template "meter" (pct5 .UsedMB .SizeMB)}}</td></tr>{{end}}</tbody></table></div>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "service"}}{{$.T "Services"}}</h2>
+  <div class="table-wrap"><table><tbody>{{range $k, $v := .Services}}<tr><td>{{$k}}</td><td><span class="badge {{if eq $v "active"}}ok{{else}}bad{{end}}"><i></i>{{$v}}</span></td>
+    <td class="actions">{{if $.User.IsAdmin}}<form method="post" action="/server/service" class="row" data-confirm="{{$.T "Restart %s?" $k}}"><input type="hidden" name="name" value="{{$k}}"><input type="hidden" name="action" value="restart"><button class="ghost sm">{{template "icon" "restart"}}{{$.T "Restart"}}</button></form>{{end}}</td></tr>{{end}}</tbody></table></div>
+</section>
+{{else}}<div class="flash err" role="alert">{{template "icon" "alert"}}<span>{{.T .Data.Err}}</span></div>{{end}}
+{{end}}

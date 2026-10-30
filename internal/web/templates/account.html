@@ -1,0 +1,103 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "My account"}}</h1>
+{{if .User.MustChangePassword}}<div class="flash warn" role="alert">{{template "icon" "alert"}}<span>{{.T "Please choose your own password before you continue."}}</span></div>{{end}}
+{{with .Data.Codes}}
+<section class="panel accent">
+  <h2>{{$.T "New recovery codes"}}</h2>
+  <p>{{$.T "Keep these codes in a safe place: each one signs you in once if you lose your phone. They are shown only now; the old codes no longer work."}}</p>
+  <ul class="codes">{{range .}}<li><code>{{.}}</code></li>{{end}}</ul>
+  <p><button type="button" class="secondary" data-copy="ul.codes">{{template "icon" "copy"}}{{$.T "Copy"}}</button></p>
+</section>
+{{end}}
+<section class="panel">
+  <h2>{{.T "Change password"}}</h2>
+  <form method="post" action="/account/password" class="stack">
+    <label>{{.T "Current password"}}<input type="password" name="current" required autocomplete="current-password"></label>
+    <label>{{.T "New password"}}<input type="password" name="password" required minlength="12" autocomplete="new-password"><small>{{.T "At least 12 characters. A passphrase of several words is best."}}</small></label>
+    <label>{{.T "Repeat the password"}}<input type="password" name="password2" required minlength="12" autocomplete="new-password"></label>
+    <div><button class="primary">{{.T "Change password"}}</button></div>
+  </form>
+</section>
+{{if not .User.MustChangePassword}}
+{{if not .IsAdminPanel}}
+<section class="panel">
+  <h2>{{template "icon" "shield"}}{{.T "Two-factor sign-in"}}</h2>
+  {{if .User.TOTPEnabled}}
+  <p>{{.T "Two-factor sign-in is on: you need your password and a code from your authenticator app."}}</p>
+  <form method="post" action="/account/2fa/off" class="row" data-confirm="{{.T "Switch off two-factor sign-in?"}}"><input type="password" name="current" required autocomplete="current-password" placeholder="{{.T "Current password"}}" aria-label="{{.T "Current password"}}"><button class="ghost">{{.T "Switch off"}}</button></form>
+  {{else}}
+  <p class="muted">{{.T "Protect your websites with a second factor: a code from an authenticator app on your phone."}}</p>
+  <a class="btn primary" href="/account/2fa">{{.T "Set up two-factor sign-in"}}</a>
+  {{end}}
+</section>
+{{end}}
+{{if .User.TOTPEnabled}}
+<section class="panel">
+  <h2>{{.T "Recovery codes"}}</h2>
+  <p class="muted">{{.T "Make new recovery codes if you used most of them or think someone saw them. Enter a code from your authenticator app to confirm."}}</p>
+  <form method="post" action="/account/recovery" class="row">
+    <input name="code" required inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" aria-label="{{.T "Code from the app"}}" class="code">
+    <button class="secondary">{{.T "Make new recovery codes"}}</button>
+  </form>
+</section>
+{{end}}
+<section class="panel">
+  <h2>{{.T "Active sessions"}}</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Address"}}</th><th class="hide-sm">{{.T "Browser"}}</th><th>{{.T "Signed in"}}</th><th class="hide-sm">{{.T "Last activity"}}</th></tr></thead>
+    <tbody>{{range .Data.Sessions}}<tr><td>{{.IP}}{{if eq .Hash $.Data.Current}} <span class="badge ok">{{$.T "This session"}}</span>{{end}}</td><td class="hide-sm muted ellipsis">{{.UserAgent}}</td><td class="muted">{{$.Time .CreatedAt}}</td><td class="hide-sm muted">{{$.Time .LastSeen}}</td></tr>{{end}}</tbody>
+  </table></div>
+  <form method="post" action="/account/sessions/signout" class="mt"><button class="secondary">{{.T "Sign out all other sessions"}}</button></form>
+</section>
+
+{{if and .IsAdminPanel .User.IsAdmin}}
+<section class="panel" id="api">
+  <h2>{{template "icon" "key"}}{{.T "API tokens"}}</h2>
+  <p class="muted">{{.T "Your billing system (for example the MaxZit portal) creates and suspends accounts through the REST API with a token. Give every token only what it needs and revoke it when it is no longer used."}}</p>
+  {{with .Data.NewToken}}
+  <div class="notice-ok panel">
+    <p><b>{{$.T "New API token"}}</b> — {{$.T "copy it now: it is shown only once."}}</p>
+    <pre class="token" id="newtoken">{{.}}</pre>
+    <p><button type="button" class="btn secondary sm" data-copy="#newtoken">{{template "icon" "copy"}}{{$.T "Copy"}}</button></p>
+  </div>
+  {{end}}
+  {{if .Data.Tokens}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Name"}}</th><th class="hide-sm">{{.T "Created"}}</th><th>{{.T "Valid until"}}</th><th class="hide-sm">{{.T "Last used"}}</th><th></th></tr></thead>
+    <tbody>{{range .Data.Tokens}}<tr>
+      <td><b>{{.Name}}</b></td>
+      <td class="hide-sm muted">{{$.Time .CreatedAt}}</td>
+      <td class="small">{{if .ExpiresAt}}{{$.Time .ExpiresAt}}{{else}}{{$.T "no limit"}}{{end}}</td>
+      <td class="hide-sm muted small">{{if .LastUsed}}{{$.Ago .LastUsed}}{{with .LastIP}} · <span class="mono">{{.}}</span>{{end}}{{else}}{{$.T "never"}}{{end}}</td>
+      <td class="actions"><form method="post" action="/account/tokens/{{.ID}}/delete" data-confirm="{{$.T "Revoke the API token %s? Scripts using it stop working." .Name}}"><button class="ghost sm">{{$.T "Revoke"}}</button></form></td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{end}}
+  <form method="post" action="/account/tokens" class="stack mt">
+    <div class="row">
+    <input name="name" required maxlength="100" placeholder="{{.T "Name, for example Backup script"}}" aria-label="{{.T "Name"}}">
+    <label class="inline">{{.T "Valid for (days)"}} <input type="number" name="days" value="365" min="0" max="3650" class="num-sm"></label>
+    </div>
+    <div class="row">{{range scopes}}<label class="check"><input type="checkbox" name="scope_{{.}}" {{if ne . "dns:mail"}}checked{{end}}><span class="mono small">{{.}}</span></label>{{end}}</div>
+    <div><button class="primary">{{template "icon" "plus"}}{{.T "Create API token"}}</button></div>
+  </form>
+  <details class="mt"><summary class="small">{{.T "How to use the API"}}</summary>
+    <p class="small muted">{{.T "Send the token in the Authorization header. All answers are JSON; times are RFC 3339."}}</p>
+    <pre class="small">curl -H "Authorization: Bearer hzt_…" https://{{.Host}}/api/v1/customers
+POST /api/v1/customers                {"username","package","domain","email","password","id","external_id"}  → 202 job
+GET  /api/v1/customers/{id}           {{.T "id = customer UUID, ext:&lt;external id&gt; or username"}}
+POST /api/v1/customers/{id}/suspend   {"reason": "billing"}
+POST /api/v1/customers/{id}/unsuspend
+POST /api/v1/customers/{id}/terminate
+PUT  /api/v1/customers/{id}/package   {"package": "wp-pro"}
+GET  /api/v1/customers/{id}/usage
+POST /api/v1/customers/{id}/sso       → {"url": "…"} {{.T "one-time sign-in link, 60 s"}}
+GET  /api/v1/jobs/{id}
+GET  /api/v1/packages</pre>
+  </details>
+</section>
+{{end}}
+
+{{end}}
+{{end}}

@@ -1,0 +1,4 @@
+{{if .User}}{{template "app" .}}{{else}}{{template "guest" .}}{{end}}
+{{define "content"}}
+<div class="empty">{{template "icon" "alert"}}<h1>{{.T "Not found"}}</h1><p>{{.T "This page does not exist or you have no access to it."}}</p><a href="/">{{.T "Back to the overview"}}</a></div>
+{{end}}

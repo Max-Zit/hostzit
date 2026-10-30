@@ -1,0 +1,17 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Websites"}}</h1>
+{{if .Data}}
+<div class="table-wrap"><table>
+  <thead><tr><th>{{.T "Domain"}}</th><th>{{.T "Account"}}</th><th class="hide-sm">PHP</th><th>{{.T "Certificate"}}</th><th class="hide-sm">{{.T "Page cache"}}</th><th class="hide-sm"></th></tr></thead>
+  <tbody>{{range .Data}}<tr>
+    <td><a href="https://{{.Domain}}/" target="_blank" rel="noopener">{{.Domain}}</a>{{range .Aliases}}<br><span class="small muted">{{.}}</span>{{end}}</td>
+    <td><a href="/customers/{{.CustomerID}}">{{.Account}}</a></td>
+    <td class="hide-sm">{{.PHPVersion}}</td>
+    <td>{{if .CertStatus}}{{template "badge" (st $ .CertStatus)}}{{if .CertNotAfter}} <span class="small muted">{{$.Time .CertNotAfter}}</span>{{end}}{{else}}<span class="muted">—</span>{{end}}</td>
+    <td class="hide-sm">{{if .Cache}}{{$.T "on"}} ({{.CacheMinutes}} min){{else}}{{$.T "off"}}{{end}}</td>
+    <td class="hide-sm err-text small">{{.ApplyError}}{{if eq .CertStatus "failed"}} {{.CertError}}{{end}}</td>
+  </tr>{{end}}</tbody>
+</table></div>
+{{else}}<div class="empty">{{template "icon" "globe"}}<p>{{.T "No websites yet."}}</p></div>{{end}}
+{{end}}

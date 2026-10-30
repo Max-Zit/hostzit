@@ -1,0 +1,25 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+{{if .Data.Restart}}<div class="flash warn" role="status">{{template "icon" "alert"}}<span>{{.T "The saved ports differ from the running ones. Restart the HostZit service to use them."}}</span></div>{{end}}
+<form method="post" action="/settings/network" class="stack">
+  <section class="panel">
+    <h2>{{template "icon" "lock"}}{{.T "Admin panel"}}</h2>
+    <p class="muted">{{.T "This panel controls every account on the server. Keep it reachable only from your own networks."}}</p>
+    <label>{{.T "Listen address"}}<input name="admin_listen" value="{{.Data.N.AdminListen}}" required spellcheck="false" class="mono"></label>
+    <label>{{.T "Allowed networks"}}<textarea name="admin_allowed" rows="4" spellcheck="false" class="mono">{{.Data.AdminText}}</textarea><small>{{.T "One network per line (10.0.0.0/8, 192.168.1.20). The server itself is always allowed. Your address: %s" .Data.ClientIP}}</small></label>
+  </section>
+  <section class="panel">
+    <h2>{{template "icon" "users"}}{{.T "Customer panel"}}</h2>
+    <p class="muted">{{.T "Customers manage their websites here. Usually open to everyone."}}</p>
+    <label>{{.T "Listen address"}}<input name="panel_listen" value="{{.Data.N.PanelListen}}" required spellcheck="false" class="mono"><small>{{.T "Must use a different port than the admin panel."}}</small></label>
+    <label>{{.T "Allowed networks"}} <small>{{.T "optional"}}</small><textarea name="panel_allowed" rows="3" spellcheck="false" class="mono">{{.Data.PanelText}}</textarea><small>{{.T "Empty: everyone may connect."}}</small></label>
+  </section>
+  <div><button class="primary">{{.T "Save"}}</button></div>
+</form>
+</div>
+</div>
+{{end}}

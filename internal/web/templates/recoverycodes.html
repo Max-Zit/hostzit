@@ -1,0 +1,8 @@
+{{template "guest" .}}
+{{define "content"}}
+<h1>{{.T "Recovery codes"}}</h1>
+<p>{{.T "Two-factor sign-in is set up. Keep these codes in a safe place: each one signs you in once if you lose your phone. They are shown only now."}}</p>
+<ul class="codes">{{range .Data.Codes}}<li><code>{{.}}</code></li>{{end}}</ul>
+<p><button type="button" class="secondary" data-copy="ul.codes">{{template "icon" "copy"}}{{.T "Copy"}}</button></p>
+<a class="btn primary" href="{{.Data.Next}}">{{.T "Continue"}}</a>
+{{end}}

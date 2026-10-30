@@ -1,0 +1,33 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Users"}}</h1>
+<section class="panel">
+  {{template "usertable" (userTable . .Data.Users)}}
+  {{with .Data.Disabled}}<details class="mt">
+    <summary class="muted">{{$.T "Disabled users"}} ({{len .}})</summary>
+    {{template "usertable" (userTable $ .)}}
+  </details>{{end}}
+</section>
+<section class="panel">
+  <h2>{{.T "Add a user"}}</h2>
+  <form method="post" action="/users" class="stack">
+    <div class="cols">
+      <label>{{.T "Username"}}<input name="username" value="{{.Data.Form.Username}}" required autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+      <label>{{.T "Full name"}} <small>{{.T "optional"}}</small><input name="display_name" value="{{.Data.Form.DisplayName}}"></label>
+    </div>
+    <label>{{.T "Initial password"}}<input type="password" name="password" required minlength="12" autocomplete="new-password"><small>{{.T "The user must change it and set up two-factor sign-in at the first sign-in."}}</small></label>
+    {{template "rolefield" (rowOf $ .Data.Form.Role)}}
+    <div><button class="primary">{{template "icon" "plus"}}{{.T "Add user"}}</button></div>
+  </form>
+</section>
+{{end}}
+
+{{define "usertable"}}{{$p := .P}}<div class="table-wrap"><table>
+    <thead><tr><th>{{$p.T "Username"}}</th><th>{{$p.T "Role"}}</th><th>{{$p.T "Two-factor"}}</th><th class="hide-sm">{{$p.T "Last sign-in"}}</th></tr></thead>
+    <tbody>{{range .Users}}<tr>
+      <td><a href="/users/{{.ID}}">{{.Username}}</a>{{if .DisplayName}} <span class="muted">· {{.DisplayName}}</span>{{end}}{{if .Disabled}} <span class="badge bad">{{$p.T "Disabled"}}</span>{{end}}</td>
+      <td>{{$p.RoleName .Role}}</td>
+      <td>{{if .TOTPEnabled}}<span class="badge ok"><i></i>{{$p.T "On"}}</span>{{else}}<span class="badge warn">{{$p.T "At next sign-in"}}</span>{{end}}</td>
+      <td class="hide-sm muted">{{$p.Time .LastLoginAt}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>{{end}}

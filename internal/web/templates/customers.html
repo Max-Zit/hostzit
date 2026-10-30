@@ -1,0 +1,27 @@
+{{template "app" .}}
+{{define "content"}}
+<div class="pagehead"><h1>{{.T "Customers"}}</h1>{{if .User.CanWrite}}<a class="btn primary" href="/customers/new">{{template "icon" "plus"}}{{.T "New customer"}}</a>{{end}}</div>
+<form method="get" action="/customers" class="row toolbar">
+  <input type="search" name="q" value="{{.Data.Q}}" placeholder="{{.T "Account, name, e-mail or domain"}}" aria-label="{{.T "Search"}}">
+  <select name="status" data-autosubmit aria-label="{{.T "Status"}}">
+    <option value="">{{.T "All"}}</option>
+    {{range list "active" "suspended" "terminated"}}<option value="{{.}}" {{if eq . $.Data.Status}}selected{{end}}>{{$.StatusName .}}</option>{{end}}
+  </select>
+  <button class="secondary">{{.T "Search"}}</button>
+</form>
+{{if .Data.List}}
+<div class="table-wrap"><table>
+  <thead><tr><th>{{.T "Account"}}</th><th class="hide-sm">{{.T "Name"}}</th><th>{{.T "Package"}}</th><th class="num">{{.T "Websites"}}</th><th class="num hide-sm">{{.T "Disk"}}</th><th>{{.T "Status"}}</th></tr></thead>
+  <tbody>{{range .Data.List}}<tr>
+    <td><a href="/customers/{{.ID}}"><b>{{.Username}}</b></a>{{if .ApplyError}} <span class="badge bad" title="{{.ApplyError}}"><i></i>{{$.T "error"}}</span>{{end}}</td>
+    <td class="hide-sm">{{.DisplayName}}<br><span class="small muted">{{.Email}}</span></td>
+    <td>{{.Package}}</td>
+    <td class="num">{{.Sites}}</td>
+    <td class="num hide-sm">{{kb .DiskKB}}</td>
+    <td>{{template "badge" (st $ .Status)}}</td>
+  </tr>{{end}}</tbody>
+</table></div>
+{{else}}
+<div class="empty">{{template "icon" "users"}}<p>{{.T "No customers yet."}}</p>{{if .User.CanWrite}}<a class="btn primary" href="/customers/new">{{template "icon" "plus"}}{{.T "New customer"}}</a>{{end}}</div>
+{{end}}
+{{end}}

@@ -1,0 +1,47 @@
+{{template "app" .}}
+{{define "content"}}
+{{$p := .Data.P}}{{$l := $p.Limits}}
+<h1>{{.T .Title}}</h1>
+<form method="post" action="{{if $p.ID}}/packages/{{$p.ID}}{{else}}/packages/new{{end}}" class="stack">
+<section class="panel">
+  <h2>{{.T "Package"}}</h2>
+  <div class="cols">
+    <label>{{.T "Name"}}<input name="name" value="{{$p.Name}}" required maxlength="100"></label>
+    <label>{{.T "Key"}}<input name="slug" value="{{$p.Slug}}" required pattern="[a-z0-9-]{1,32}" maxlength="32" class="mono" spellcheck="false"><small>{{.T "Used by the billing API, e.g. wp-basic."}}</small></label>
+  </div>
+  <div class="cols">
+    <label>{{.T "Websites"}}<input type="number" name="max_sites" value="{{$p.MaxSites}}" min="0" max="10000" required></label>
+    <label>{{.T "Databases"}}<input type="number" name="max_dbs" value="{{$p.MaxDBs}}" min="0" max="10000" required></label>
+    <label>{{.T "DNS zones"}}<input type="number" name="max_zones" value="{{$p.MaxZones}}" min="0" max="10000" required></label>
+  </div>
+</section>
+<section class="panel">
+  <h2>{{.T "Resources"}}</h2>
+  <p class="muted small">{{.T "The limits apply to everything the account runs (PHP, cron jobs, SSH, tools) through its own control group. 0 means no limit."}}</p>
+  <div class="cols">
+    <label>{{.T "Disk space (MB)"}}<input type="number" name="disk_mb" value="{{$l.DiskMB}}" min="0" required></label>
+    <label>{{.T "Files (inodes)"}}<input type="number" name="inodes" value="{{$l.Inodes}}" min="0" required></label>
+  </div>
+  <div class="cols">
+    <label>{{.T "CPU (%)"}}<input type="number" name="cpu_percent" value="{{$l.CPUPercent}}" min="0" max="6400" required><small>{{.T "100 % = one CPU core."}}</small></label>
+    <label>{{.T "Memory (MB)"}}<input type="number" name="memory_mb" value="{{$l.MemoryMB}}" min="0" required></label>
+    <label>{{.T "Processes"}}<input type="number" name="processes" value="{{$l.Processes}}" min="0" required></label>
+    <label>{{.T "Disk priority"}}<input type="number" name="io_weight" value="{{$l.IOWeight}}" min="1" max="10000" required><small>{{.T "100 = normal."}}</small></label>
+  </div>
+</section>
+<section class="panel">
+  <h2>PHP</h2>
+  <div class="cols">
+    <label>{{.T "PHP workers per version"}}<input type="number" name="php_workers" value="{{$l.PHPWorkers}}" min="1" max="512" required><small>{{.T "Requests handled at the same time."}}</small></label>
+    <label>{{.T "Memory per request (MB)"}}<input type="number" name="php_memory_mb" value="{{$l.PHPMemoryMB}}" min="32" max="8192" required></label>
+    <label>{{.T "Largest upload (MB)"}}<input type="number" name="upload_mb" value="{{$l.UploadMB}}" min="1" max="10240" required></label>
+    <label>{{.T "Mails per hour from websites"}}<input type="number" name="mail_per_hour" value="{{$l.MailPerHour}}" min="0" max="100000" required></label>
+  </div>
+  <label class="check"><input type="checkbox" name="allow_exec" {{if $l.AllowExec}}checked{{end}}><span>{{.T "PHP may start programs (exec, shell_exec, proc_open …). Off is safer; some backup plugins need it."}}</span></label>
+  <label class="check"><input type="checkbox" name="ssh" {{if $l.SSH}}checked{{end}}><span>{{.T "SSH shell access (SFTP is always included). The shell runs in the account's private file system view."}}</span></label>
+</section>
+<div class="row"><button class="primary">{{.T "Save"}}</button>
+{{if $p.ID}}</div></form>
+<form method="post" action="/packages/{{$p.ID}}/delete" class="mt" data-confirm="{{.T "Delete the package %s?" $p.Name}}"><button class="ghost danger">{{template "icon" "trash"}}{{.T "Delete package"}}</button></form>
+{{else}}</div></form>{{end}}
+{{end}}

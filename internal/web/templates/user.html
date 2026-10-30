@@ -1,0 +1,33 @@
+{{template "app" .}}
+{{define "content"}}
+<p class="back"><a href="/users">{{.T "Users"}}</a></p>
+<h1>{{.Data.U.Username}}{{if .Data.U.Disabled}} <span class="badge bad">{{.T "Disabled"}}</span>{{end}}</h1>
+<section class="panel">
+  <h2>{{.T "Account"}}</h2>
+  <form method="post" action="/users/{{.Data.U.ID}}" class="stack">
+    <label>{{.T "Full name"}}<input name="display_name" value="{{.Data.U.DisplayName}}"></label>
+    {{template "rolefield" (rowOf $ .Data.U.Role)}}
+    {{if not .Data.Self}}<label class="check"><input type="checkbox" name="disabled" value="1" {{if .Data.U.Disabled}}checked{{end}}>{{.T "Disabled (cannot sign in; open sessions end)"}}</label>{{else}}<input type="hidden" name="disabled" value="">{{end}}
+    <div><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+</section>
+<section class="panel">
+  <h2>{{.T "Password and two-factor sign-in"}}</h2>
+  <dl class="facts">
+    <dt>{{.T "Two-factor"}}</dt><dd>{{if .Data.U.TOTPEnabled}}<span class="badge ok"><i></i>{{.T "On"}}</span>{{else}}<span class="badge warn">{{.T "At next sign-in"}}</span>{{end}}</dd>
+    <dt>{{.T "Last sign-in"}}</dt><dd>{{.Time .Data.U.LastLoginAt}}</dd>
+    <dt>{{.T "Added"}}</dt><dd>{{.Time .Data.U.CreatedAt}}</dd>
+  </dl>
+  {{if not .Data.Self}}
+  <form method="post" action="/users/{{.Data.U.ID}}/password" class="row mt">
+    <input type="password" name="password" required minlength="12" autocomplete="new-password" placeholder="{{.T "New password"}}" aria-label="{{.T "New password"}}">
+    <button class="secondary">{{.T "Set password"}}</button>
+  </form>
+  {{if .Data.U.TOTPEnabled}}
+  <form method="post" action="/users/{{.Data.U.ID}}/reset-2fa" class="mt" data-confirm="{{.T "Reset two-factor sign-in of this user?"}}">
+    <button class="danger">{{.T "Reset two-factor sign-in"}}</button> <small class="muted">{{.T "For a user who lost the phone and the recovery codes."}}</small>
+  </form>
+  {{end}}
+  {{else}}<p class="muted mt">{{.T "Change your own password on"}} <a href="/account">{{.T "My account"}}</a>.</p>{{end}}
+</section>
+{{end}}

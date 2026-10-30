@@ -1,0 +1,18 @@
+{{template "guest" .}}
+{{define "content"}}
+<h1>{{.T "Set up two-factor sign-in"}}</h1>
+<p class="muted">{{.T "Administrators of a hosting server can reach every website, so their accounts need a second factor. Scan the code with an authenticator app (Microsoft Authenticator, Google Authenticator, Authy, 1Password, Bitwarden …)."}}</p>
+<div class="enroll">
+  {{with .Data.QR}}{{template "qr" .}}{{end}}
+  <div>
+    <p class="small muted">{{.T "Or enter this key by hand:"}}</p>
+    <p><code class="secret" data-copy-text>{{.Data.Secret}}</code></p>
+  </div>
+</div>
+<form method="post" action="/login/enroll" class="stack">
+  <input type="hidden" name="next" value="{{.Data.Next}}">
+  <label>{{.T "Code from the app"}}<input name="code" required autofocus inputmode="numeric" autocomplete="one-time-code" maxlength="7" class="code"></label>
+  <button class="primary">{{.T "Confirm"}}</button>
+</form>
+<form method="post" action="/logout" class="mt"><button class="link">{{.T "Cancel"}}</button></form>
+{{end}}

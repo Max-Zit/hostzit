@@ -1,0 +1,7 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Logs"}} · {{.Data.S.Domain}}</h1>
+<nav class="tabs"><a href="/sites/{{.Data.S.ID}}/logs?kind=access" class="{{if eq .Data.Kind "access"}}on{{end}}">{{.T "Visits"}}</a><a href="/sites/{{.Data.S.ID}}/logs?kind=error" class="{{if eq .Data.Kind "error"}}on{{end}}">{{.T "Errors"}}</a></nav>
+<section class="panel">{{if .Data.Text}}<pre class="pre small scroll-y">{{.Data.Text}}</pre>{{else}}<p class="muted">{{.T "The log is empty."}}</p>{{end}}</section>
+<p class="small muted">{{.T "The last 300 lines. PHP errors are in ~/logs/php-error.log (Files)."}}</p>
+{{end}}

@@ -1,0 +1,48 @@
+{{template "app" .}}
+{{define "content"}}
+{{$c := .Data.C}}
+<h1>{{.T "Databases"}}</h1>
+{{with .Data.NewPW}}
+<section class="panel accent">
+  <h2>{{$.T "Database password"}}</h2>
+  <p>{{$.T "The user %s has this password. Copy it now (for example into wp-config.php); it is shown only once." $.Data.NewFor}}</p>
+  <pre class="token" id="dbpw">{{.}}</pre>
+  <p><button type="button" class="btn secondary sm" data-copy="#dbpw">{{template "icon" "copy"}}{{$.T "Copy"}}</button></p>
+  <p class="small muted">{{$.T "Host: localhost · Database: %s · User: %s" $.Data.NewFor $.Data.NewFor}}</p>
+</section>
+{{end}}
+<section class="panel">
+  <h2>{{template "icon" "database"}}{{.T "Databases"}} <span class="muted small">{{len .Data.DBs}} / {{.Data.Max}}</span></h2>
+  {{if .Data.DBs}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Name"}}</th><th class="num">{{.T "Size"}}</th><th class="hide-sm">{{.T "Users"}}</th><th></th></tr></thead>
+    <tbody>{{range .Data.DBs}}<tr><td class="mono">{{.Name}}</td><td class="num">{{bytes .SizeB}}</td><td class="hide-sm mono small">{{join .Users ", "}}</td>
+      <td class="actions"><form method="post" action="/databases/{{.Name}}/delete" class="row"><input name="confirm" required placeholder="{{.Name}}" aria-label="{{$.T "Type the database name to confirm."}}" class="num-sm" autocomplete="off"><button class="ghost sm danger">{{template "icon" "trash"}}</button></form></td></tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<p class="muted">{{.T "No databases yet."}}</p>{{end}}
+  <form method="post" action="/databases" class="row mt">
+    <span class="mono">{{$c.Username}}_</span><input name="name" required pattern="[a-z0-9_]{1,32}" maxlength="32" placeholder="wp" class="mono" aria-label="{{.T "Name"}}">
+    <label class="check"><input type="checkbox" name="with_user" checked><span>{{.T "with a user of the same name"}}</span></label>
+    <button class="primary">{{template "icon" "plus"}}{{.T "Create database"}}</button>
+  </form>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "key"}}{{.T "Database users"}}</h2>
+  {{range .Data.Users}}
+  <form method="post" action="/databases/users" class="stack panel">
+    <input type="hidden" name="user" value="{{.Name}}">
+    <div class="titlebar"><b class="mono">{{.Name}}</b></div>
+    <div class="row">{{$u := .}}{{range $.Data.DBs}}<label class="check"><input type="checkbox" name="db_{{.Name}}" {{if inStrings $u.Databases .Name}}checked{{end}}><span class="mono small">{{.Name}}</span></label>{{end}}</div>
+    <div class="row"><input type="password" name="password" minlength="10" autocomplete="new-password" placeholder="{{$.T "New password (empty = keep)"}}" aria-label="{{$.T "New password"}}"><label class="check"><input type="checkbox" name="generate"><span>{{$.T "generate a new one"}}</span></label><button class="secondary sm">{{$.T "Save"}}</button></div>
+  </form>
+  <form method="post" action="/databases/users/{{.Name}}/delete" data-confirm="{{$.T "Delete the database user %s?" .Name}}"><button class="ghost sm">{{template "icon" "trash"}}{{$.T "Delete user"}}</button></form>
+  {{end}}
+  <form method="post" action="/databases/users" class="row mt">
+    <span class="mono">{{$c.Username}}_</span><input name="user" required pattern="[a-z0-9_]{1,32}" maxlength="32" class="mono" aria-label="{{.T "Name"}}" placeholder="app">
+    <input type="hidden" name="generate" value="1">
+    {{range .Data.DBs}}<label class="check"><input type="checkbox" name="db_{{.Name}}"><span class="mono small">{{.Name}}</span></label>{{end}}
+    <button class="secondary">{{template "icon" "plus"}}{{.T "Create user"}}</button>
+  </form>
+  <p class="small muted">{{.T "Websites connect to localhost. Database users can only reach the databases checked here."}}</p>
+</section>
+{{end}}

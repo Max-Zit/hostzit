@@ -1,0 +1,10 @@
+{{template "guest" .}}
+{{define "content"}}
+<h1>{{.T "Sign in"}}</h1>
+<form method="post" action="/login" class="stack">
+  <input type="hidden" name="next" value="{{.Data.Next}}">
+  <label>{{.T "Username"}}<input name="username" value="{{.Data.Username}}" required autofocus autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+  <label>{{.T "Password"}}<input type="password" name="password" required autocomplete="current-password"></label>
+  <button class="primary">{{.T "Sign in"}}</button>
+</form>
+{{end}}

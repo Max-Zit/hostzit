@@ -1,0 +1,51 @@
+{{template "app" .}}
+{{define "content"}}
+{{$z := .Data.Z}}
+<h1>{{$z.Name}}</h1>
+{{if $z.ApplyError}}<div class="flash err" role="alert">{{template "icon" "alert"}}<span>{{.T "Not published yet:"}} {{$z.ApplyError}}</span></div>{{end}}
+<section class="panel">
+  <h2>{{template "icon" "network"}}{{.T "Records"}}</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Name"}}</th><th>{{.T "Type"}}</th><th>{{.T "Value"}}</th><th class="num hide-sm">TTL</th><th></th></tr></thead>
+    <tbody>
+    {{range .Data.NS}}<tr class="muted"><td>@</td><td>NS</td><td class="mono small">{{.}}.</td><td class="num hide-sm">86400</td><td class="small">{{$.T "server"}}</td></tr>{{end}}
+    {{range .Data.Records}}
+    {{if and (eq .ID $.Data.Edit) (eq .Owner "")}}
+    <tr><td colspan="5"><form method="post" action="/dns/{{$z.ID}}/records/{{.ID}}" class="row">
+      <input name="name" value="{{.Name}}" required class="mono" aria-label="{{$.T "Name"}}">
+      <select name="type" aria-label="{{$.T "Type"}}">{{$t := .Type}}{{range $.Data.Types}}<option {{if eq . $t}}selected{{end}}>{{.}}</option>{{end}}</select>
+      <input name="content" value="{{.Content}}" required class="mono" aria-label="{{$.T "Value"}}">
+      <input type="number" name="ttl" value="{{.TTL}}" min="60" max="604800" class="num-sm" aria-label="TTL">
+      <button class="primary sm">{{$.T "Save"}}</button><a class="btn ghost sm" href="/dns/{{$z.ID}}">{{$.T "Cancel"}}</a></form></td></tr>
+    {{else}}
+    <tr><td class="mono">{{.Name}}</td><td>{{.Type}}</td><td class="mono small ds">{{.Content}}</td><td class="num hide-sm">{{.TTL}}</td>
+      <td class="actions">{{if .Owner}}<span class="badge info" title="{{$.T "Managed by %s" .Owner}}"><i></i>{{.Owner}}</span>{{else}}<a class="btn ghost sm" href="/dns/{{$z.ID}}?edit={{.ID}}">{{template "icon" "edit"}}</a><form method="post" action="/dns/{{$z.ID}}/records/{{.ID}}/delete" data-confirm="{{$.T "Delete this record?"}}"><button class="ghost sm" aria-label="{{$.T "Delete"}}">{{template "icon" "trash"}}</button></form>{{end}}</td></tr>
+    {{end}}
+    {{end}}
+    </tbody>
+  </table></div>
+  <form method="post" action="/dns/{{$z.ID}}/records" class="row mt">
+    <input name="name" value="@" required class="mono" aria-label="{{.T "Name"}}" placeholder="@ / www / mail">
+    <select name="type" aria-label="{{.T "Type"}}">{{range .Data.Types}}<option>{{.}}</option>{{end}}</select>
+    <input name="content" required class="mono" aria-label="{{.T "Value"}}" placeholder="203.0.113.10">
+    <input type="number" name="ttl" value="3600" min="60" max="604800" class="num-sm" aria-label="TTL">
+    <button class="primary">{{template "icon" "plus"}}{{.T "Add record"}}</button>
+  </form>
+  <p class="small muted">{{.T "Name: @ for the domain itself, or a name such as www. MX: priority and host (10 mail.example.com). Changes are live within seconds."}}</p>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "shield"}}DNSSEC</h2>
+  {{if $z.DNSSEC}}
+  <p><span class="badge ok"><i></i>{{.T "signed"}}</span> {{.T "Put this DS record at your domain registrar:"}}</p>
+  {{range $z.DS}}<pre class="pre small ds">{{.}}</pre>{{end}}
+  <form method="post" action="/dns/{{$z.ID}}/dnssec" data-confirm="{{.T "Remove the DS record at the registrar first, then switch DNSSEC off. Continue?"}}"><button class="ghost">{{.T "Switch DNSSEC off"}}</button></form>
+  {{else}}
+  <p class="muted">{{.T "DNSSEC signs the zone so nobody can forge its answers."}}</p>
+  <form method="post" action="/dns/{{$z.ID}}/dnssec"><input type="hidden" name="on" value="1"><button class="secondary">{{.T "Sign the zone"}}</button></form>
+  {{end}}
+</section>
+<section class="panel">
+  <h2>{{template "icon" "trash"}}{{.T "Delete DNS zone"}}</h2>
+  <form method="post" action="/dns/{{$z.ID}}/delete" class="row"><input name="confirm" required placeholder="{{$z.Name}}" aria-label="{{.T "Type the domain to confirm."}}" autocomplete="off"><button class="danger">{{.T "Delete zone"}}</button></form>
+</section>
+{{end}}

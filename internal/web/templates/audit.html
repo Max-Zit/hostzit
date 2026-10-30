@@ -1,0 +1,22 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Audit log"}}</h1>
+{{if .Data.Check.OK}}
+<div class="flash ok">{{template "icon" "audit"}}<span>{{.T "The chain of %d entries is intact: no entry was changed or deleted." .Data.Check.Entries}}</span></div>
+{{else}}
+<div class="flash err" role="alert">{{template "icon" "alert"}}<span>{{.T "The audit log was tampered with: the chain breaks at entry #%d." .Data.Check.BrokenAt}}</span></div>
+{{end}}
+<section class="panel">
+  <form method="get" action="/audit" class="row">
+    <input type="search" name="q" value="{{.Data.Q}}" placeholder="{{.T "Search user, action, target, address"}}" aria-label="{{.T "Search"}}">
+    <button class="secondary">{{.T "Search"}}</button>
+  </form>
+  {{if .Data.Entries}}
+  <div class="table-wrap mt"><table class="audit">
+    <thead><tr><th>#</th><th>{{.T "Time"}}</th><th>{{.T "User"}}</th><th>{{.T "Action"}}</th><th>{{.T "Target"}}</th><th>{{.T "Details"}}</th><th class="hide-sm">{{.T "Address"}}</th></tr></thead>
+    <tbody>{{range .Data.Entries}}<tr><td class="muted">{{.ID}}</td><td class="nowrap">{{$.Time .At}}</td><td>{{.Username}}</td><td><code>{{.Action}}</code></td><td class="target">{{.Target}}</td><td class="detail">{{.Detail}}</td><td class="hide-sm muted">{{.IP}}</td></tr>{{end}}</tbody>
+  </table></div>
+  {{with .Data.Next}}<p class="mt"><a class="btn secondary" href="/audit?before={{.}}&amp;q={{$.Data.Q}}">{{$.T "Older entries"}}{{template "icon" "chevr"}}</a></p>{{end}}
+  {{else}}<p class="muted mt">{{.T "No entries."}}</p>{{end}}
+</section>
+{{end}}

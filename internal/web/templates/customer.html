@@ -1,0 +1,84 @@
+{{template "app" .}}
+{{define "content"}}
+{{$c := .Data.C}}
+<div class="pagehead"><h1>{{$c.Username}} {{template "badge" (st $ $c.Status)}}</h1>
+  {{if and .User.CanWrite (eq $c.Status "active")}}<form method="post" action="/customers/{{$c.ID}}/login"><button class="secondary">{{template "icon" "logout"}}{{.T "Open the customer panel"}}</button></form>{{end}}</div>
+{{if $c.ApplyError}}<div class="flash err" role="alert">{{template "icon" "alert"}}<span>{{.T "The system account is not up to date:"}} {{$c.ApplyError}}</span></div>{{end}}
+{{if $c.SuspendReason}}<p class="muted">{{.T "Reason:"}} {{$c.SuspendReason}}</p>{{end}}
+<div class="cards2">
+<section class="panel">
+  <h2>{{template "icon" "users"}}{{.T "Account"}}</h2>
+  <dl class="kv">
+    <dt>{{.T "Customer id"}}</dt><dd class="mono small">{{$c.UUID}}</dd>
+    {{with $c.ExternalID}}<dt>{{$.T "External id"}}</dt><dd class="mono small">{{.}}</dd>{{end}}
+    <dt>{{.T "Linux user"}}</dt><dd class="mono">{{$c.Username}} ({{.T "uid"}} {{printf "%d" (i64 $c.Number)}})</dd>
+    <dt>{{.T "Created"}}</dt><dd>{{.Time $c.CreatedAt}}</dd>
+    {{with $c.DeleteAfter}}<dt>{{$.T "Files deleted after"}}</dt><dd>{{$.Time .}}</dd>{{end}}
+    {{with .Data.User}}<dt>{{$.T "Last sign-in"}}</dt><dd>{{$.Time .LastLoginAt}}</dd><dt>{{$.T "Two-factor sign-in"}}</dt><dd>{{if .TOTPEnabled}}{{$.T "on"}}{{else}}{{$.T "off"}}{{end}}</dd>{{end}}
+  </dl>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "disk"}}{{.T "Usage"}}</h2>
+  {{with .Data.Usage}}{{$p := $.Data.Package}}
+  <dl class="kv">
+    <dt>{{$.T "Disk"}}</dt><dd>{{kb .DiskKB}}{{if $p.Limits.DiskMB}} / {{mb $p.Limits.DiskMB}}{{template "meter" (pct5 .DiskKB (mul (i64 $p.Limits.DiskMB) 1024))}}{{end}}</dd>
+    <dt>{{$.T "Files"}}</dt><dd>{{.Inodes}}{{if $p.Limits.Inodes}} / {{$p.Limits.Inodes}}{{end}}</dd>
+    <dt>{{$.T "Databases"}}</dt><dd>{{bytes .DBB}}</dd>
+    <dt>{{$.T "Memory"}}</dt><dd>{{bytes .MemoryB}}{{if $p.Limits.MemoryMB}} / {{mb $p.Limits.MemoryMB}}{{end}}</dd>
+    <dt>{{$.T "Processes"}}</dt><dd>{{.Tasks}}</dd>
+    <dt>{{$.T "Measured"}}</dt><dd class="muted">{{$.Ago .At}}</dd>
+  </dl>
+  {{else}}<p class="muted">{{.T "No measurement yet (every 10 minutes)."}}</p>{{end}}
+</section>
+</div>
+
+<section class="panel">
+  <h2>{{template "icon" "globe"}}{{.T "Websites"}}</h2>
+  {{if .Data.Sites}}<div class="table-wrap"><table><tbody>{{range .Data.Sites}}<tr><td><a href="https://{{.Domain}}/" target="_blank" rel="noopener">{{.Domain}}</a></td><td class="muted">PHP {{.PHPVersion}}</td><td>{{if .Cache}}<span class="badge ok"><i></i>{{$.T "cache"}}</span>{{end}} {{if .CertStatus}}{{template "badge" (st $ .CertStatus)}}{{end}}</td><td class="err-text small">{{.ApplyError}}</td></tr>{{end}}</tbody></table></div>
+  {{else}}<p class="muted">{{.T "No websites."}}</p>{{end}}
+  {{with .Data.Zones}}<p class="small muted">{{$.T "DNS zones:"}} {{range .}}{{.Name}} {{end}}</p>{{end}}
+  {{with .Data.DBs}}<p class="small muted">{{$.T "Databases:"}} {{range .}}{{.Name}} {{end}}</p>{{end}}
+</section>
+
+{{if .User.CanWrite}}
+<section class="panel">
+  <h2>{{template "icon" "edit"}}{{.T "Settings"}}</h2>
+  <form method="post" action="/customers/{{$c.ID}}" class="stack">
+    <div class="cols">
+      <label>{{.T "Name"}}<input name="display_name" value="{{$c.DisplayName}}" maxlength="100"></label>
+      <label>{{.T "E-mail"}}<input type="email" name="email" value="{{$c.Email}}"></label>
+    </div>
+    <div class="cols">
+      <label>{{.T "Package"}}<select name="package">{{range .Data.Packages}}<option value="{{.ID}}" {{if eq .ID $c.PackageID}}selected{{end}}>{{.Name}}</option>{{end}}</select></label>
+      <label>{{.T "Default PHP"}}<select name="php"><option value="">{{.T "Server default"}}</option>{{range .Data.PHP}}<option value="{{.}}" {{if eq . $c.PHPVersion}}selected{{end}}>PHP {{.}}</option>{{end}}</select></label>
+    </div>
+    <div><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "lock"}}{{.T "Status and sign-in"}}</h2>
+  <div class="row">
+    {{if eq $c.Status "active"}}
+    <form method="post" action="/customers/{{$c.ID}}/status" class="row"><input type="hidden" name="status" value="suspended"><input name="reason" placeholder="{{.T "Reason (shown to administrators)"}}" maxlength="200"><button class="secondary">{{.T "Suspend"}}</button></form>
+    {{else}}
+    <form method="post" action="/customers/{{$c.ID}}/status"><input type="hidden" name="status" value="active"><button class="primary">{{.T "Unsuspend"}}</button></form>
+    {{end}}
+    {{if ne $c.Status "terminated"}}<form method="post" action="/customers/{{$c.ID}}/status" data-confirm="{{.T "Terminate %s? The websites stop at once; the files are deleted after the grace period." $c.Username}}"><input type="hidden" name="status" value="terminated"><button class="ghost danger">{{.T "Terminate"}}</button></form>{{end}}
+    <form method="post" action="/customers/{{$c.ID}}/apply"><button class="ghost">{{template "icon" "refresh"}}{{.T "Set up again"}}</button></form>
+  </div>
+  <form method="post" action="/customers/{{$c.ID}}/password" class="row mt">
+    <input type="password" name="password" minlength="12" required autocomplete="new-password" placeholder="{{.T "New panel password"}}" aria-label="{{.T "New panel password"}}">
+    <label class="check"><input type="checkbox" name="must_change" checked><span>{{.T "must be changed at the next sign-in"}}</span></label>
+    <button class="secondary">{{.T "Set password"}}</button>
+  </form>
+  {{if .Data.User}}{{if .Data.User.TOTPEnabled}}<form method="post" action="/customers/{{$c.ID}}/reset-2fa" class="mt" data-confirm="{{.T "Remove the two-factor sign-in of %s?" $c.Username}}"><button class="ghost sm">{{.T "Remove two-factor sign-in"}}</button></form>{{end}}{{end}}
+</section>
+{{if .User.IsAdmin}}
+<section class="panel">
+  <h2>{{template "icon" "trash"}}{{.T "Delete now"}}</h2>
+  <p class="muted">{{.T "Deletes the account, all websites, files, databases and DNS zones at once. This cannot be undone."}}</p>
+  <form method="post" action="/customers/{{$c.ID}}/delete" class="row"><input name="confirm" required placeholder="{{$c.Username}}" aria-label="{{.T "Type the account name to confirm."}}" autocomplete="off"><button class="danger">{{.T "Delete everything"}}</button></form>
+</section>
+{{end}}
+{{end}}
+{{end}}

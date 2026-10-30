@@ -1,0 +1,20 @@
+{{template "app" .}}
+{{define "content"}}
+<div class="pagehead"><h1>{{.T "Packages"}}</h1>{{if .User.IsAdmin}}<a class="btn primary" href="/packages/new">{{template "icon" "plus"}}{{.T "New package"}}</a>{{end}}</div>
+{{if .Data}}
+<div class="table-wrap"><table>
+  <thead><tr><th>{{.T "Name"}}</th><th class="hide-sm">{{.T "Key"}}</th><th class="num">{{.T "Disk"}}</th><th class="num hide-sm">CPU</th><th class="num hide-sm">{{.T "Memory"}}</th><th class="num">{{.T "Websites"}}</th><th class="num">{{.T "Customers"}}</th></tr></thead>
+  <tbody>{{range .Data}}<tr>
+    <td>{{if $.User.IsAdmin}}<a href="/packages/{{.ID}}"><b>{{.Name}}</b></a>{{else}}<b>{{.Name}}</b>{{end}}</td>
+    <td class="hide-sm mono small">{{.Slug}}</td>
+    <td class="num">{{mb .Limits.DiskMB}}</td>
+    <td class="num hide-sm">{{if .Limits.CPUPercent}}{{.Limits.CPUPercent}} %{{else}}∞{{end}}</td>
+    <td class="num hide-sm">{{mb .Limits.MemoryMB}}</td>
+    <td class="num">{{.MaxSites}}</td>
+    <td class="num">{{.Customers}}</td>
+  </tr>{{end}}</tbody>
+</table></div>
+{{else}}
+<div class="empty">{{template "icon" "package"}}<p>{{.T "No packages yet. A package sets the limits of the customers on it."}}</p>{{if .User.IsAdmin}}<a class="btn primary" href="/packages/new">{{template "icon" "plus"}}{{.T "New package"}}</a>{{end}}</div>
+{{end}}
+{{end}}

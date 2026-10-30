@@ -1,0 +1,43 @@
+{{template "app" .}}
+{{define "content"}}
+{{$l := .Data.Limits}}
+<h1>{{.T "Overview"}}</h1>
+<div class="grid">
+  <a class="stat" href="/sites"><span class="si">{{template "icon" "globe"}}</span><b>{{len .Data.Sites}} / {{.Data.P.MaxSites}}</b><span>{{.T "Websites"}}</span></a>
+  <a class="stat" href="/databases"><span class="si">{{template "icon" "database"}}</span><b>{{.Data.DBs}} / {{.Data.P.MaxDBs}}</b><span>{{.T "Databases"}}</span></a>
+  <a class="stat" href="/dns"><span class="si">{{template "icon" "network"}}</span><b>{{.Data.Zones}} / {{.Data.P.MaxZones}}</b><span>{{.T "DNS zones"}}</span></a>
+  <a class="stat" href="/usage"><span class="si">{{template "icon" "disk"}}</span><b>{{with .Data.Usage}}{{kb .DiskKB}}{{else}}—{{end}}</b><span>{{.T "of %s disk" (mb $l.DiskMB)}}</span></a>
+</div>
+{{with .Data.Usage}}{{if $l.DiskMB}}
+<section class="panel">
+  <h2>{{template "icon" "disk"}}{{$.T "Disk space"}}</h2>
+  {{template "meter" (pct5 .DiskKB (mul (i64 $l.DiskMB) 1024))}}
+  <p class="small muted">{{$.T "%s of %s used (files and e-mail of the websites; databases are counted separately)." (kb .DiskKB) (mb $l.DiskMB)}}</p>
+</section>
+{{end}}{{end}}
+<section class="panel">
+  <div class="titlebar"><h2>{{template "icon" "globe"}}{{.T "Websites"}}</h2><a class="btn primary sm" href="/sites/new">{{template "icon" "plus"}}{{.T "New website"}}</a></div>
+  {{if .Data.Sites}}
+  <div class="table-wrap"><table><tbody>{{range .Data.Sites}}<tr>
+    <td><a href="/sites/{{.ID}}"><b>{{.Domain}}</b></a></td>
+    <td class="hide-sm muted">PHP {{.PHPVersion}}</td>
+    <td>{{if or (eq .CertStatus "ok") (eq .CertStatus "uploaded")}}<span class="badge ok"><i></i>HTTPS</span>{{else if eq .CertStatus "failed"}}<span class="badge warn"><i></i>{{$.T "no certificate yet"}}</span>{{else}}<span class="badge"><i></i>HTTP</span>{{end}}
+      {{if .Cache}}<span class="badge ok"><i></i>{{$.T "page cache"}}</span>{{end}}</td>
+    <td class="actions"><a class="btn ghost sm" href="https://{{.Domain}}/" target="_blank" rel="noopener">{{$.T "Open"}}</a></td>
+  </tr>{{end}}</tbody></table></div>
+  {{else}}
+  <div class="empty">{{template "icon" "globe"}}<p>{{.T "No websites yet. Add your domain to start."}}</p><a class="btn primary" href="/sites/new">{{template "icon" "plus"}}{{.T "New website"}}</a></div>
+  {{end}}
+</section>
+<section class="panel">
+  <h2>{{template "icon" "package"}}{{.T "Your package"}}: {{.Data.P.Name}}</h2>
+  <dl class="kv">
+    <dt>{{.T "Disk space"}}</dt><dd>{{mb $l.DiskMB}}</dd>
+    <dt>CPU</dt><dd>{{if $l.CPUPercent}}{{$l.CPUPercent}} % ({{.T "100 % = one core"}}){{else}}∞{{end}}</dd>
+    <dt>{{.T "Memory"}}</dt><dd>{{mb $l.MemoryMB}}</dd>
+    <dt>{{.T "PHP workers"}}</dt><dd>{{$l.PHPWorkers}}</dd>
+    <dt>{{.T "Largest upload"}}</dt><dd>{{$l.UploadMB}} MB</dd>
+    <dt>SSH</dt><dd>{{if $l.SSH}}{{.T "yes"}}{{else}}{{.T "SFTP only"}}{{end}}</dd>
+  </dl>
+</section>
+{{end}}

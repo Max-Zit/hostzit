@@ -1,0 +1,39 @@
+{{template "app" .}}
+{{define "content"}}
+{{$d := .Data}}
+<h1>{{.T "Files"}}</h1>
+<nav class="crumbs mono">{{range $i, $c := $d.Crumbs}}{{if $i}} / {{end}}<a href="/files?path={{$c.Path}}">{{$c.Name}}</a>{{end}}</nav>
+{{if $d.Err}}<div class="flash err" role="alert">{{template "icon" "alert"}}<span>{{$d.Err}}</span></div>{{end}}
+<section class="panel">
+  <div class="table-wrap"><table class="files">
+    <thead><tr><th>{{.T "Name"}}</th><th class="num hide-sm">{{.T "Size"}}</th><th class="hide-sm">{{.T "Changed"}}</th><th class="hide-sm">{{.T "Permissions"}}</th><th></th></tr></thead>
+    <tbody>
+    {{range $d.Files}}{{$p := printf "%s/%s" $d.Path .Name}}<tr>
+      <td class="name">{{if .Dir}}{{template "icon" "folder"}} <a href="/files?path={{$p}}"><b>{{.Name}}</b></a>{{else}}{{template "icon" "file"}} <a href="/files/edit?path={{$p}}">{{.Name}}</a>{{end}}{{with .Link}} <span class="small muted">→ {{.}}</span>{{end}}</td>
+      <td class="num hide-sm">{{if not .Dir}}{{bytes .Size}}{{end}}</td>
+      <td class="hide-sm muted small">{{$.Time .ModTime}}</td>
+      <td class="hide-sm mono small">{{.Mode}}</td>
+      <td class="actions">
+        {{if not .Dir}}<a class="btn ghost sm" href="/files/download?path={{$p}}" title="{{$.T "Download"}}">{{template "icon" "download"}}</a>{{end}}
+        <details class="inline"><summary class="btn ghost sm" title="{{$.T "More"}}">⋯</summary>
+          <form method="post" action="/files" class="row"><input type="hidden" name="dir" value="{{$d.Path}}"><input type="hidden" name="action" value="rename"><input type="hidden" name="name" value="{{.Name}}"><input name="to" value="{{.Name}}" required aria-label="{{$.T "New name"}}"><button class="ghost sm">{{$.T "Rename"}}</button></form>
+          <form method="post" action="/files" class="row"><input type="hidden" name="dir" value="{{$d.Path}}"><input type="hidden" name="action" value="chmod"><input type="hidden" name="name" value="{{.Name}}"><input name="mode" value="{{.Mode}}" pattern="[0-7]{3}" class="num-sm mono" aria-label="{{$.T "Permissions"}}"><button class="ghost sm">{{$.T "Permissions"}}</button></form>
+          <form method="post" action="/files" data-confirm="{{$.T "Delete %s?" .Name}}"><input type="hidden" name="dir" value="{{$d.Path}}"><input type="hidden" name="action" value="delete"><input type="hidden" name="name" value="{{.Name}}"><button class="ghost sm danger">{{template "icon" "trash"}}{{$.T "Delete"}}</button></form>
+        </details>
+      </td>
+    </tr>{{else}}<tr><td colspan="5" class="muted">{{.T "The folder is empty."}}</td></tr>{{end}}
+    </tbody>
+  </table></div>
+</section>
+<section class="panel">
+  <form method="post" action="/files" enctype="multipart/form-data" class="row">
+    <input type="hidden" name="dir" value="{{$d.Path}}"><input type="hidden" name="action" value="upload">
+    <input type="file" name="file" required aria-label="{{.T "File"}}"><button class="primary">{{template "icon" "upload"}}{{.T "Upload"}}</button>
+  </form>
+  <div class="row mt">
+    <form method="post" action="/files" class="row"><input type="hidden" name="dir" value="{{$d.Path}}"><input type="hidden" name="action" value="mkdir"><input name="name" required placeholder="{{.T "Folder name"}}" aria-label="{{.T "Folder name"}}"><button class="secondary">{{template "icon" "folder"}}{{.T "New folder"}}</button></form>
+    <form method="post" action="/files" class="row"><input type="hidden" name="dir" value="{{$d.Path}}"><input type="hidden" name="action" value="newfile"><input name="name" required placeholder="{{.T "File name"}}" aria-label="{{.T "File name"}}"><button class="secondary">{{template "icon" "file"}}{{.T "New file"}}</button></form>
+  </div>
+  <p class="small muted">{{.T "Files up to 48 MB. For bigger uploads and many files use SFTP (see SFTP and SSH)."}}</p>
+</section>
+{{end}}

@@ -1,0 +1,12 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "New website"}}</h1>
+<section class="panel">
+<form method="post" action="/sites/new" class="stack">
+  <label>{{.T "Domain"}}<input name="domain" value="{{.Data.Domain}}" required autofocus placeholder="example.com" spellcheck="false" autocapitalize="none"><small>{{.T "Also a subdomain such as shop.example.com. www is added automatically."}}</small></label>
+  <label class="check"><input type="checkbox" name="dns" {{if .Data.DNS}}checked{{end}}><span>{{.T "Host the DNS of this domain here (set the name servers of this server at your registrar)"}}</span></label>
+  <div><button class="primary">{{template "icon" "plus"}}{{.T "Create website"}}</button></div>
+</form>
+</section>
+<p class="muted small">{{.T "The website gets its own folder, its own PHP processes and a free certificate as soon as the domain points to this server."}}</p>
+{{end}}

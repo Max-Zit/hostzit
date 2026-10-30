@@ -1,0 +1,16 @@
+{{template "app" .}}
+{{define "content"}}
+<div class="pagehead"><h1>{{.T "Websites"}}</h1><a class="btn primary" href="/sites/new">{{template "icon" "plus"}}{{.T "New website"}}</a></div>
+{{if .Data}}
+<div class="table-wrap"><table>
+  <thead><tr><th>{{.T "Domain"}}</th><th class="hide-sm">{{.T "Folder"}}</th><th class="hide-sm">PHP</th><th>{{.T "State"}}</th></tr></thead>
+  <tbody>{{range .Data}}<tr>
+    <td><a href="/sites/{{.ID}}"><b>{{.Domain}}</b></a>{{range .Aliases}}<br><span class="small muted">{{.}}</span>{{end}}</td>
+    <td class="hide-sm mono small">~/{{.DocRoot}}</td>
+    <td class="hide-sm">{{.PHPVersion}}</td>
+    <td>{{if or (eq .CertStatus "ok") (eq .CertStatus "uploaded")}}<span class="badge ok"><i></i>HTTPS</span>{{else if eq .CertStatus "failed"}}<span class="badge warn"><i></i>{{$.T "no certificate yet"}}</span>{{else}}<span class="badge"><i></i>HTTP</span>{{end}}
+      {{if .Cache}}<span class="badge ok"><i></i>{{$.T "page cache"}}</span>{{end}}{{if .ApplyError}} <span class="badge bad"><i></i>{{$.T "error"}}</span>{{end}}</td>
+  </tr>{{end}}</tbody>
+</table></div>
+{{else}}<div class="empty">{{template "icon" "globe"}}<p>{{.T "No websites yet. Add your domain to start."}}</p><a class="btn primary" href="/sites/new">{{template "icon" "plus"}}{{.T "New website"}}</a></div>{{end}}
+{{end}}

@@ -1,0 +1,5 @@
+{{template "app" .}}
+{{define "content"}}<div class="docs">{{template "docnav" .}}<article class="doc">
+{{.Data.Body}}
+<div class="docpager">{{with .Data.Prev}}<a href="/docs/{{.Slug}}" class="btn ghost">{{template "icon" "chevl"}}{{$.T .Title}}</a>{{else}}<span></span>{{end}}{{with .Data.Next}}<a href="/docs/{{.Slug}}" class="btn ghost">{{$.T .Title}}{{template "icon" "chevr"}}</a>{{end}}</div>
+</article></div>{{end}}

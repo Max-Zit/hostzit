@@ -1,0 +1,11 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Jobs"}}</h1>
+<p class="muted">{{.T "Work started through the API (creating, suspending, terminating accounts) runs in the background and is listed here."}}</p>
+{{if .Data}}
+<div class="table-wrap"><table>
+  <thead><tr><th>{{.T "Job"}}</th><th>{{.T "Status"}}</th><th class="hide-sm">{{.T "Started"}}</th><th>{{.T "Result"}}</th></tr></thead>
+  <tbody>{{range .Data}}<tr><td><b>{{.Kind}}</b> <span class="muted">{{.Detail}}</span><br><span class="mono small muted">{{.ID}}</span></td><td>{{template "badge" (st $ .Status)}}</td><td class="hide-sm muted">{{$.Time .CreatedAt}}</td><td class="small err-text">{{.Error}}</td></tr>{{end}}</tbody>
+</table></div>
+{{else}}<div class="empty">{{template "icon" "clock"}}<p>{{.T "No jobs yet."}}</p></div>{{end}}
+{{end}}

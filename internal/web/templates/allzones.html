@@ -1,0 +1,14 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "DNS zones"}}</h1>
+{{if .Data}}
+<div class="table-wrap"><table>
+  <thead><tr><th>{{.T "Zone"}}</th><th>{{.T "Account"}}</th><th class="num">{{.T "Records"}}</th><th>DNSSEC</th><th class="hide-sm"></th></tr></thead>
+  <tbody>{{range .Data}}<tr>
+    <td>{{.Name}}</td><td><a href="/customers/{{.CustomerID}}">{{.Account}}</a></td><td class="num">{{.Records}}</td>
+    <td>{{if .DNSSEC}}<span class="badge ok"><i></i>{{$.T "signed"}}</span>{{else}}<span class="muted">—</span>{{end}}</td>
+    <td class="hide-sm small">{{if .ApplyError}}<span class="err-text">{{.ApplyError}}</span>{{else if .Applied}}<span class="muted">{{$.T "published"}}</span>{{end}}</td>
+  </tr>{{end}}</tbody>
+</table></div>
+{{else}}<div class="empty">{{template "icon" "network"}}<p>{{.T "No DNS zones yet."}}</p></div>{{end}}
+{{end}}

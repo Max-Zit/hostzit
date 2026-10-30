@@ -1,0 +1,55 @@
+{{template "app" .}}
+{{define "content"}}
+{{$h := .Data.H}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+<form method="post" action="/settings/hosting" class="stack">
+<section class="panel">
+  <h2>{{template "icon" "rack"}}{{.T "This server"}}</h2>
+  <label>{{.T "Mode"}}<select name="mode">
+    <option value="shared" {{if eq $h.Mode "shared"}}selected{{end}}>{{.T "Shared hosting — many customers, each one isolated with its own limits"}}</option>
+    <option value="dedicated" {{if eq $h.Mode "dedicated"}}selected{{end}}>{{.T "Dedicated server — one customer, no package limits"}}</option>
+  </select></label>
+  <div class="cols">
+    <label>{{.T "Server name"}}<input name="server_name" value="{{$h.ServerName}}" placeholder="host1.example.com" spellcheck="false" class="mono"><small>{{.T "The host name customers use for SFTP and SSH."}}</small></label>
+    <label>{{.T "Customer panel address"}} <small>{{.T "optional"}}</small><input name="panel_url" value="{{$h.PanelURL}}" placeholder="https://panel.example.com:8443" spellcheck="false" class="mono"><small>{{.T "Used in sign-in links from the billing system."}}</small></label>
+  </div>
+  <div class="cols">
+    <label>{{.T "IPv4 address of the websites"}}<input name="ipv4" value="{{$h.IPv4}}" placeholder="203.0.113.10" spellcheck="false" class="mono"></label>
+    <label>{{.T "IPv6 address"}} <small>{{.T "optional"}}</small><input name="ipv6" value="{{$h.IPv6}}" placeholder="2001:db8::10" spellcheck="false" class="mono"></label>
+  </div>
+  <div class="cols">
+    <label>{{.T "Default PHP version"}}<select name="default_php">{{range .Data.PHP}}<option value="{{.}}" {{if eq . $h.DefaultPHP}}selected{{end}}>PHP {{.}}</option>{{end}}</select></label>
+    <label>{{.T "Keep files of terminated customers (days)"}}<input type="number" name="grace_days" value="{{$h.GraceDays}}" min="0" max="365"></label>
+  </div>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "network"}}DNS</h2>
+  <label>{{.T "Name servers"}}<textarea name="nameservers" rows="3" spellcheck="false" class="mono" placeholder="ns1.example.com&#10;ns2.example.com">{{.Data.NS}}</textarea><small>{{.T "One per line. Customers enter these at their domain registrar. Both names need glue records (A/AAAA) at the registrar of their own domain."}}</small></label>
+  <div class="cols">
+    <label>{{.T "Hostmaster e-mail"}} <small>{{.T "optional"}}</small><input type="email" name="hostmaster" value="{{$h.Hostmaster}}" placeholder="hostmaster@example.com"></label>
+    <label>{{.T "SPF record of new zones"}}<input name="spf" value="{{$h.SPF}}" spellcheck="false" class="mono"><small>{{.T "Empty: no SPF record."}}</small></label>
+  </div>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "lock"}}{{.T "Certificates (HTTPS)"}}</h2>
+  <p class="muted small">{{.T "Every website gets a free certificate automatically as soon as its domain points to this server; certificates are renewed 30 days before they expire."}}</p>
+  {{$custom := and $h.ACME (ne $h.ACME "letsencrypt") (ne $h.ACME "letsencrypt-staging")}}
+  <label>{{.T "Certificate authority"}}<select name="acme">
+    <option value="" {{if not $h.ACME}}selected{{end}}>{{.T "Off"}}</option>
+    <option value="letsencrypt" {{if eq $h.ACME "letsencrypt"}}selected{{end}}>Let's Encrypt</option>
+    <option value="letsencrypt-staging" {{if eq $h.ACME "letsencrypt-staging"}}selected{{end}}>Let's Encrypt — {{.T "staging (tests, not trusted by browsers)"}}</option>
+    <option value="custom" {{if $custom}}selected{{end}}>{{.T "Other ACME directory"}}</option>
+  </select></label>
+  <div class="cols">
+    <label>{{.T "ACME directory address"}} <small>{{.T "only for other"}}</small><input name="acme_url" value="{{if $custom}}{{$h.ACME}}{{end}}" placeholder="https://…/directory" spellcheck="false" class="mono"></label>
+    <label>{{.T "Contact e-mail for the certificate authority"}}<input type="email" name="acme_email" value="{{$h.ACMEEmail}}"></label>
+  </div>
+</section>
+<div><button class="primary">{{.T "Save"}}</button></div>
+</form>
+</div>
+</div>
+{{end}}

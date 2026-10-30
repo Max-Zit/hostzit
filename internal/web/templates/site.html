@@ -1,0 +1,69 @@
+{{template "app" .}}
+{{define "content"}}
+{{$s := .Data.S}}
+<div class="pagehead"><h1>{{$s.Domain}}</h1>
+  <div class="row"><a class="btn secondary" href="https://{{$s.Domain}}/" target="_blank" rel="noopener">{{template "icon" "globe"}}{{.T "Open"}}</a>
+  <a class="btn ghost" href="/files?path={{$s.DocRoot}}">{{template "icon" "folder"}}{{.T "Files"}}</a>
+  <a class="btn ghost" href="/sites/{{$s.ID}}/logs">{{template "icon" "file"}}{{.T "Logs"}}</a></div></div>
+{{if $s.ApplyError}}<div class="flash err" role="alert">{{template "icon" "alert"}}<span>{{$s.ApplyError}}</span></div>{{end}}
+
+<section class="panel">
+  <div class="titlebar"><h2>{{template "icon" "refresh"}}{{.T "Page cache"}}</h2>
+    {{if $s.Cache}}<form method="post" action="/sites/{{$s.ID}}/cache/purge"><button class="secondary">{{template "icon" "trash"}}{{.T "Clear cache"}}</button></form>{{end}}</div>
+  <p class="muted small">{{.T "The web server keeps finished pages for visitors and answers without starting PHP: much faster pages and far less load. Logged-in users, the WordPress admin, comments, shopping carts and forms always get fresh pages. Clear the cache after you change the design or content and do not want to wait."}}</p>
+  {{if $s.Cache}}<p><span class="badge ok"><i></i>{{.T "on"}}</span> {{.T "pages are kept %d minutes" $s.CacheMinutes}}</p>{{else}}<p><span class="badge"><i></i>{{.T "off"}}</span></p>{{end}}
+</section>
+
+<section class="panel">
+  <h2>{{template "icon" "lock"}}{{.T "HTTPS certificate"}}</h2>
+  {{if eq $s.CertStatus "ok"}}<p><span class="badge ok"><i></i>Let's Encrypt</span> {{.T "valid until %s" (.Time $s.CertNotAfter)}} · <span class="small muted">{{join $s.CertNames ", "}}</span></p>
+  {{else if eq $s.CertStatus "uploaded"}}<p><span class="badge ok"><i></i>{{.T "own certificate"}}</span> {{.T "valid until %s" (.Time $s.CertNotAfter)}}</p>
+  {{else if eq $s.CertStatus "failed"}}<p><span class="badge warn"><i></i>{{.T "not issued yet"}}</span> <span class="small">{{$s.CertError}}</span></p><p class="small muted">{{.T "It is tried again automatically every few hours."}}</p>
+  {{else if eq $s.CertStatus "pending"}}<p><span class="badge warn"><i></i>{{.T "being requested"}}</span></p>
+  {{else}}<p class="muted">{{.T "A free certificate is requested as soon as the domain points to this server."}}</p>{{end}}
+  <details><summary class="small">{{.T "Install your own certificate"}}</summary>
+    <form method="post" action="/sites/{{$s.ID}}/cert" class="stack mt">
+      <label>{{.T "Certificate with the chain (PEM)"}}<textarea name="cert" rows="5" class="mono small" spellcheck="false" required placeholder="-----BEGIN CERTIFICATE-----"></textarea></label>
+      <label>{{.T "Private key (PEM)"}}<textarea name="key" rows="4" class="mono small" spellcheck="false" required placeholder="-----BEGIN PRIVATE KEY-----"></textarea></label>
+      <div><button class="secondary">{{.T "Install"}}</button></div>
+    </form>
+    {{if eq $s.CertStatus "uploaded"}}<form method="post" action="/sites/{{$s.ID}}/cert" class="mt"><input type="hidden" name="auto" value="1"><button class="ghost sm">{{.T "Use automatic certificates again"}}</button></form>{{end}}
+  </details>
+</section>
+
+<form method="post" action="/sites/{{$s.ID}}" class="stack">
+<section class="panel">
+  <h2>{{template "icon" "settings"}}{{.T "Settings"}}</h2>
+  <div class="cols">
+    <label>PHP<select name="php">{{range .Data.PHP}}<option value="{{.}}" {{if eq . $s.PHPVersion}}selected{{end}}>PHP {{.}}</option>{{end}}</select></label>
+    <label>{{.T "Document root"}}<input name="doc_root" value="{{$s.DocRoot}}" required spellcheck="false" class="mono"><small>{{.T "A folder inside sites/ of your home."}}</small></label>
+  </div>
+  <label class="check"><input type="checkbox" name="cache" {{if $s.Cache}}checked{{end}}><span><b>{{.T "Page cache"}}</b> — {{.T "keep pages for"}} <input type="number" name="cache_minutes" value="{{$s.CacheMinutes}}" min="1" max="1440" class="num-sm" aria-label="{{.T "minutes"}}"> {{.T "minutes"}}</span></label>
+  <label class="check"><input type="checkbox" name="www" {{if $s.WWW}}checked{{end}}><span>{{.T "Also answer on www.%s" $s.Domain}}</span></label>
+  <label>{{.T "Main address"}}<select name="canonical">
+    <option value="" {{if eq $s.Canonical ""}}selected{{end}}>{{.T "both, no redirect"}}</option>
+    <option value="bare" {{if eq $s.Canonical "bare"}}selected{{end}}>{{$s.Domain}} ({{.T "www redirects here"}})</option>
+    <option value="www" {{if eq $s.Canonical "www"}}selected{{end}}>www.{{$s.Domain}}</option>
+  </select></label>
+  <label class="check"><input type="checkbox" name="auto_tls" {{if $s.AutoTLS}}checked{{end}}><span>{{.T "Free certificate (Let's Encrypt) automatically"}}</span></label>
+  <label class="check"><input type="checkbox" name="force_https" {{if $s.ForceHTTPS}}checked{{end}}><span>{{.T "Redirect HTTP to HTTPS (when a certificate exists)"}}</span></label>
+  <label class="check"><input type="checkbox" name="hsts" {{if $s.HSTS}}checked{{end}}><span>{{.T "HSTS: browsers use only HTTPS for a year"}}</span></label>
+  <label class="check"><input type="checkbox" name="wordpress" {{if $s.WordPress}}checked{{end}}><span>{{.T "WordPress protection (wp-config.php and PHP files in uploads blocked)"}}</span></label>
+  <label class="check"><input type="checkbox" name="block_xmlrpc" {{if $s.BlockXMLRPC}}checked{{end}}><span>{{.T "Block xmlrpc.php (stops many password-guessing attacks; Jetpack and some apps need it)"}}</span></label>
+  <label>{{.T "Largest upload (MB)"}}<input type="number" name="upload_mb" value="{{$s.UploadMB}}" min="1" max="{{.Data.MaxUp}}" class="num-sm"><small>{{.T "Up to %d MB in your package." .Data.MaxUp}}</small></label>
+  <label>{{.T "More domains for this website (aliases)"}}<textarea name="aliases" rows="2" spellcheck="false" class="mono">{{.Data.Aliases}}</textarea><small>{{.T "One per line; they show the same website."}}</small></label>
+  <label>{{.T "Redirects"}}<textarea name="redirects" rows="3" spellcheck="false" class="mono" placeholder="/old-page /new-page 301&#10;/shop https://shop.example.com/ 302">{{.Data.Redirect}}</textarea><small>{{.T "One per line: path, target and 301 (permanent) or 302 (temporary)."}}</small></label>
+  <div><button class="primary">{{.T "Save"}}</button></div>
+</section>
+</form>
+
+{{with .Data.Zone}}<p class="small muted">{{$.T "DNS of this domain:"}} <a href="/dns/{{.ID}}">{{.Name}}</a></p>{{end}}
+
+<section class="panel">
+  <h2>{{template "icon" "trash"}}{{.T "Delete website"}}</h2>
+  <form method="post" action="/sites/{{$s.ID}}/delete" class="stack">
+    <label class="check"><input type="checkbox" name="files"><span>{{.T "Also delete the folder ~/sites/%s with all files" $s.Domain}}</span></label>
+    <div class="row"><input name="confirm" required placeholder="{{$s.Domain}}" aria-label="{{.T "Type the domain to confirm."}}" autocomplete="off"><button class="danger">{{.T "Delete website"}}</button></div>
+  </form>
+</section>
+{{end}}

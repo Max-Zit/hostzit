@@ -1,0 +1,11 @@
+{{template "guest" .}}
+{{define "content"}}
+<h1>{{.T "Two-factor sign-in"}}</h1>
+<p class="muted">{{.T "Enter the 6-digit code from your authenticator app, or one of your recovery codes."}}</p>
+<form method="post" action="/login/2fa" class="stack">
+  <input type="hidden" name="next" value="{{.Data.Next}}">
+  <label>{{.T "Code"}}<input name="code" required autofocus inputmode="numeric" autocomplete="one-time-code" maxlength="12" spellcheck="false" class="code"></label>
+  <button class="primary">{{.T "Sign in"}}</button>
+</form>
+<form method="post" action="/logout" class="mt"><button class="link">{{.T "Cancel"}}</button></form>
+{{end}}

@@ -1,0 +1,28 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "New customer"}}</h1>
+{{if not .Data.Packages}}
+<div class="flash warn" role="alert">{{template "icon" "alert"}}<span>{{.T "Create a package first."}} <a href="/packages/new">{{.T "New package"}}</a></span></div>
+{{else}}
+<section class="panel">
+<form method="post" action="/customers/new" class="stack">
+  <div class="cols">
+    <label>{{.T "Account name"}}<input name="username" value="{{index .Data.F "username"}}" required pattern="[a-z][a-z0-9]{2,15}" maxlength="16" autocapitalize="none" spellcheck="false" class="mono"><small>{{.T "3–16 lowercase letters and digits. It becomes the Linux user, the SFTP login and the prefix of databases."}}</small></label>
+    <label>{{.T "Package"}}<select name="package" required>{{range .Data.Packages}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $.Data.F "package")}}selected{{end}}>{{.Name}}</option>{{end}}</select></label>
+  </div>
+  <div class="cols">
+    <label>{{.T "Name"}} <small>{{.T "optional"}}</small><input name="display_name" value="{{index .Data.F "display_name"}}" maxlength="100"></label>
+    <label>{{.T "E-mail"}} <small>{{.T "optional"}}</small><input type="email" name="email" value="{{index .Data.F "email"}}"></label>
+  </div>
+  <div class="cols">
+    <label>{{.T "First website"}} <small>{{.T "optional"}}</small><input name="domain" value="{{index .Data.F "domain"}}" placeholder="example.com" spellcheck="false" autocapitalize="none"></label>
+    <label>PHP<select name="php"><option value="">{{.T "Server default"}}</option>{{range .Data.PHP}}<option value="{{.}}" {{if eq . (index $.Data.F "php")}}selected{{end}}>PHP {{.}}</option>{{end}}</select></label>
+  </div>
+  <label class="check"><input type="checkbox" name="dns" {{if index .Data.F "dns"}}checked{{end}}><span>{{.T "Host the DNS zone of the domain on this server"}}</span></label>
+  <label>{{.T "Password"}} <small>{{.T "optional"}}</small><input type="password" name="password" minlength="12" autocomplete="new-password"><small>{{.T "Empty: a password is generated and shown once; the customer must change it at the first sign-in."}}</small></label>
+  <label>{{.T "External id"}} <small>{{.T "optional"}}</small><input name="external_id" value="{{index .Data.F "external_id"}}" maxlength="100" spellcheck="false"><small>{{.T "The id of this customer in your billing system."}}</small></label>
+  <div><button class="primary">{{template "icon" "plus"}}{{.T "Create customer"}}</button></div>
+</form>
+</section>
+{{end}}
+{{end}}
