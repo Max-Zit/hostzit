@@ -299,7 +299,9 @@ func (s *Server) AdminHandler() http.Handler {
 	admin("POST /users/{id}/password", s.handleUserPassword)
 	admin("POST /users/{id}/reset-2fa", s.handleUserReset2FA)
 	admin("GET /audit", s.handleAudit)
-	admin("GET /settings", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/settings/hosting", http.StatusFound) })
+	admin("GET /settings", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/settings/hosting", http.StatusFound)
+	})
 	admin("GET /settings/hosting", s.handleHostingSettings)
 	admin("POST /settings/hosting", s.handleHostingSettingsSave)
 	admin("GET /settings/network", s.handleNetwork)

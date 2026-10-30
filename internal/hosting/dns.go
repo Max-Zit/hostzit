@@ -179,7 +179,7 @@ func CleanRecord(r Record, zone string) (Record, error) {
 		c = fmt.Sprintf(`%d %s "%s"`, fl, f[1], v)
 	case "TLSA":
 		f := strings.Fields(c)
-		if len(f) != 4 || !regexp.MustCompile(`^[0-9a-fA-F]{2,1024}$`).MatchString(f[3]) {
+		if len(f) != 4 || len(f[3]) < 2 || len(f[3]) > 1024 || !hexRE.MatchString(f[3]) {
 			return r, errors.New("TLSA: usage selector type hex-data")
 		}
 		for _, n := range f[:3] {
@@ -220,3 +220,5 @@ func AllowedForEmailZit(r Record) error {
 	}
 	return nil
 }
+
+var hexRE = regexp.MustCompile(`^[0-9a-fA-F]+$`)

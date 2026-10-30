@@ -153,7 +153,7 @@ func workerDo(home string, r WorkerReq) (WorkerResp, error) {
 			return WorkerResp{}, errors.New("choose a file name")
 		}
 		tmp := filepath.Join(filepath.Dir(p), ".hz-upload-"+strconv.FormatInt(time.Now().UnixNano(), 36))
-		if err := os.WriteFile(tmp, r.Data, 0o644); err != nil {
+		if err := os.WriteFile(tmp, r.Data, 0o644); err != nil { // #nosec G306 -- website files must be readable by the web server group
 			return WorkerResp{}, cleanErr(err, home)
 		}
 		if err := os.Rename(tmp, p); err != nil {
@@ -162,7 +162,7 @@ func workerDo(home string, r WorkerReq) (WorkerResp, error) {
 		}
 		return WorkerResp{Bytes: int64(len(r.Data))}, nil
 	case "mkdir":
-		return WorkerResp{}, cleanErr(os.MkdirAll(p, 0o755), home)
+		return WorkerResp{}, cleanErr(os.MkdirAll(p, 0o755), home) // #nosec G301 -- website folders must be readable by the web server group
 	case "delete":
 		if p == home {
 			return WorkerResp{}, errors.New("the home folder cannot be deleted")
@@ -201,11 +201,11 @@ func workerDo(home string, r WorkerReq) (WorkerResp, error) {
 		if _, err := os.Stat(p); err == nil {
 			return WorkerResp{}, nil
 		}
-		if err := os.MkdirAll(p, 0o755); err != nil {
+		if err := os.MkdirAll(p, 0o755); err != nil { // #nosec G301 -- website folders must be readable by the web server group
 			return WorkerResp{}, cleanErr(err, home)
 		}
 		if r.Index != "" {
-			if err := os.WriteFile(filepath.Join(p, "index.html"), []byte(r.Index), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(p, "index.html"), []byte(r.Index), 0o644); err != nil { // #nosec G306 -- a website page, served by nginx
 				return WorkerResp{}, cleanErr(err, home)
 			}
 		}

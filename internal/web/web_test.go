@@ -117,13 +117,13 @@ func fakeSystem(t *testing.T) (*inProc, string) {
 }
 
 type env struct {
-	t      *testing.T
-	st     *store.Store
-	srv    *Server
-	hp     *inProc
-	root   string
-	admin  *httptest.Server
-	panel  *httptest.Server
+	t     *testing.T
+	st    *store.Store
+	srv   *Server
+	hp    *inProc
+	root  string
+	admin *httptest.Server
+	panel *httptest.Server
 }
 
 func newEnv(t *testing.T) *env {
@@ -381,7 +381,9 @@ func TestPanels(t *testing.T) {
 
 func mustURL(s string) *url.URL { u, _ := url.Parse(s); return u }
 
-func itoa(n int64) string { return strings.TrimSpace(strings.Replace(time.Duration(n).String(), "ns", "", 1)) }
+func itoa(n int64) string {
+	return strings.TrimSpace(strings.Replace(time.Duration(n).String(), "ns", "", 1))
+}
 
 func TestAPI(t *testing.T) {
 	e := newEnv(t)

@@ -140,12 +140,12 @@ func run() error {
 		h.WebGID = 990
 		h.Log = func(format string, a ...any) { log.Info("helper: " + fmt.Sprintf(format, a...)) }
 		for _, p := range []string{"usr/sbin/php-fpm8.3", "usr/sbin/php-fpm8.4", "usr/bin/env", "etc/resolv.conf", "etc/hosts"} {
-			_ = os.MkdirAll(filepath.Dir(filepath.Join(root, p)), 0o755)
-			_ = os.WriteFile(filepath.Join(root, p), []byte("x"), 0o644)
+			_ = os.MkdirAll(filepath.Dir(filepath.Join(root, p)), 0o755) // #nosec G301 -- development fake system
+			_ = os.WriteFile(filepath.Join(root, p), []byte("x"), 0o644) // #nosec G306 -- development fake system
 		}
 		hc = inProcess{h}
 		challenges = filepath.Join(root, "var", "lib", "zit-acme", "challenges")
-		_ = os.MkdirAll(challenges, 0o755)
+		_ = os.MkdirAll(challenges, 0o755) // #nosec G301 -- development fake system
 		log.Warn("TEST MODE: the helper runs in-process against a fake system", "root", root)
 	}
 	srv, err := web.New(ctx, st, hc, log)
@@ -305,7 +305,7 @@ func fakeRunner(root string) func(ctx context.Context, stdin []byte, name string
 			}
 			var out bytes.Buffer
 			home := filepath.Join(root, "home", account)
-			_ = os.MkdirAll(home, 0o755)
+			_ = os.MkdirAll(home, 0o755) // #nosec G301 -- development fake system
 			err := helper.RunWorker(home, bytes.NewReader(stdin), &out)
 			return out.Bytes(), err
 		case "mariadb":

@@ -133,4 +133,3 @@ func (s *Store) UserByAPIToken(ctx context.Context, token, ip string) (*User, *A
 	_, _ = s.db.Exec(ctx, `UPDATE api_tokens SET last_used=$2, last_ip=$3 WHERE id=$1`, t.ID, s.now(), truncate(ip, 64))
 	return u, &t, nil
 }
-

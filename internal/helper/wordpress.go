@@ -162,14 +162,3 @@ func (h *Helper) wpRestore(ctx context.Context, a snapArgs) (any, error) {
 	_, _ = h.inCage(ctx, a.Account, nil, "/usr/bin/rm", "-rf", home+"/"+aside)
 	return nil, nil
 }
-
-// runAs runs a fixed tool of the cage as the account (archives for
-// backups); the tool list is fixed here.
-func (h *Helper) cageTool(ctx context.Context, account string, argv ...string) ([]byte, error) {
-	switch argv[0] {
-	case "/usr/bin/tar", "/usr/bin/rm", "/usr/bin/mv", "/usr/bin/cp", "/usr/bin/du", "/usr/bin/clamscan", "/usr/bin/unzip", "/usr/bin/crontab":
-	default:
-		return nil, errors.New("tool not allowed")
-	}
-	return h.inCage(ctx, account, nil, argv...)
-}

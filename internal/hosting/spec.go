@@ -10,18 +10,18 @@ import (
 // Limits are the resource limits of an account (from its package). Zero
 // means "no limit" where noted.
 type Limits struct {
-	DiskMB       int `json:"disk_mb"`        // disk quota (0 = none)
-	Inodes       int `json:"inodes"`         // file count quota (0 = none)
-	CPUPercent   int `json:"cpu_percent"`    // 100 = one core (0 = none)
-	MemoryMB     int `json:"memory_mb"`      // hard limit for all processes (0 = none)
-	IOWeight     int `json:"io_weight"`      // 1–10000, systemd default 100
-	Processes    int `json:"processes"`      // TasksMax (0 = none)
-	PHPWorkers   int `json:"php_workers"`    // pm.max_children per PHP version
-	PHPMemoryMB  int `json:"php_memory_mb"`  // memory_limit of one PHP request
-	UploadMB     int `json:"upload_mb"`      // upload_max_filesize / client_max_body_size
-	AllowExec    bool `json:"allow_exec"`    // PHP may start programs (exec, proc_open …)
-	SSH          bool `json:"ssh"`           // shell access (SFTP is always allowed)
-	MailPerHour  int `json:"mail_per_hour"`  // mails from websites per hour (0 = none allowed)
+	DiskMB      int  `json:"disk_mb"`       // disk quota (0 = none)
+	Inodes      int  `json:"inodes"`        // file count quota (0 = none)
+	CPUPercent  int  `json:"cpu_percent"`   // 100 = one core (0 = none)
+	MemoryMB    int  `json:"memory_mb"`     // hard limit for all processes (0 = none)
+	IOWeight    int  `json:"io_weight"`     // 1–10000, systemd default 100
+	Processes   int  `json:"processes"`     // TasksMax (0 = none)
+	PHPWorkers  int  `json:"php_workers"`   // pm.max_children per PHP version
+	PHPMemoryMB int  `json:"php_memory_mb"` // memory_limit of one PHP request
+	UploadMB    int  `json:"upload_mb"`     // upload_max_filesize / client_max_body_size
+	AllowExec   bool `json:"allow_exec"`    // PHP may start programs (exec, proc_open …)
+	SSH         bool `json:"ssh"`           // shell access (SFTP is always allowed)
+	MailPerHour int  `json:"mail_per_hour"` // mails from websites per hour (0 = none allowed)
 }
 
 // DedicatedLimits are used on a dedicated server: no sharing, so only
@@ -127,9 +127,7 @@ func (s Site) Names() []string {
 	if s.WWW {
 		n = append(n, "www."+s.Domain)
 	}
-	for _, a := range s.Aliases {
-		n = append(n, a)
-	}
+	n = append(n, s.Aliases...)
 	return n
 }
 

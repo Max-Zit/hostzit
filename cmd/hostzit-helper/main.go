@@ -128,7 +128,7 @@ func run() error {
 	if panelGID >= 0 {
 		_ = os.Chown(*socket, 0, panelGID)
 	}
-	if err := os.Chmod(*socket, 0o660); err != nil {
+	if err := os.Chmod(*socket, 0o660); err != nil { // #nosec G302 -- the socket: root and the panel group
 		return err
 	}
 	go func() { <-ctx.Done(); _ = l.Close() }()

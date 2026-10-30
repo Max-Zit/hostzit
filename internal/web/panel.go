@@ -61,13 +61,13 @@ func (s *Server) handleSSO(w http.ResponseWriter, r *http.Request) {
 // ---- home
 
 type homeData struct {
-	C       *store.Customer
-	P       *store.Package
-	Sites   []*store.Site
-	Zones   int
-	DBs     int
-	Usage   *store.UsageSample
-	Limits  hosting.Limits
+	C      *store.Customer
+	P      *store.Package
+	Sites  []*store.Site
+	Zones  int
+	DBs    int
+	Usage  *store.UsageSample
+	Limits hosting.Limits
 }
 
 func (s *Server) handleCustomerHome(w http.ResponseWriter, r *http.Request) {
@@ -435,10 +435,10 @@ func (s *Server) handleSiteLogs(w http.ResponseWriter, r *http.Request) {
 // ---- access (SFTP / SSH)
 
 type accessData struct {
-	C      *store.Customer
-	Host   string
-	SSH    bool
-	Port   int
+	C    *store.Customer
+	Host string
+	SSH  bool
+	Port int
 }
 
 func (s *Server) handleAccess(w http.ResponseWriter, r *http.Request) {

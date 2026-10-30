@@ -73,7 +73,9 @@ func (s *Server) apiHandler() http.Handler {
 	need("dns:mail", "GET /api/v1/dns/zones/{zone}/owned/{owner}", s.apiOwned)
 	need("dns:mail", "PUT /api/v1/dns/zones/{zone}/owned/{owner}", s.apiOwnedPut)
 	need("dns:mail", "DELETE /api/v1/dns/zones/{zone}/owned/{owner}", s.apiOwnedPut)
-	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) { apiError(w, http.StatusNotFound, "not_found", "unknown API path") })
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		apiError(w, http.StatusNotFound, "not_found", "unknown API path")
+	})
 	return mux
 }
 
@@ -163,7 +165,7 @@ func (s *Server) idempotent(next http.HandlerFunc) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json; charset=utf-8")
 			w.Header().Set("Idempotent-Replayed", "true")
 			w.WriteHeader(st)
-			_, _ = w.Write(body)
+			_, _ = w.Write(body) // #nosec G705 -- a stored JSON answer of this API, served as application/json
 			return
 		}
 		rc := &recorder{ResponseWriter: w, status: 200}
@@ -204,13 +206,13 @@ func (s *Server) apiStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 type apiPackage struct {
-	Slug        string         `json:"slug"`
-	Name        string         `json:"name"`
-	Limits      hosting.Limits `json:"limits"`
-	MaxSites    int            `json:"max_sites"`
-	MaxDBs      int            `json:"max_databases"`
-	MaxZones    int            `json:"max_dns_zones"`
-	Customers   int            `json:"customers"`
+	Slug      string         `json:"slug"`
+	Name      string         `json:"name"`
+	Limits    hosting.Limits `json:"limits"`
+	MaxSites  int            `json:"max_sites"`
+	MaxDBs    int            `json:"max_databases"`
+	MaxZones  int            `json:"max_dns_zones"`
+	Customers int            `json:"customers"`
 }
 
 func (s *Server) apiPackages(w http.ResponseWriter, r *http.Request) {
@@ -666,4 +668,3 @@ func (s *Server) handleAPITokenDelete(w http.ResponseWriter, r *http.Request) {
 	s.audit(r, "api.token.delete", "user:"+u.Username, "API token #%d %q revoked", id, name)
 	s.redirect(w, r, "/account#api", "API token revoked.")
 }
-

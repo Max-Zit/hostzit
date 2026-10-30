@@ -81,7 +81,7 @@ func (o *OS) WriteFile(path string, data []byte, mode os.FileMode, uid, gid int)
 		return fmt.Errorf("helper refuses to write %s", path)
 	}
 	full := o.p(path)
-	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil { // #nosec G301 -- parents of system folders (modes set right after)
 		return err
 	}
 	if fi, err := os.Lstat(full); err == nil && fi.Mode()&os.ModeSymlink != 0 {
@@ -94,21 +94,21 @@ func (o *OS) WriteFile(path string, data []byte, mode os.FileMode, uid, gid int)
 	tmp := f.Name()
 	defer os.Remove(tmp)
 	if _, err := f.Write(data); err != nil {
-		f.Close()
+		_ = f.Close()
 		return err
 	}
 	if err := f.Chmod(mode); err != nil {
-		f.Close()
+		_ = f.Close()
 		return err
 	}
 	if o.Root == "" {
 		if err := f.Chown(uid, gid); err != nil {
-			f.Close()
+			_ = f.Close()
 			return err
 		}
 	}
 	if err := f.Sync(); err != nil {
-		f.Close()
+		_ = f.Close()
 		return err
 	}
 	if err := f.Close(); err != nil {
@@ -138,7 +138,7 @@ func (o *OS) RemoveAll(path string) error {
 
 func (o *OS) Mkdir(path string, mode os.FileMode, uid, gid int) error {
 	full := o.p(path)
-	if err := os.MkdirAll(full, 0o755); err != nil {
+	if err := os.MkdirAll(full, 0o755); err != nil { // #nosec G301 -- parents of system folders (modes set right after)
 		return err
 	}
 	if fi, err := os.Lstat(full); err != nil || !fi.IsDir() {
@@ -214,7 +214,7 @@ func (o *OS) Mounted(target string) bool {
 
 func (o *OS) Mknod(path string, major, minor uint32) error {
 	if o.Root != "" {
-		return os.WriteFile(o.p(path), nil, 0o666)
+		return os.WriteFile(o.p(path), nil, 0o666) // #nosec G306 -- only in tests on Windows
 	}
 	return sysMknod(path, major, minor)
 }
@@ -222,7 +222,7 @@ func (o *OS) Mknod(path string, major, minor uint32) error {
 func (o *OS) Symlink(target, path string) error {
 	full := o.p(path)
 	if o.Root != "" && runtime.GOOS == "windows" {
-		return os.WriteFile(full, []byte(target), 0o644) // tests on Windows cannot make links
+		return os.WriteFile(full, []byte(target), 0o644) // #nosec G306 -- tests on Windows cannot make links
 	}
 	if cur, err := os.Readlink(full); err == nil && cur == target {
 		return nil

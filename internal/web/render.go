@@ -98,7 +98,7 @@ type Page struct {
 	Acting string
 	// Crumb is an optional link above the title.
 	Crumb, CrumbURL string
-	Data             any
+	Data            any
 }
 
 // T translates a text for the page language.
@@ -220,7 +220,7 @@ var funcs = template.FuncMap{
 		}
 		return "?"
 	},
-	"join":        strings.Join,
+	"join": strings.Join,
 	"fval": func(p *float64) string {
 		if p == nil {
 			return ""
@@ -327,7 +327,6 @@ func (s *Server) lang(r *http.Request, u *store.User) string {
 
 // ---- flash messages: a short-lived cookie carries the message (in
 // English, translated when shown) across the redirect after a POST.
-
 
 func flashCookie(r *http.Request) string {
 	if panelOf(r) == PanelAdmin {

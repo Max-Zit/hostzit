@@ -8,13 +8,13 @@ import (
 
 // Paths the nginx configuration uses.
 const (
-	NginxSitesDir    = "/etc/nginx/zit.d/hostzit/sites"     // <account>/<site id>.conf
-	NginxCacheZones  = "/etc/nginx/zit.d/hostzit/cache"     // <site id>.conf (http level)
-	CacheDir         = "/var/cache/hostzit/pages"           // <site id>/
-	CertDir          = "/var/lib/hostzit/certs"             // <site id>/fullchain.pem, privkey.pem
-	SiteLogDir       = "/var/log/hostzit/sites"             // <site id>/access.log, error.log
-	ACMEChallengeDir = "/var/lib/zit-acme/challenges"       // shared with EmailZit
-	SuspendedPage    = "/usr/share/hostzit/suspended"       // index.html
+	NginxSitesDir    = "/etc/nginx/zit.d/hostzit/sites" // <account>/<site id>.conf
+	NginxCacheZones  = "/etc/nginx/zit.d/hostzit/cache" // <site id>.conf (http level)
+	CacheDir         = "/var/cache/hostzit/pages"       // <site id>/
+	CertDir          = "/var/lib/hostzit/certs"         // <site id>/fullchain.pem, privkey.pem
+	SiteLogDir       = "/var/log/hostzit/sites"         // <site id>/access.log, error.log
+	ACMEChallengeDir = "/var/lib/zit-acme/challenges"   // shared with EmailZit
+	SuspendedPage    = "/usr/share/hostzit/suspended"   // index.html
 )
 
 // SiteConfPath is the nginx file of a site.

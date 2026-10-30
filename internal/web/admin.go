@@ -99,9 +99,9 @@ func (s *Server) handleCustomers(w http.ResponseWriter, r *http.Request) {
 }
 
 type customerFormData struct {
-	Packages []*store.Package
-	PHP      []string
-	F        map[string]string
+	Packages  []*store.Package
+	PHP       []string
+	F         map[string]string
 	Dedicated bool
 }
 

@@ -388,4 +388,3 @@ func (s *Server) handleFileSave(w http.ResponseWriter, r *http.Request) {
 	s.audit(r, "files", "customer:"+c.Username, "edit %s (%d bytes)", p, len(text))
 	s.redirect(w, r, "/files/edit?path="+url.QueryEscape(p), "Saved.")
 }
-

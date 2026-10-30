@@ -195,16 +195,16 @@ func (h *Helper) service(ctx context.Context, a serviceArgs) (any, error) {
 
 // Usage is what an account uses right now.
 type Usage struct {
-	DiskKB     int64 `json:"disk_kb"`
-	Inodes     int64 `json:"inodes"`
-	QuotaOK    bool  `json:"quota_ok"` // numbers come from the quota system
-	MemoryB    int64 `json:"memory_b"`
-	CPUUsec    int64 `json:"cpu_usec"` // total CPU time since the slice started
-	Tasks      int64 `json:"tasks"`
-	IOReadB    int64 `json:"io_read_b"`
-	IOWriteB   int64 `json:"io_write_b"`
-	MemEvents  int64 `json:"mem_oom"` // times the memory limit killed something
-	Throttled  int64 `json:"throttled_usec"`
+	DiskKB    int64 `json:"disk_kb"`
+	Inodes    int64 `json:"inodes"`
+	QuotaOK   bool  `json:"quota_ok"` // numbers come from the quota system
+	MemoryB   int64 `json:"memory_b"`
+	CPUUsec   int64 `json:"cpu_usec"` // total CPU time since the slice started
+	Tasks     int64 `json:"tasks"`
+	IOReadB   int64 `json:"io_read_b"`
+	IOWriteB  int64 `json:"io_write_b"`
+	MemEvents int64 `json:"mem_oom"` // times the memory limit killed something
+	Throttled int64 `json:"throttled_usec"`
 }
 
 func readInt(s System, p string) int64 {

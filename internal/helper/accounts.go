@@ -393,7 +393,9 @@ func (h *Helper) accountPassword(ctx context.Context, a passwordArgs) (any, erro
 }
 
 // CageMount mounts an account's cage (boot unit).
-func (h *Helper) CageMount(ctx context.Context, account string) error { return h.cageMount(ctx, account) }
+func (h *Helper) CageMount(ctx context.Context, account string) error {
+	return h.cageMount(ctx, account)
+}
 
 // CageUnmount removes the mounts of an account's cage.
 func (h *Helper) CageUnmount(ctx context.Context, account string) error {

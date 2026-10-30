@@ -1,0 +1,40 @@
+# Security checks on every push and pull request, and weekly (new CVEs).
+name: security
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  schedule:
+    - cron: "23 4 * * 1"
+permissions:
+  contents: read
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # gitleaks reads the whole history
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: build and vet
+        run: |
+          go build ./...
+          go vet ./...
+      - name: staticcheck
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@v0.8.2
+          staticcheck ./...
+      - name: gosec
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.30.0
+          gosec -quiet ./...
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          govulncheck ./...
+      - name: gitleaks (secrets in the history)
+        run: |
+          go install github.com/zricethezav/gitleaks/v8@v8.30.1
+          gitleaks git --redact --no-banner .
