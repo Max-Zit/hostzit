@@ -34,6 +34,21 @@
   </form>
 </section>
 <section class="panel">
+  <h2>{{template "icon" "layers"}}{{.T "Staging"}}</h2>
+  {{if .Data.Live}}
+    <p>{{.T "This is a staging copy of %s. Try changes here; visitors and search engines do not see it." .Data.Live.Domain}}</p>
+    <div class="row">
+      <form method="post" action="/wordpress/{{$w.ID}}/push" data-confirm="{{.T "Copy this staging site over %s? A snapshot of the live site is made first." .Data.Live.Domain}}"><button class="primary">{{.T "Push to live"}}</button></form>
+      <form method="post" action="/wordpress/{{$w.ID}}/staging/delete" data-confirm="{{.T "Delete the staging copy with its files and database?"}}"><button class="ghost danger">{{template "icon" "trash"}}{{.T "Delete staging copy"}}</button></form>
+    </div>
+  {{else if .Data.Staging}}
+    <p>{{.T "Staging copy:"}} <a href="/wordpress/{{.Data.Staging.ID}}"><b>{{.Data.Staging.Domain}}</b></a></p>
+  {{else}}
+    <p class="muted small">{{.T "A staging copy is a full copy of this site (files and database) on staging.%s, hidden from search engines. Try updates and changes there, then push them to the live site." $w.Domain}}</p>
+    <form method="post" action="/wordpress/{{$w.ID}}/staging"><button class="secondary">{{template "icon" "plus"}}{{.T "Create a staging copy"}}</button></form>
+  {{end}}
+</section>
+<section class="panel">
   <h2>{{template "icon" "shield"}}{{.T "Security"}}</h2>
   <form method="post" action="/wordpress/{{$w.ID}}/harden" class="stack">
     <label class="check"><input type="checkbox" name="file_edit" checked><span>{{.T "Switch off the theme and plugin editor in wp-admin (DISALLOW_FILE_EDIT)"}}</span></label>

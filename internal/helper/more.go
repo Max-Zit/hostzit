@@ -6,6 +6,7 @@ func (h *Helper) registerMore() {
 	h.ops["wp"] = op{handle(h.wp), false}
 	h.ops["wp.snapshot"] = op{handle(h.wpSnapshot), false}
 	h.ops["wp.restore"] = op{handle(h.wpRestore), false}
+	h.ops["site.copy"] = op{handle(h.siteCopy), false}
 	h.ops["cron.apply"] = op{handle(h.cronApply), true}
 	h.ops["cron.run"] = op{handle(h.cronRun), false}
 	h.ops["cron.log"] = op{handle(h.cronLog), false}

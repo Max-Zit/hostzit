@@ -14,9 +14,15 @@ docB=/home/$B/sites/$SB/public
 
 # a secret of B
 echo "secret-of-$B" > /home/$B/sites/$SB/public/secret.txt
-echo "db-password-of-$B" > /home/$B/sites/$SB/public/wp-config.php
-chown $B:$B /home/$B/sites/$SB/public/secret.txt /home/$B/sites/$SB/public/wp-config.php
-chmod 600 /home/$B/sites/$SB/public/wp-config.php
+# a wp-config.php of B (only made when B has none: never touch a real one)
+madecfg=0
+if [ ! -e /home/$B/sites/$SB/public/wp-config.php ]; then
+	echo "db-password-of-$B" > /home/$B/sites/$SB/public/wp-config.php
+	chown $B:$B /home/$B/sites/$SB/public/wp-config.php
+	chmod 600 /home/$B/sites/$SB/public/wp-config.php
+	madecfg=1
+fi
+chown $B:$B /home/$B/sites/$SB/public/secret.txt
 
 cat > $docA/probe.php <<'PHP'
 <?php
@@ -79,7 +85,8 @@ out=$(sh 'for i in $(seq 1 200); do sleep 5 & done; wait' | grep -c "Resource te
 [ "${out:-0}" -gt 0 ] && pass "fork bomb stopped by TasksMax ($out refused forks)" || bad "TasksMax did not stop 200 processes"
 # quota
 q=$(quota -u -w $A 2>/dev/null | tail -1); pass "quota of $A: $q"
-rm -f /home/$B/sites/$SB/public/secret.txt /home/$B/sites/$SB/public/wp-config.php
+rm -f /home/$B/sites/$SB/public/secret.txt
+[ $madecfg = 1 ] && rm -f /home/$B/sites/$SB/public/wp-config.php
 echo
 [ $fail = 0 ] && echo "ALL ISOLATION TESTS PASSED" || echo "SOME ISOLATION TESTS FAILED"
 exit $fail

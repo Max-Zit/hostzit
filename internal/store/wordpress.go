@@ -45,9 +45,10 @@ type WPInstall struct {
 	UpdatedAt  *time.Time
 	LastError  string
 	CreatedAt  time.Time
+	StagingOf  *int64
 }
 
-const wpCols = `w.id, w.site_id, s.customer_id, s.domain, w.path, w.db_name, w.admin_user, w.version, w.auto_update, w.updates, w.checked_at, w.updated_at, w.last_error, w.created_at`
+const wpCols = `w.id, w.site_id, s.customer_id, s.domain, w.path, w.db_name, w.admin_user, w.version, w.auto_update, w.updates, w.checked_at, w.updated_at, w.last_error, w.created_at, w.staging_of`
 
 func (s *Store) queryWP(ctx context.Context, where string, args ...any) ([]*WPInstall, error) {
 	rows, err := s.db.Query(ctx, `SELECT `+wpCols+` FROM wp_installs w JOIN sites s ON s.id=w.site_id WHERE `+where+` ORDER BY s.domain`, args...)
@@ -59,7 +60,7 @@ func (s *Store) queryWP(ctx context.Context, where string, args ...any) ([]*WPIn
 	for rows.Next() {
 		w := &WPInstall{}
 		var up []byte
-		if err := rows.Scan(&w.ID, &w.SiteID, &w.CustomerID, &w.Domain, &w.Path, &w.DBName, &w.AdminUser, &w.Version, &w.AutoUpdate, &up, &w.CheckedAt, &w.UpdatedAt, &w.LastError, &w.CreatedAt); err != nil {
+		if err := rows.Scan(&w.ID, &w.SiteID, &w.CustomerID, &w.Domain, &w.Path, &w.DBName, &w.AdminUser, &w.Version, &w.AutoUpdate, &up, &w.CheckedAt, &w.UpdatedAt, &w.LastError, &w.CreatedAt, &w.StagingOf); err != nil {
 			return nil, err
 		}
 		_ = json.Unmarshal(up, &w.Updates)
@@ -99,8 +100,8 @@ func (s *Store) WPInstallForSite(ctx context.Context, siteID int64) (*WPInstall,
 
 // AddWPInstall records an install.
 func (s *Store) AddWPInstall(ctx context.Context, w *WPInstall) error {
-	err := s.db.QueryRow(ctx, `INSERT INTO wp_installs(site_id, path, db_name, admin_user, version) VALUES($1,$2,$3,$4,$5) ON CONFLICT (site_id) DO UPDATE SET path=$2, db_name=$3, admin_user=$4, version=$5 RETURNING id`,
-		w.SiteID, w.Path, w.DBName, w.AdminUser, w.Version).Scan(&w.ID)
+	err := s.db.QueryRow(ctx, `INSERT INTO wp_installs(site_id, path, db_name, admin_user, version, staging_of) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (site_id) DO UPDATE SET path=$2, db_name=$3, admin_user=$4, version=$5, staging_of=$6 RETURNING id`,
+		w.SiteID, w.Path, w.DBName, w.AdminUser, w.Version, w.StagingOf).Scan(&w.ID)
 	return err
 }
 
@@ -172,4 +173,16 @@ func (s *Store) WPSnapshots(ctx context.Context, installID int64) ([]*WPSnapshot
 func (s *Store) DeleteWPSnapshot(ctx context.Context, id int64) error {
 	_, err := s.db.Exec(ctx, `DELETE FROM wp_snapshots WHERE id=$1`, id)
 	return err
+}
+
+// StagingOf finds the staging copy of an install.
+func (s *Store) StagingOf(ctx context.Context, liveID int64) (*WPInstall, error) {
+	l, err := s.queryWP(ctx, `w.staging_of=$1`, liveID)
+	if err == nil && len(l) == 0 {
+		err = ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return l[0], nil
 }

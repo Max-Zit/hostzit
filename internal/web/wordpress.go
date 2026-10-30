@@ -298,12 +298,18 @@ type wpData struct {
 	Site        *store.Site
 	Snapshots   []*store.WPSnapshot
 	NewPassword string
+	Staging     *store.WPInstall // the staging copy of this site
+	Live        *store.WPInstall // the live site of this staging copy
 }
 
 func (s *Server) wpData(ctx context.Context, in *store.WPInstall) *wpData {
 	d := &wpData{W: in}
 	d.Site, _ = s.store.SiteByID(ctx, in.SiteID)
 	d.Snapshots, _ = s.store.WPSnapshots(ctx, in.ID)
+	d.Staging, _ = s.store.StagingOf(ctx, in.ID)
+	if in.StagingOf != nil {
+		d.Live, _ = s.store.WPInstallByID(ctx, *in.StagingOf)
+	}
 	return d
 }
 

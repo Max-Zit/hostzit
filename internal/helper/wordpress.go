@@ -162,3 +162,56 @@ func (h *Helper) wpRestore(ctx context.Context, a snapArgs) (any, error) {
 	_, _ = h.inCage(ctx, a.Account, nil, "/usr/bin/rm", "-rf", home+"/"+aside)
 	return nil, nil
 }
+
+type copyArgs struct {
+	Account string   `json:"account"`
+	From    string   `json:"from"` // folder inside sites/
+	To      string   `json:"to"`
+	Keep    []string `json:"keep"` // file names in To that survive (wp-config.php)
+}
+
+var keepRE = regexp.MustCompile(`^[A-Za-z0-9._-]{1,100}$`)
+
+// siteCopy replaces the folder To with a copy of From, as the account in
+// its cage; the files named in Keep stay as they were in To.
+func (h *Helper) siteCopy(ctx context.Context, a copyArgs) (any, error) {
+	if err := hosting.ValidAccount(a.Account); err != nil {
+		return nil, userErr(err.Error())
+	}
+	from, err1 := hosting.CleanRelPath(a.From)
+	to, err2 := hosting.CleanRelPath(a.To)
+	if err1 != nil || err2 != nil || !strings.HasPrefix(from, "sites/") || !strings.HasPrefix(to, "sites/") || from == to ||
+		strings.HasPrefix(to+"/", from+"/") || strings.HasPrefix(from+"/", to+"/") {
+		return nil, userErr("both folders must be separate folders inside sites/")
+	}
+	home := hosting.HomeDir(a.Account)
+	tmp := home + "/.hz-keep"
+	run := func(argv ...string) error {
+		out, err := h.inCage(ctx, a.Account, nil, argv...)
+		if err != nil {
+			return userErr(argv[0] + ": " + tail(string(out)+" "+err.Error(), 300))
+		}
+		return nil
+	}
+	_ = run("/usr/bin/rm", "-rf", tmp)
+	if err := run("/usr/bin/mkdir", "-p", tmp, home+"/"+to); err != nil {
+		return nil, err
+	}
+	for _, k := range a.Keep {
+		if !keepRE.MatchString(k) {
+			return nil, userErr("invalid file name")
+		}
+		_, _ = h.inCage(ctx, a.Account, nil, "/usr/bin/mv", home+"/"+to+"/"+k, tmp+"/"+k)
+	}
+	if err := run("/usr/bin/rm", "-rf", home+"/"+to); err != nil {
+		return nil, err
+	}
+	if err := run("/usr/bin/cp", "-a", home+"/"+from, home+"/"+to); err != nil {
+		return nil, err
+	}
+	for _, k := range a.Keep {
+		_, _ = h.inCage(ctx, a.Account, nil, "/usr/bin/mv", "-f", tmp+"/"+k, home+"/"+to+"/"+k)
+	}
+	_ = run("/usr/bin/rm", "-rf", tmp)
+	return nil, nil
+}
