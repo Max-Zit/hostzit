@@ -26,7 +26,7 @@ import (
 
 // TrustedKeys are the public release keys (base64 Ed25519). A new key is
 // added here one release before it signs.
-var TrustedKeys = []string{"m6v0l8smmYzzu/067UcjEIa7OwhXq/npz9VngRrs/K0="}
+var TrustedKeys = []string{"gFkXf9LiCCULQac6VWKZygNtgRfT/t4IwQfM93TrvL4="}
 
 // DefaultSource is where releases are published.
 const DefaultSource = "https://github.com/Max-Zit/hostzit/releases"
@@ -36,7 +36,7 @@ type File struct {
 	Name   string `json:"name"`
 	SHA256 string `json:"sha256"`
 	Size   int64  `json:"size"`
-	// Kind is server, agent or other; Format deb, rpm, msi, exe or bin;
+	// Kind is server or other; Format deb, rpm, exe, bin, iso, ova, qcow2 or vhdx;
 	// Platform e.g. linux-amd64.
 	Kind     string `json:"kind"`
 	Format   string `json:"format,omitempty"`
@@ -220,4 +220,58 @@ func Newer(a, b string) bool {
 		}
 	}
 	return false
+}
+
+// Channels: stable follows the newest release; testing also offers release
+// candidates (GitHub pre-releases, or the "testing" folder of a mirror).
+const (
+	ChannelStable  = "stable"
+	ChannelTesting = "testing"
+)
+
+// GitHubAPI lists the releases of the repository (tests replace it).
+var GitHubAPI = "https://api.github.com/repos/Max-Zit/hostzit/releases?per_page=20"
+
+// Latest finds and verifies the newest release of a channel.
+func Latest(ctx context.Context, hc *http.Client, source, channel string) (*Manifest, error) {
+	if channel != ChannelTesting {
+		m, _, _, err := Fetch(ctx, hc, source, "")
+		return m, err
+	}
+	if !strings.HasPrefix(source, "https://github.com/") {
+		// A mirror keeps its candidates in a folder of their own; it may
+		// have none, then the newest stable release is offered.
+		m, _, _, err := Fetch(ctx, hc, strings.TrimRight(source, "/")+"/testing", "")
+		if err == nil {
+			if st, _, _, serr := Fetch(ctx, hc, source, ""); serr == nil && Newer(st.Version, m.Version) {
+				return st, nil
+			}
+			return m, nil
+		}
+		m, _, _, err = Fetch(ctx, hc, source, "")
+		return m, err
+	}
+	raw, err := get(ctx, hc, GitHubAPI, 4<<20)
+	if err != nil {
+		return nil, err
+	}
+	var rels []struct {
+		Tag   string `json:"tag_name"`
+		Draft bool   `json:"draft"`
+	}
+	if err := json.Unmarshal(raw, &rels); err != nil {
+		return nil, fmt.Errorf("the release list is unreadable: %w", err)
+	}
+	best := ""
+	for _, r := range rels {
+		v := strings.TrimPrefix(r.Tag, "v")
+		if !r.Draft && versionRe.MatchString(v) && (best == "" || Newer(v, best)) {
+			best = v
+		}
+	}
+	if best == "" {
+		return nil, errors.New("no release found")
+	}
+	m, _, _, err := Fetch(ctx, hc, source, best)
+	return m, err
 }

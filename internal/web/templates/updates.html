@@ -1,0 +1,36 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+<section class="panel">
+  <h2>{{template "icon" "download"}}{{.T "Updates"}}</h2>
+  <p>{{.T "Installed version:"}} <b>{{.Data.Current}}</b></p>
+  <p class="muted small">{{.T "Releases are signed by MaxZit. The server installs only packages whose signature and checksum match; the panel database is saved before every update."}}</p>
+  <form method="get" action="/settings/updates"><input type="hidden" name="check" value="1"><button class="secondary">{{template "icon" "refresh"}}{{.T "Check for a new version"}}</button></form>
+  {{if .Data.Err}}<p class="err-text mt">{{.Data.Err}}</p>{{end}}
+  {{with .Data.Latest}}
+    <div class="mt">
+    {{if index . "newer"}}
+      <p><span class="badge warn"><i></i>{{$.T "new version"}}</span> <b>{{index . "version"}}</b></p>
+      {{with index . "notes"}}<pre class="pre small scroll-y">{{.}}</pre>{{end}}
+      <form method="post" action="/settings/updates/install" data-confirm="{{$.T "Install the new version now? The panel restarts; websites keep running."}}"><input type="hidden" name="version" value="{{index . "version"}}"><button class="primary">{{$.T "Install"}}</button></form>
+    {{else}}<p><span class="badge ok"><i></i>{{$.T "up to date"}}</span> {{index . "version"}}</p>{{end}}
+    </div>
+  {{end}}
+</section>
+<section class="panel">
+  <h2>{{template "icon" "settings"}}{{.T "Release channel"}}</h2>
+  <form method="post" action="/settings/updates" class="stack">
+    <label>{{.T "Channel"}}<select name="channel">
+      <option value="official" {{if eq .Data.U.Channel "official"}}selected{{end}}>{{.T "Official releases"}}</option>
+      <option value="testing" {{if eq .Data.U.Channel "testing"}}selected{{end}}>{{.T "Testing (release candidates)"}}</option>
+    </select></label>
+    <label>{{.T "Update source"}} <small>{{.T "optional"}}</small><input name="source" value="{{.Data.U.Source}}" class="mono" spellcheck="false" placeholder="https://github.com/Max-Zit/hostzit/releases"><small>{{.T "Empty: the official releases on GitHub. A mirror must hold the same signed files."}}</small></label>
+    <div><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+</section>
+</div>
+</div>
+{{end}}

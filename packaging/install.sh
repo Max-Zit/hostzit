@@ -1,7 +1,7 @@
 #!/bin/bash
 # HostZit installer for Debian 12/13.
 #
-#   install.sh [--mode shared|dedicated] [--local DIR] [--no-dns] [--php "8.3 8.4"]
+#   install.sh [--mode shared|dedicated] [--version X.Y.Z | --local DIR] [--no-dns] [--php "8.3 8.4"]
 #
 # Installs the server software HostZit drives (nginx, PHP-FPM, MariaDB,
 # PowerDNS, PostgreSQL, OpenSSH, quota tools, WP-CLI), creates the hostzit
@@ -10,13 +10,14 @@
 # freshly built binaries). Run it as root on a fresh server.
 set -euo pipefail
 
-MODE=shared LOCAL="" DNS=1 PHPS=""
+MODE=shared LOCAL="" DNS=1 PHPS="" HZ_VERSION=""
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--mode) MODE=$2; shift 2 ;;
 	--local) LOCAL=$2; shift 2 ;;
 	--no-dns) DNS=0; shift ;;
 	--php) PHPS=$2; shift 2 ;;
+	--version) HZ_VERSION=$2; shift 2 ;;
 	*) echo "unknown option $1" >&2; exit 2 ;;
 	esac
 done
@@ -28,7 +29,7 @@ say() { printf '\n==> %s\n' "$*"; }
 
 say "Installing server software"
 apt-get update -q
-pkgs="nginx libnginx-mod-http-modsecurity modsecurity-crs mariadb-server postgresql openssh-server quota curl ca-certificates unzip nftables fail2ban"
+pkgs="openssl nginx libnginx-mod-http-modsecurity modsecurity-crs mariadb-server postgresql openssh-server quota curl ca-certificates unzip nftables fail2ban"
 [ "$DNS" = 1 ] && pkgs="$pkgs pdns-server pdns-backend-sqlite3 sqlite3"
 if [ -z "$PHPS" ]; then
 	PHPS=$(apt-cache search --names-only '^php[0-9.]+-fpm$' | sed -E 's/^php([0-9.]+)-fpm.*/\1/' | sort -V | tail -1)
@@ -115,7 +116,40 @@ if [ -n "$LOCAL" ]; then
 	install -m 0755 "$LOCAL/hostzit-helper" /usr/lib/hostzit/hostzit-helper
 	install -m 0644 "$LOCAL/hostzit-server.service" "$LOCAL/hostzit-helper.service" "$LOCAL/hostzit-firewall.service" /etc/systemd/system/
 else
-	echo "release downloads come with 0.8; use --local DIR" >&2; exit 1
+	# the newest signed release (or --version), checked with the release keys
+	KEYS="gFkXf9LiCCULQac6VWKZygNtgRfT/t4IwQfM93TrvL4=" # public key, not a secret  gitleaks:allow
+	SOURCE=${HOSTZIT_SOURCE:-https://github.com/Max-Zit/hostzit/releases}
+	WORK=$(mktemp -d); trap 'rm -rf "$WORK"' EXIT
+	case "$SOURCE" in
+		https://github.com/*) if [ -n "$HZ_VERSION" ]; then BASE="$SOURCE/download/v$HZ_VERSION"; else BASE="$SOURCE/latest/download"; fi ;;
+		*) BASE="$SOURCE" ;;
+	esac
+	curl -fsSL -o "$WORK/manifest.json" "$BASE/manifest.json" || { echo "no release found at $BASE" >&2; exit 1; }
+	curl -fsSL -o "$WORK/manifest.json.sig" "$BASE/manifest.json.sig" || { echo "the release has no signature" >&2; exit 1; }
+	base64 -d "$WORK/manifest.json.sig" > "$WORK/sig.bin"
+	OK=0
+	for k in $KEYS; do
+		printf -- '-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA%s\n-----END PUBLIC KEY-----\n' "$k" > "$WORK/key.pem"
+		openssl pkeyutl -verify -pubin -inkey "$WORK/key.pem" -rawin -in "$WORK/manifest.json" -sigfile "$WORK/sig.bin" >/dev/null 2>&1 && OK=1 && break
+	done
+	[ $OK = 1 ] || { echo "the release is not signed with a HostZit release key" >&2; exit 1; }
+	ARCH=$(dpkg --print-architecture)
+	eval "$(awk -v arch="linux-$ARCH" '
+		/^  "version":/ { ver = $2; gsub(/[",]/, "", ver) }
+		/^    \{/ { name = kind = format = sum = plat = "" }
+		/"name":/ { name = $2; gsub(/[",]/, "", name) }
+		/"kind":/ { kind = $2; gsub(/[",]/, "", kind) }
+		/"format":/ { format = $2; gsub(/[",]/, "", format) }
+		/"platform":/ { plat = $2; gsub(/[",]/, "", plat) }
+		/"sha256":/ { sum = $2; gsub(/[",]/, "", sum) }
+		/^    \}/ { if (kind == "server" && format == "deb" && plat == arch) { pkg = name; pkgsum = sum } }
+		END { printf "REL_VERSION=%s\nPKG=%s\nPKG_SHA=%s\n", ver, pkg, pkgsum }
+	' "$WORK/manifest.json")"
+	case "$REL_VERSION" in *[!0-9.]*|"") echo "the release manifest has no valid version" >&2; exit 1 ;; esac
+	case "$PKG" in ""|*/*|*..*) echo "the release has no package for $ARCH" >&2; exit 1 ;; esac
+	curl -fsSL -o "$WORK/$PKG" "$BASE/$PKG"
+	echo "$PKG_SHA  $WORK/$PKG" | sha256sum -c - >/dev/null || { echo "the checksum of $PKG does not match the signed release" >&2; exit 1; }
+	apt-get -y -q install "$WORK/$PKG"
 fi
 systemctl daemon-reload
 systemctl enable --now hostzit-helper

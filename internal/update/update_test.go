@@ -106,3 +106,38 @@ func TestNewer(t *testing.T) {
 		}
 	}
 }
+
+func TestChannels(t *testing.T) {
+	pub, priv, _ := ed25519.GenerateKey(rand.Reader)
+	old := TrustedKeys
+	TrustedKeys = []string{base64.StdEncoding.EncodeToString(pub)}
+	defer func() { TrustedKeys = old }()
+	dir := t.TempDir()
+	put := func(sub, v string) {
+		d := filepath.Join(dir, sub)
+		_ = os.MkdirAll(d, 0o700)
+		raw, _ := json.Marshal(Manifest{Product: "hostzit", Version: v})
+		_ = os.WriteFile(filepath.Join(d, "manifest.json"), raw, 0o600)
+		_ = os.WriteFile(filepath.Join(d, "manifest.json.sig"), Sign(raw, priv), 0o600)
+	}
+	src := "file://" + filepath.ToSlash(dir)
+	put("", "0.5.0")
+	ctx := context.Background()
+	for _, c := range []struct{ channel, want string }{{ChannelStable, "0.5.0"}, {ChannelTesting, "0.5.0"}} {
+		if m, err := Latest(ctx, http.DefaultClient, src, c.channel); err != nil || m.Version != c.want {
+			t.Fatalf("no candidates, %s: %v %v", c.channel, m, err)
+		}
+	}
+	put("testing", "0.5.1")
+	if m, _ := Latest(ctx, http.DefaultClient, src, ChannelStable); m.Version != "0.5.0" {
+		t.Fatalf("stable offers %s", m.Version)
+	}
+	if m, _ := Latest(ctx, http.DefaultClient, src, ChannelTesting); m.Version != "0.5.1" {
+		t.Fatalf("testing offers %s", m.Version)
+	}
+	// a stable release newer than the candidate wins on testing too
+	put("", "0.6.0")
+	if m, _ := Latest(ctx, http.DefaultClient, src, ChannelTesting); m.Version != "0.6.0" {
+		t.Fatalf("testing offers %s after 0.6.0", m.Version)
+	}
+}

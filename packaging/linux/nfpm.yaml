@@ -1,0 +1,53 @@
+name: hostzit
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+section: admin
+priority: optional
+maintainer: MaxZit <office@maxzit.com>
+description: |
+  HostZit: web hosting control panel (admin and customer panels, REST API)
+  with isolated accounts, websites, DNS, databases and a WordPress toolkit.
+vendor: MaxZit
+homepage: https://github.com/Max-Zit/hostzit
+license: AGPL-3.0-only
+overrides:
+  deb:
+    depends:
+      - nginx
+      - postgresql
+      - mariadb-server
+      - nftables
+      - quota
+    recommends:
+      - pdns-server
+      - pdns-backend-sqlite3
+      - libnginx-mod-http-modsecurity
+      - modsecurity-crs
+      - fail2ban
+contents:
+  - src: ./LICENSE
+    dst: /usr/share/doc/hostzit/copyright
+  - src: ./THIRD_PARTY_LICENSES.md
+    dst: /usr/share/doc/hostzit/THIRD_PARTY_LICENSES.md
+  - src: ./bin/pkg/hostzit-server
+    dst: /usr/bin/hostzit-server
+    file_info:
+      mode: 0755
+  - src: ./bin/pkg/hostzit-helper
+    dst: /usr/lib/hostzit/hostzit-helper
+    file_info:
+      mode: 0755
+  - src: ./packaging/linux/hostzit-server.service
+    dst: /usr/lib/systemd/system/hostzit-server.service
+  - src: ./packaging/linux/hostzit-helper.service
+    dst: /usr/lib/systemd/system/hostzit-helper.service
+  - src: ./packaging/linux/hostzit-firewall.service
+    dst: /usr/lib/systemd/system/hostzit-firewall.service
+  - src: ./packaging/install.sh
+    dst: /usr/share/hostzit/install.sh
+    file_info:
+      mode: 0755
+scripts:
+  postinstall: ./packaging/linux/postinstall.sh
+  preremove: ./packaging/linux/preremove.sh

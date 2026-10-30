@@ -96,6 +96,7 @@
   <a href="/settings/hosting" class="{{if eq .Title "Hosting"}}on{{end}}">{{template "icon" "globe"}}<span>{{.T "Hosting"}}<small>{{.T "Server name, addresses, name servers, certificates"}}</small></span></a>
   <a href="/settings/network" class="{{if eq .Title "Network and access"}}on{{end}}">{{template "icon" "network"}}<span>{{.T "Network and access"}}<small>{{.T "Panel ports and allowed networks"}}</small></span></a>
   <a href="/settings/security" class="{{if eq .Title "Sign-in and security"}}on{{end}}">{{template "icon" "lock"}}<span>{{.T "Sign-in and security"}}<small>{{.T "Session length, blocked addresses"}}</small></span></a>
+  <a href="/settings/updates" class="{{if eq .Title "Updates"}}on{{end}}">{{template "icon" "download"}}<span>{{.T "Updates"}}<small>{{.T "Signed new versions"}}</small></span></a>
   <a href="/settings/backup" class="{{if eq .Title "Panel backup"}}on{{end}}">{{template "icon" "disk"}}<span>{{.T "Panel backup"}}<small>{{.T "Nightly encrypted backups of the panel"}}</small></span></a>
   <a href="/settings/mail" class="{{if eq .Title "Notifications"}}on{{end}}">{{template "icon" "mail"}}<span>{{.T "Notifications"}}<small>{{.T "E-mail to administrators and customers"}}</small></span></a>
 </nav>{{end}}
