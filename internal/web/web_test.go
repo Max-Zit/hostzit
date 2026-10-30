@@ -640,3 +640,28 @@ func TestFourEyes(t *testing.T) {
 		t.Fatal("not deleted after approval")
 	}
 }
+
+// The local API socket serves only the DNS API, and only to a peer the
+// listener has checked.
+func TestLocalAPISocket(t *testing.T) {
+	e := newEnv(t)
+	h := e.srv.LocalAPIHandler()
+	do := func(ctx context.Context, path string) int {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil).WithContext(ctx))
+		return rec.Code
+	}
+	peer := WithLocalPeer(context.Background(), "emailzit")
+	if c := do(context.Background(), "/api/v1/domains/example.com"); c != http.StatusForbidden {
+		t.Fatalf("unchecked peer: %d", c)
+	}
+	if c := do(peer, "/api/v1/domains/example.com"); c != http.StatusNotFound {
+		t.Fatalf("checked peer, unknown domain: %d", c)
+	}
+	if c := do(peer, "/api/v1/zit/info"); c != http.StatusOK {
+		t.Fatalf("info: %d", c)
+	}
+	if c := do(peer, "/api/v1/customers"); c != http.StatusNotFound {
+		t.Fatalf("customers over the socket: %d", c)
+	}
+}

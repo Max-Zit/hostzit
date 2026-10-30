@@ -119,7 +119,44 @@ func apiToken(r *http.Request) *store.APIToken {
 	return t
 }
 
+// ctxLocalPeer marks requests from the local API socket (the listener has
+// checked the peer's uid with SO_PEERCRED); the value is the peer's name.
+type ctxLocalPeer struct{}
+
+// WithLocalPeer marks a connection of the local API socket.
+func WithLocalPeer(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, ctxLocalPeer{}, name)
+}
+
+// LocalAPIHandler serves the local socket /run/hostzit-api/api.sock: for
+// EmailZit on the same server the DNS part of the API (scope dns:mail)
+// without a token. Requests without a checked peer are refused.
+func (s *Server) LocalAPIHandler() http.Handler {
+	mux := http.NewServeMux()
+	local := func(pattern string, h http.HandlerFunc) {
+		mux.Handle(pattern, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if _, ok := r.Context().Value(ctxLocalPeer{}).(string); !ok {
+				apiError(w, http.StatusForbidden, "forbidden", "not a checked local peer")
+				return
+			}
+			h(w, r)
+		}))
+	}
+	local("GET /api/v1/zit/info", s.apiInfo)
+	local("GET /api/v1/domains/{domain}", s.apiDomain)
+	local("GET /api/v1/dns/zones/{zone}/owned/{owner}", s.apiOwned)
+	local("PUT /api/v1/dns/zones/{zone}/owned/{owner}", s.apiOwnedPut)
+	local("DELETE /api/v1/dns/zones/{zone}/owned/{owner}", s.apiOwnedPut)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		apiError(w, http.StatusNotFound, "not_found", "the local socket serves only the DNS API (dns:mail)")
+	})
+	return mux
+}
+
 func apiActor(r *http.Request) string {
+	if p, ok := r.Context().Value(ctxLocalPeer{}).(string); ok {
+		return p + " (local API socket)"
+	}
 	name := "-"
 	if u := userFrom(r); u != nil {
 		name = u.Username

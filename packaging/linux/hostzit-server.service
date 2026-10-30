@@ -7,6 +7,9 @@ Wants=network-online.target
 User=hostzit
 Group=hostzit
 SupplementaryGroups=zit-acme
+# local API socket for EmailZit (each connection is checked by its uid)
+RuntimeDirectory=hostzit-api
+RuntimeDirectoryMode=0755
 EnvironmentFile=/etc/hostzit/server.env
 ExecStart=/usr/bin/hostzit-server --data-dir /var/lib/hostzit/panel
 Restart=on-failure

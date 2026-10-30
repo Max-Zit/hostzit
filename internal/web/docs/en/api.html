@@ -29,3 +29,6 @@ POST   /api/v1/customers/{id}/export    → job: account backup in ~/backups
 GET    /api/v1/customers/{id}/backups
 GET    /api/v1/jobs/{id}
 GET    /api/v1/server/status</pre>
+
+<h2 id="local">Local socket for EmailZit</h2>
+<p>When EmailZit runs on the same server it can use the DNS part of the API (<code>GET /api/v1/domains/{domain}</code>, <code>GET|PUT|DELETE /api/v1/dns/zones/{zone}/owned/{owner}</code>) over the Unix socket <code>/run/hostzit-api/api.sock</code> without a token. HostZit checks every connection by the user of the calling process: only root and the <code>emailzit</code> service user are answered.</p>

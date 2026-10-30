@@ -63,6 +63,7 @@ func run() error {
 	panelListen := flag.String("panel-listen", "", "customer panel address; overrides the saved setting (e.g. :8443)")
 	devAdminHTTP := flag.String("dev-http-admin", "", "also serve the admin panel over plain HTTP on this loopback address (development only)")
 	devPanelHTTP := flag.String("dev-http-panel", "", "also serve the customer panel over plain HTTP on this loopback address (development only)")
+	apiSocket := flag.String("api-socket", "/run/hostzit-api/api.sock", "local API socket for EmailZit on this server (DNS API without a token; only root and the emailzit user); used when its folder exists")
 	devNo2FA := flag.Bool("dev-no-2fa", false, "sign in with the password only (development only, needs --dev-embedded-db)")
 	devFakeHelper := flag.Bool("dev-fake-helper", false, "run the helper in-process against a fake system in the data directory (development only)")
 	helperSocket := flag.String("helper-socket", helper.SocketPath, "socket of hostzit-helper")
@@ -225,6 +226,28 @@ func run() error {
 	if err := serve("customer", net0.PanelListen, srv.CustomerHandler(), srv.PanelACL); err != nil {
 		return err
 	}
+	if *apiSocket != "" && dirExists(filepath.Dir(*apiSocket)) {
+		_ = os.Remove(*apiSocket)
+		l, err := net.Listen("unix", *apiSocket)
+		if err != nil {
+			return fmt.Errorf("local API socket: %w", err)
+		}
+		// anyone may connect; each connection is checked with SO_PEERCRED
+		if err := os.Chmod(*apiSocket, 0o666); err != nil { // #nosec G302 -- access is decided per connection by the peer uid
+			return err
+		}
+		local := srv.LocalAPIHandler()
+		hs := &http.Server{Handler: local, ReadHeaderTimeout: 10 * time.Second, ReadTimeout: time.Minute, WriteTimeout: time.Minute, MaxHeaderBytes: 64 << 10,
+			ConnContext: func(ctx context.Context, c net.Conn) context.Context {
+				if p := localPeer(c); p != "" {
+					return web.WithLocalPeer(ctx, p)
+				}
+				return ctx
+			}}
+		servers = append(servers, hs)
+		go func() { errc <- hs.Serve(l) }()
+		log.Info("listening", "listener", "local API", "addr", *apiSocket)
+	}
 	for _, d := range []struct {
 		addr string
 		h    http.Handler
@@ -373,4 +396,9 @@ func restoreBackup(ctx context.Context, file, passFile, dataDir, dbURL string) e
 	fmt.Printf("Restored the panel backup of %s (HostZit %s, %d files). Start the service, then use \"Set up again\" for each customer in the admin panel.\n",
 		m.Created.Local().Format("2006-01-02 15:04"), m.ServerVersion, len(m.Files))
 	return nil
+}
+
+func dirExists(p string) bool {
+	st, err := os.Stat(p)
+	return err == nil && st.IsDir()
 }

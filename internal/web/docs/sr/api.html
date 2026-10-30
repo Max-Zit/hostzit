@@ -29,3 +29,6 @@ POST   /api/v1/customers/{id}/export    → posao: rezervna kopija naloga u ~/ba
 GET    /api/v1/customers/{id}/backups
 GET    /api/v1/jobs/{id}
 GET    /api/v1/server/status</pre>
+
+<h2 id="local">Lokalni socket za EmailZit</h2>
+<p>Kada EmailZit radi na istom serveru, DNS deo API-ja (<code>GET /api/v1/domains/{domain}</code>, <code>GET|PUT|DELETE /api/v1/dns/zones/{zone}/owned/{owner}</code>) može da koristi preko Unix socketa <code>/run/hostzit-api/api.sock</code> bez tokena. HostZit svaku konekciju proverava po korisniku procesa koji poziva: odgovara samo root-u i servisnom korisniku <code>emailzit</code>.</p>
