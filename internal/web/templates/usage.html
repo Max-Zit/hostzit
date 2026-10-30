@@ -31,6 +31,7 @@
 <section class="panel">
   <h2>{{template "icon" "clock"}}{{.T "Last 7 days"}}</h2>
   {{if .Data.Samples}}
+  <div class="cards2"><div><p class="small muted">{{.T "Disk"}}</p>{{spark .Data.Disk}}</div><div><p class="small muted">{{.T "Memory (MB)"}}</p>{{spark .Data.Mem}}</div></div>
   <div class="table-wrap scroll-y"><table>
     <thead><tr><th>{{.T "Time"}}</th><th class="num">{{.T "Disk"}}</th><th class="num">{{.T "Memory"}}</th><th class="num hide-sm">{{.T "Processes"}}</th></tr></thead>
     <tbody>{{range .Data.Samples}}<tr><td class="muted small">{{$.Time .At}}</td><td class="num">{{kb .DiskKB}}</td><td class="num">{{bytes .MemoryB}}</td><td class="num hide-sm">{{.Tasks}}</td></tr>{{end}}</tbody>

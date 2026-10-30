@@ -439,6 +439,7 @@ type accessData struct {
 	Host string
 	SSH  bool
 	Port int
+	Keys []*store.SSHKey
 }
 
 func (s *Server) handleAccess(w http.ResponseWriter, r *http.Request) {
@@ -452,6 +453,7 @@ func (s *Server) handleAccess(w http.ResponseWriter, r *http.Request) {
 		host, _, _ = splitHostPort(r.Host)
 	}
 	d := &accessData{C: c, Host: host, Port: 22, SSH: p != nil && p.Limits.SSH || s.hostingSettings(r.Context()).Mode == "dedicated"}
+	d.Keys, _ = s.store.SSHKeys(r.Context(), c.ID)
 	s.render(w, r, http.StatusOK, "access", &Page{Title: "SFTP and SSH", Nav: "access", Customer: c, Data: d})
 }
 

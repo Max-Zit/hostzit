@@ -232,3 +232,32 @@ func TestCageFiles(t *testing.T) {
 		}
 	}
 }
+
+func TestOnCalendar(t *testing.T) {
+	cases := map[string]string{
+		"*/15 * * * *":    "*-*-* *:0/15:00",
+		"0 3 * * *":       "*-*-* 3:0:00",
+		"30 2 * * 1-5":    "Mon..Fri *-*-* 2:30:00",
+		"0 0 1 * *":       "*-*-1 0:0:00",
+		"@daily":          "*-*-* 0:0:00",
+		"5,35 8-18 * * *": "*-*-* 8..18:5,35:00",
+		"0 4 * * 0":       "Sun *-*-* 4:0:00",
+	}
+	for in, want := range cases {
+		if got, err := OnCalendar(in); err != nil || got != want {
+			t.Errorf("%q → %q, %v; want %q", in, got, err, want)
+		}
+	}
+	for _, bad := range []string{"", "* * * *", "61 * * * *", "* 24 * * *", "a b c d e", "* * * * 1/2", "*/0 * * * *", "* * * * *\nExecStart=/bin/sh", "0 0 32 * *"} {
+		if got, err := OnCalendar(bad); err == nil {
+			t.Errorf("%q accepted as %q", bad, got)
+		}
+	}
+	s, tm, err := CronUnits("shop", CronJob{ID: 4, Schedule: "*/5 * * * *", Command: "php x.php"})
+	if err != nil || !strings.Contains(s, "ExecStart=/bin/bash /home/shop/.hz-cron/4.sh") || !strings.Contains(s, "RootDirectory=/var/lib/hostzit/cages/shop") || !strings.Contains(tm, "OnCalendar=*-*-* *:0/5:00") {
+		t.Fatal(s, tm, err)
+	}
+	if strings.Contains(s, "php x.php") {
+		t.Fatal("the command reached the unit file")
+	}
+}

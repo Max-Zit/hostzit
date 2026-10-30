@@ -448,6 +448,7 @@ func (s *Server) Run(ctx context.Context) {
 			return
 		case <-usage.C:
 			s.collectUsage(ctx)
+			s.checkNotices(ctx)
 		case <-hourly.C:
 			_ = s.store.PurgeSessions(ctx)
 			_ = s.store.PruneUsage(ctx)

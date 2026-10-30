@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"context"
+	"crypto/ed25519"
 	"encoding/json"
 	"errors"
 	"io"
@@ -19,6 +20,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"golang.org/x/crypto/ssh"
 
 	"github.com/max-zit/hostzit/internal/helper"
 	"github.com/max-zit/hostzit/internal/store"
@@ -306,6 +309,38 @@ func TestPanels(t *testing.T) {
 	if st, _, _ := c.get("/files?path=../../etc"); st != http.StatusOK {
 		t.Fatal(st)
 	}
+
+	// scheduled job: the command lands in the account's script, not in the unit
+	c.page("/cron")
+	c.ok("/cron", url.Values{"schedule": {"*/10 * * * *"}, "command": {"php -r 'echo 1;' ; echo $HOME"}, "note": {"test"}})
+	jobs, _ := e.st.CronJobs(context.Background(), sites[0].CustomerID)
+	if len(jobs) != 1 {
+		t.Fatal("job not stored")
+	}
+	unit, err := os.ReadFile(filepath.Join(e.root, "etc/systemd/system", "hz-cron-shop-"+itoa(jobs[0].ID)+".service"))
+	if err != nil || strings.Contains(string(unit), "echo") || !strings.Contains(string(unit), "User=shop") {
+		t.Fatalf("cron unit: %v\n%s", err, unit)
+	}
+	if b, _ := os.ReadFile(filepath.Join(e.root, "home/shop/.hz-cron", itoa(jobs[0].ID)+".sh")); !strings.Contains(string(b), "echo $HOME") {
+		t.Fatalf("cron script %q", b)
+	}
+	if st, _, _ := c.post("/cron", url.Values{"schedule": {"* * * * *\nExecStart=/bin/sh"}, "command": {"x"}}); st != http.StatusSeeOther {
+		t.Fatal(st)
+	}
+	if jobs, _ := e.st.CronJobs(context.Background(), sites[0].CustomerID); len(jobs) != 1 {
+		t.Fatal("bad schedule stored")
+	}
+	// SSH key
+	pub, _, _ := ed25519.GenerateKey(nil)
+	sk, _ := ssh.NewPublicKey(pub)
+	c.ok("/access/keys", url.Values{"name": {"laptop"}, "key": {strings.TrimSpace(string(ssh.MarshalAuthorizedKey(sk))) + " me@laptop"}})
+	if b, _ := os.ReadFile(filepath.Join(e.root, "home/shop/.ssh/authorized_keys")); !strings.Contains(string(b), "ssh-ed25519 ") {
+		t.Fatalf("authorized_keys %q", b)
+	}
+	if st, _, loc := c.post("/access/keys", url.Values{"key": {`command="rm -rf /" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl x`}}); st != http.StatusSeeOther || loc != "/access" {
+		t.Fatal("key with options accepted")
+	}
+	c.page("/access")
 
 	// a second customer cannot see the first one's things
 	a.ok("/customers/new", url.Values{"username": {"blog"}, "package": {"1"}, "password": {"blog password 123"}})

@@ -1,0 +1,6 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Job output"}}</h1>
+<section class="panel">{{if .Data}}<pre class="pre small scroll-y">{{.Data}}</pre>{{else}}<p class="muted">{{.T "The job has not run yet."}}</p>{{end}}</section>
+<p><a class="btn ghost" href="/cron">{{.T "Back"}}</a></p>
+{{end}}

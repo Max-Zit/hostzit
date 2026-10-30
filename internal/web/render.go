@@ -467,3 +467,25 @@ type rowCtx struct {
 func init() {
 	funcs["rowOf"] = func(p *Page, v string) rowCtx { return rowCtx{P: p, Row: v} }
 }
+
+// spark draws a small line graph of numbers (server-side SVG, no script).
+func spark(vals []int64) template.HTML {
+	if len(vals) < 2 {
+		return ""
+	}
+	var mx int64 = 1
+	for _, v := range vals {
+		mx = max(mx, v)
+	}
+	var b strings.Builder
+	b.WriteString(`<svg class="spark" viewBox="0 0 400 60" preserveAspectRatio="none" role="img" aria-hidden="true"><polyline points="`)
+	for i, v := range vals {
+		x := float64(i) * 400 / float64(len(vals)-1)
+		y := 58 - float64(v)*56/float64(mx)
+		fmt.Fprintf(&b, "%.1f,%.1f ", x, y)
+	}
+	b.WriteString(`"/></svg>`)
+	return template.HTML(b.String()) // #nosec G203 -- numbers only
+}
+
+func init() { funcs["spark"] = spark }

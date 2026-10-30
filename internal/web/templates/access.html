@@ -15,8 +15,16 @@ ssh {{$d.C.Username}}@{{$d.Host}}{{end}}</pre>
   <p class="small muted">{{.T "FileZilla, WinSCP and Cyberduck work too (protocol SFTP). You see only your own home folder; your websites are in the folder sites."}}</p>
 </section>
 <section class="panel">
+  <h2>{{template "icon" "key"}}{{.T "SSH keys"}}</h2>
+  {{if $d.Keys}}<div class="table-wrap"><table><tbody>{{range $d.Keys}}<tr><td><b>{{.Name}}</b><br><span class="mono small muted">{{.Fingerprint}}</span></td><td class="actions"><form method="post" action="/access/keys/{{.ID}}/delete" data-confirm="{{$.T "Remove this key?"}}"><button class="ghost sm" aria-label="{{$.T "Delete"}}">{{template "icon" "trash"}}</button></form></td></tr>{{end}}</tbody></table></div>{{else}}<p class="muted small">{{.T "No keys yet. With a key you sign in without a password."}}</p>{{end}}
+  <form method="post" action="/access/keys" class="stack mt">
+    <label>{{.T "Public key"}}<textarea name="key" rows="3" required class="mono small" spellcheck="false" placeholder="ssh-ed25519 AAAA… me@laptop"></textarea></label>
+    <div class="row"><input name="name" maxlength="100" placeholder="{{.T "Name, e.g. laptop"}}" aria-label="{{.T "Name"}}"><button class="secondary">{{template "icon" "plus"}}{{.T "Add key"}}</button></div>
+  </form>
+</section>
+<section class="panel">
   <h2>{{template "icon" "key"}}{{.T "SFTP password"}}</h2>
-  <p class="muted small">{{.T "A separate password for SFTP/SSH (not the panel password). You can also use SSH keys: put them into ~/.ssh/authorized_keys."}}</p>
+  <p class="muted small">{{.T "A separate password for SFTP/SSH (not the panel password). SSH keys (above) work without a password."}}</p>
   <form method="post" action="/access/password" class="stack">
     <div class="cols">
       <label>{{.T "New password"}}<input type="password" name="password" required minlength="12" autocomplete="new-password"></label>

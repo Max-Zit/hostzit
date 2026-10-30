@@ -65,6 +65,7 @@
     <a href="/databases" class="{{if eq .Nav "databases"}}on{{end}}">{{template "icon" "database"}}{{.T "Databases"}}</a>
     <a href="/files" class="{{if eq .Nav "files"}}on{{end}}">{{template "icon" "folder"}}{{.T "Files"}}</a>
     <a href="/access" class="{{if eq .Nav "access"}}on{{end}}">{{template "icon" "terminal"}}{{.T "SFTP and SSH"}}</a>
+    <a href="/cron" class="{{if eq .Nav "cron"}}on{{end}}">{{template "icon" "clock"}}{{.T "Scheduled jobs"}}</a>
     <a href="/usage" class="{{if eq .Nav "usage"}}on{{end}}">{{template "icon" "disk"}}{{.T "Usage"}}</a>
     <a href="/docs" class="{{if eq .Nav "docs"}}on{{end}}">{{template "icon" "book"}}{{.T "User guide"}}</a>
   </nav>{{end}}
@@ -92,6 +93,7 @@
   <a href="/settings/hosting" class="{{if eq .Title "Hosting"}}on{{end}}">{{template "icon" "globe"}}<span>{{.T "Hosting"}}<small>{{.T "Server name, addresses, name servers, certificates"}}</small></span></a>
   <a href="/settings/network" class="{{if eq .Title "Network and access"}}on{{end}}">{{template "icon" "network"}}<span>{{.T "Network and access"}}<small>{{.T "Panel ports and allowed networks"}}</small></span></a>
   <a href="/settings/security" class="{{if eq .Title "Sign-in and security"}}on{{end}}">{{template "icon" "lock"}}<span>{{.T "Sign-in and security"}}<small>{{.T "Session length, blocked addresses"}}</small></span></a>
+  <a href="/settings/mail" class="{{if eq .Title "Notifications"}}on{{end}}">{{template "icon" "mail"}}<span>{{.T "Notifications"}}<small>{{.T "E-mail to administrators and customers"}}</small></span></a>
 </nav>{{end}}
 
 {{define "rolefield"}}<label>{{.P.T "Role"}}<select name="role">

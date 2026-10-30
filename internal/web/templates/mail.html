@@ -1,0 +1,34 @@
+{{template "app" .}}
+{{define "content"}}
+{{$m := .Data.M}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+<form method="post" action="/settings/mail" class="stack">
+<section class="panel">
+  <h2>{{template "icon" "mail"}}{{.T "E-mail notifications"}}</h2>
+  <p class="muted small">{{.T "Sent at most once a day each: disk space almost full, certificates that cannot be issued or renewed, failed automatic updates. Leave the server empty to switch notifications off."}}</p>
+  <div class="cols">
+    <label>{{.T "SMTP server"}}<input name="host" value="{{$m.Host}}" spellcheck="false" class="mono" placeholder="smtp.example.com"></label>
+    <label>{{.T "Port"}}<input type="number" name="port" value="{{if $m.Port}}{{$m.Port}}{{else}}587{{end}}" min="1" max="65535"></label>
+    <label>{{.T "Security"}}<select name="security">
+      <option value="starttls" {{if eq $m.Security "starttls"}}selected{{end}}>STARTTLS (587)</option>
+      <option value="tls" {{if eq $m.Security "tls"}}selected{{end}}>TLS (465)</option>
+      <option value="none" {{if eq $m.Security "none"}}selected{{end}}>{{.T "none (only inside your network)"}}</option>
+    </select></label>
+  </div>
+  <div class="cols">
+    <label>{{.T "User"}} <small>{{.T "optional"}}</small><input name="user" value="{{$m.User}}" autocomplete="off"></label>
+    <label>{{.T "Password"}} <small>{{if .Data.HasPW}}{{.T "saved; empty keeps it"}}{{else}}{{.T "optional"}}{{end}}</small><input type="password" name="password" autocomplete="new-password"></label>
+    <label>{{.T "Sender address"}}<input type="email" name="from" value="{{$m.From}}" placeholder="hostzit@example.com"></label>
+  </div>
+  <label>{{.T "Administrators"}}<textarea name="admins" rows="3" spellcheck="false" placeholder="admin@example.com">{{.Data.Admins}}</textarea><small>{{.T "One address per line."}}</small></label>
+  <label class="check"><input type="checkbox" name="customer" {{if $m.Customer}}checked{{end}}><span>{{.T "Also tell customers about their own account (disk space, certificates)"}}</span></label>
+  <div><button class="primary">{{.T "Save"}}</button></div>
+</section>
+</form>
+<form method="post" action="/settings/mail/test"><button class="secondary">{{template "icon" "mail"}}{{.T "Send a test message"}}</button></form>
+</div>
+</div>
+{{end}}
