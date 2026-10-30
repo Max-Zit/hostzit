@@ -202,6 +202,8 @@ type SecuritySettings struct {
 	WindowMinutes int  `json:"window_minutes"`
 	BlockMinutes  int  `json:"block_minutes"`
 	Customer2FA   bool `json:"customer_2fa"` // customers must use two-factor sign-in too
+	// FourEyes: deleting/terminating customers and deleting packages need a second administrator.
+	FourEyes bool `json:"four_eyes"`
 }
 
 // DefaultSecurity: short admin sessions, customers may choose 2FA.

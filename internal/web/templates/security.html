@@ -16,6 +16,7 @@
       <label>{{.T "Counting period (minutes)"}}<input type="number" name="window_minutes" value="{{.Data.X.WindowMinutes}}" min="1" max="1440" required></label>
       <label>{{.T "Block length (minutes)"}}<input type="number" name="block_minutes" value="{{.Data.X.BlockMinutes}}" min="1" max="10080" required><small>{{.T "Doubles for every repeated block within a day (up to 7 days)."}}</small></label>
     </div>
+    <label class="check"><input type="checkbox" name="four_eyes" {{if .Data.X.FourEyes}}checked{{end}}><span>{{.T "Four-eyes approval: a second administrator must approve deleting or terminating customers and deleting packages"}}</span></label>
     <label class="check"><input type="checkbox" name="customer_2fa" {{if .Data.X.Customer2FA}}checked{{end}}><span>{{.T "Customers must use two-factor sign-in too"}}</span></label>
     <p class="small muted">{{.T "Administrators always need two-factor sign-in; customers can switch it on in their panel. Sign-ins from the server itself (127.0.0.1) are never blocked."}}</p>
     <div><button class="primary">{{.T "Save"}}</button></div>

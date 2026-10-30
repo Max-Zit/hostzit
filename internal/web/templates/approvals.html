@@ -1,0 +1,19 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Approvals"}}</h1>
+<p class="muted small">{{.T "With four-eyes approval on (Settings → Sign-in and security), deleting or terminating customers and deleting packages wait here until a second administrator approves."}}</p>
+{{if .Data.List}}
+<div class="table-wrap"><table>
+  <thead><tr><th>{{.T "Action"}}</th><th>{{.T "Asked by"}}</th><th>{{.T "Status"}}</th><th></th></tr></thead>
+  <tbody>{{range .Data.List}}<tr>
+    <td><b>{{.Summary}}</b><br><span class="muted small">{{$.Time .RequestedAt}}</span></td>
+    <td>{{.RequestedBy}}{{with .DecidedBy}}<br><span class="muted small">{{$.T "decided by"}} {{.}}</span>{{end}}</td>
+    <td>{{template "badge" (st $ .Status)}}{{with .Result}}<br><span class="err-text small">{{.}}</span>{{end}}</td>
+    <td class="actions">{{if eq .Status "pending"}}{{if ne .RequestedBy $.Data.Me}}
+      <form method="post" action="/approvals/{{.ID}}/approve" data-confirm="{{$.T "Approve: %s?" .Summary}}"><button class="primary sm">{{$.T "Approve"}}</button></form>
+      <form method="post" action="/approvals/{{.ID}}/reject"><button class="ghost sm">{{$.T "Reject"}}</button></form>
+      {{else}}<span class="muted small">{{$.T "waiting for another administrator"}}</span>{{end}}{{end}}</td>
+  </tr>{{end}}</tbody>
+</table></div>
+{{else}}<div class="empty">{{template "icon" "audit"}}<p>{{.T "Nothing to approve."}}</p></div>{{end}}
+{{end}}

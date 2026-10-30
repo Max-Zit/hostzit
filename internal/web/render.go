@@ -97,6 +97,8 @@ type Page struct {
 	Customer *store.Customer
 	// Acting is the administrator working in this customer panel.
 	Acting string
+	// Approvals waiting (admin sidebar).
+	Approvals int
 	// MailURL is the linked EmailZit panel (product switch).
 	MailURL string
 	// Crumb is an optional link above the title.
@@ -285,6 +287,9 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, name
 	p.Panel = panelOf(r)
 	if p.User != nil {
 		p.MailURL = s.emailzitLink(r.Context()).URL
+		if p.User.IsAdmin() && panelOf(r) == PanelAdmin {
+			p.Approvals = s.store.PendingApprovals(r.Context())
+		}
 	}
 	if x := sessionFrom(r); x != nil {
 		p.Acting = x.ActingAdmin

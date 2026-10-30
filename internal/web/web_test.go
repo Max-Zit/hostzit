@@ -607,3 +607,36 @@ func TestEmailZitLink(t *testing.T) {
 		t.Fatal("no switch to EmailZit")
 	}
 }
+
+func TestFourEyes(t *testing.T) {
+	e := newEnv(t)
+	a := e.setupAdmin()
+	a.ok("/users", url.Values{"username": {"second"}, "password": {"second admin pw 1"}, "role": {"admin"}})
+	a.ok("/settings/security", url.Values{"session_hours": {"8"}, "idle_minutes": {"30"}, "max_attempts": {"5"}, "window_minutes": {"15"}, "block_minutes": {"30"}, "four_eyes": {"on"}})
+	a.ok("/packages/new", url.Values{"name": {"P"}, "slug": {"p"}, "max_sites": {"1"}, "max_dbs": {"1"}, "max_zones": {"1"}, "disk_mb": {"100"}, "inodes": {"0"},
+		"cpu_percent": {"0"}, "memory_mb": {"0"}, "processes": {"0"}, "io_weight": {"100"}, "php_workers": {"2"}, "php_memory_mb": {"128"}, "upload_mb": {"8"}, "mail_per_hour": {"0"}})
+	a.ok("/customers/new", url.Values{"username": {"victim"}, "package": {"1"}, "password": {"victim password 1"}})
+	c, _ := e.st.CustomerByRef(context.Background(), "victim")
+	a.ok("/customers/"+itoa(c.ID)+"/delete", url.Values{"confirm": {"victim"}})
+	if _, err := e.st.CustomerByRef(context.Background(), "victim"); err != nil {
+		t.Fatal("deleted without approval")
+	}
+	list, _ := e.st.Approvals(context.Background())
+	if len(list) != 1 || list[0].Status != "pending" {
+		t.Fatal(list)
+	}
+	if st, _, _ := a.post("/approvals/"+itoa(list[0].ID)+"/approve", url.Values{}); st != http.StatusSeeOther {
+		t.Fatal(st)
+	}
+	if _, err := e.st.CustomerByRef(context.Background(), "victim"); err != nil {
+		t.Fatal("the requester approved own request")
+	}
+	b := e.client(e.admin.URL)
+	b.ok("/login", url.Values{"username": {"second"}, "password": {"second admin pw 1"}})
+	b.ok("/account/password", url.Values{"current": {"second admin pw 1"}, "password": {"second admin pw 2"}, "password2": {"second admin pw 2"}})
+	b.page("/approvals")
+	b.ok("/approvals/"+itoa(list[0].ID)+"/approve", url.Values{})
+	if _, err := e.st.CustomerByRef(context.Background(), "victim"); err == nil {
+		t.Fatal("not deleted after approval")
+	}
+}

@@ -261,6 +261,10 @@ func (s *Server) handleCustomerStatus(w http.ResponseWriter, r *http.Request) {
 	if st == store.StatusSuspended && reason == "" {
 		reason = "admin"
 	}
+	if st == store.StatusTerminated && s.fourEyes(r.Context()) {
+		s.askApproval(w, r, back, "customer.terminate", "customer:"+c.Username, "Terminate the customer "+c.Username, map[string]string{"customer": strconv.FormatInt(c.ID, 10), "reason": reason})
+		return
+	}
 	err := s.setStatus(r.Context(), actor(r), c, st, reason)
 	s.audit(r, "customer.status", "customer:"+c.Username, "%s → %s (%s)", c.Status, st, reason)
 	if err != nil {
@@ -372,6 +376,11 @@ func (s *Server) handleCustomerDelete(w http.ResponseWriter, r *http.Request) {
 		s.redirectErr(w, r, "/customers/"+strconv.FormatInt(c.ID, 10), "Type the account name to confirm.")
 		return
 	}
+	if s.fourEyes(r.Context()) {
+		s.askApproval(w, r, "/customers/"+strconv.FormatInt(c.ID, 10), "customer.delete", "customer:"+c.Username, "Delete the customer "+c.Username+" with all files",
+			map[string]string{"customer": strconv.FormatInt(c.ID, 10)})
+		return
+	}
 	if err := s.deleteAccount(r.Context(), actor(r), c); err != nil {
 		s.redirectErr(w, r, "/customers/"+strconv.FormatInt(c.ID, 10), storeErr(err))
 		return
@@ -450,6 +459,10 @@ func (s *Server) handlePackageSave(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handlePackageDelete(w http.ResponseWriter, r *http.Request) {
 	id, _ := pathID(r, "id")
+	if s.fourEyes(r.Context()) {
+		s.askApproval(w, r, "/packages", "package.delete", "package:"+strconv.FormatInt(id, 10), "Delete package "+strconv.FormatInt(id, 10), map[string]string{"package": strconv.FormatInt(id, 10)})
+		return
+	}
 	if err := s.store.DeletePackage(r.Context(), id); err != nil {
 		s.redirectErr(w, r, "/packages", storeErr(err))
 		return

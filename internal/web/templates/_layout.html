@@ -53,6 +53,7 @@
     {{if .User.IsAdmin}}
     <span class="navlabel">{{.T "Administration"}}</span>
     <a href="/users" class="{{if eq .Nav "users"}}on{{end}}">{{template "icon" "key"}}{{.T "Administrators"}}</a>
+    <a href="/approvals" class="{{if eq .Nav "approvals"}}on{{end}}">{{template "icon" "check"}}{{.T "Approvals"}}{{if .Approvals}} <span class="navcount warn">{{.Approvals}}</span>{{end}}</a>
     <a href="/audit" class="{{if eq .Nav "audit"}}on{{end}}">{{template "icon" "audit"}}{{.T "Audit log"}}</a>
     <a href="/settings/hosting" class="{{if eq .Nav "settings"}}on{{end}}">{{template "icon" "settings"}}{{.T "Settings"}}</a>
     {{end}}

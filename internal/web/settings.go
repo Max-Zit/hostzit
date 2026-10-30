@@ -40,10 +40,24 @@ func formInt(r *http.Request, k string) int {
 
 func (s *Server) handleSecuritySave(w http.ResponseWriter, r *http.Request) {
 	x := SecuritySettings{SessionHours: formInt(r, "session_hours"), IdleMinutes: formInt(r, "idle_minutes"), MaxAttempts: formInt(r, "max_attempts"),
-		WindowMinutes: formInt(r, "window_minutes"), BlockMinutes: formInt(r, "block_minutes"), Customer2FA: r.FormValue("customer_2fa") != ""}
+		WindowMinutes: formInt(r, "window_minutes"), BlockMinutes: formInt(r, "block_minutes"), Customer2FA: r.FormValue("customer_2fa") != "", FourEyes: r.FormValue("four_eyes") != ""}
 	if err := x.Validate(); err != nil {
 		s.showSecurity(w, r, http.StatusBadRequest, x, err.Error())
 		return
+	}
+	if x.FourEyes {
+		admins := 0
+		if us, err := s.store.Users(r.Context()); err == nil {
+			for _, u := range us {
+				if u.IsAdmin() && !u.Disabled {
+					admins++
+				}
+			}
+		}
+		if admins < 2 {
+			s.showSecurity(w, r, http.StatusBadRequest, x, "Four-eyes approval needs at least two administrators.")
+			return
+		}
 	}
 	if err := s.store.SetSetting(r.Context(), settingSecurity, x); err != nil {
 		s.serverError(w, r, err)
