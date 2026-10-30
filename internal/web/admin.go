@@ -334,6 +334,10 @@ func (s *Server) handleCustomerReset2FA(w http.ResponseWriter, r *http.Request) 
 
 // panelURL is where customers reach their panel.
 func (s *Server) panelURL(ctx context.Context, r *http.Request) string {
+	// development: the admin panel over plain HTTP links to the customer one
+	if r.TLS == nil && s.DevPanelHTTP != "" {
+		return "http://" + s.DevPanelHTTP
+	}
 	if u := s.hostingSettings(ctx).PanelURL; u != "" {
 		return u
 	}

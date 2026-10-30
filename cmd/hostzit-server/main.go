@@ -165,6 +165,7 @@ func run() error {
 	srv.Version = version
 	srv.DataDir = *dataDir
 	srv.LoadPanelCert()
+	srv.DevPanelHTTP = *devPanelHTTP
 	if challenges != "" {
 		srv.ACMEChallengeDir = challenges
 	}

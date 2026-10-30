@@ -58,8 +58,10 @@ type Server struct {
 	Version                    string
 	SetupTokenFile             string
 	DevNo2FA                   bool
-	setupToken                 string
-	DataDir                    string
+	// DevPanelHTTP is the plain-HTTP customer panel of development (--dev-http-panel).
+	DevPanelHTTP string
+	setupToken   string
+	DataDir      string
 	// ACMEChallengeDir is where HTTP-01 answers are written (shared with nginx).
 	ACMEChallengeDir string
 
