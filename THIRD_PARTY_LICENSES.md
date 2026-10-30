@@ -8,7 +8,7 @@ Its programs contain the following components under their own licenses, all comp
 | Go standard library and runtime | go1.27.3 | BSD-3-Clause |
 | github.com/coreos/go-oidc/v3 | v3.21.0 | Apache-2.0 |
 | github.com/fergusstrange/embedded-postgres | v1.34.0 | MIT |
-| github.com/go-jose/go-jose/v4 | v4.1.4 | Apache-2.0 |
+| github.com/go-jose/go-jose/v4 | v4.1.6 | Apache-2.0 |
 | github.com/jackc/pgpassfile | v1.0.0 | MIT |
 | github.com/jackc/pgservicefile | v0.0.0-20240606120523-5a60cdf6a761 | MIT |
 | github.com/jackc/pgx/v5 | v5.11.0 | MIT |
@@ -293,7 +293,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## github.com/go-jose/go-jose/v4 v4.1.4 (Apache-2.0)
+## github.com/go-jose/go-jose/v4 v4.1.6 (Apache-2.0)
 
 ```
 Apache License
