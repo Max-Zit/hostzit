@@ -460,3 +460,36 @@ func TestApplianceNetwork(t *testing.T) {
 		t.Fatal("unknown power action accepted")
 	}
 }
+
+func TestDBQuery(t *testing.T) {
+	out := []byte(`<?xml version="1.0"?>
+<resultset statement="SELECT id, name FROM t" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <row>
+	<field name="id">1</field>
+	<field name="name">a &amp; b</field>
+  </row>
+  <row>
+	<field name="id">2</field>
+	<field name="name" xsi:nil="true" />
+  </row>
+</resultset>
+<resultset statement="UPDATE t SET x=1"></resultset>
+`)
+	sets, err := parseResultSets(out)
+	if err != nil || len(sets) != 2 || len(sets[0].Rows) != 2 || sets[0].Columns[1] != "name" || *sets[0].Rows[0][1] != "a & b" || sets[0].Rows[1][1] != nil {
+		t.Fatalf("sets %+v err %v", sets, err)
+	}
+	h, fr, _, _ := newTest(t)
+	if r := call(t, h, "db.query", dbQueryArgs{Account: "shop", DBs: []string{"shop_wp"}, DB: "other_wp", SQL: "SELECT 1"}); r.OK {
+		t.Fatal("query in a database of another account")
+	}
+	if r := call(t, h, "db.query", dbQueryArgs{Account: "shop", DBs: []string{"other_wp"}, SQL: "SELECT 1"}); r.OK {
+		t.Fatal("grant on a database of another account")
+	}
+	if r := call(t, h, "db.query", dbQueryArgs{Account: "shop", DBs: []string{"shop_wp"}, DB: "shop_wp", SQL: "SELECT 1"}); !r.OK {
+		t.Fatalf("query: %+v", r)
+	}
+	if !fr.has("GRANT ALL PRIVILEGES ON `shop\\_wp`.* TO 'hzq_shop_") || !fr.has("DROP USER IF EXISTS 'hzq_shop_") {
+		t.Fatalf("temporary user not made and dropped: %v", fr.calls)
+	}
+}

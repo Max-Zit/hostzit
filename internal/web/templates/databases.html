@@ -17,7 +17,7 @@
   <div class="table-wrap"><table>
     <thead><tr><th>{{.T "Name"}}</th><th class="num">{{.T "Size"}}</th><th class="hide-sm">{{.T "Users"}}</th><th></th></tr></thead>
     <tbody>{{range .Data.DBs}}<tr><td class="mono">{{.Name}}</td><td class="num">{{bytes .SizeB}}</td><td class="hide-sm mono small">{{join .Users ", "}}</td>
-      <td class="actions"><form method="post" action="/databases/{{.Name}}/delete" class="row"><input name="confirm" required placeholder="{{.Name}}" aria-label="{{$.T "Type the database name to confirm."}}" class="num-sm" autocomplete="off"><button class="ghost sm danger">{{template "icon" "trash"}}</button></form></td></tr>{{end}}</tbody>
+      <td class="actions"><a class="btn ghost sm" href="/databases/{{.Name}}/manage">{{template "icon" "database"}}{{$.T "Open"}}</a> <form method="post" action="/databases/{{.Name}}/delete" class="row"><input name="confirm" required placeholder="{{.Name}}" aria-label="{{$.T "Type the database name to confirm."}}" class="num-sm" autocomplete="off"><button class="ghost sm danger">{{template "icon" "trash"}}</button></form></td></tr>{{end}}</tbody>
   </table></div>
   {{else}}<p class="muted">{{.T "No databases yet."}}</p>{{end}}
   <form method="post" action="/databases" class="row mt">

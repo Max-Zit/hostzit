@@ -399,6 +399,7 @@ var assetVersion = func() string {
 
 func init() {
 	funcs["list"] = func(xs ...string) []string { return xs }
+	funcs["add"] = func(a, b int) int { return a + b }
 	funcs["inStrings"] = func(xs []string, x string) bool { return slices.Contains(xs, x) }
 	funcs["kb"] = func(kb int64) string { return humanBytes(kb * 1024) }
 	funcs["bytes"] = func(v any) string {

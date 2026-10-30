@@ -1,0 +1,65 @@
+{{template "app" .}}
+{{define "content"}}
+{{$d := .Data}}{{$base := printf "/databases/%s/manage" $d.DB}}
+<h1>{{template "icon" "database"}}<span class="mono">{{$d.DB}}</span></h1>
+<nav class="tabs" aria-label="{{.T "Database"}}">
+  <a href="{{$base}}" class="{{if or (eq $d.View "tables") (and $d.Table (ne $d.View "sql"))}}on{{end}}">{{.T "Tables"}}</a>
+  <a href="{{$base}}?view=sql" class="{{if eq $d.View "sql"}}on{{end}}">SQL</a>
+</nav>
+{{if $d.Error}}<div class="flash err" role="alert">{{template "icon" "alert"}}<span class="mono small">{{$d.Error}}</span></div>{{end}}
+
+{{if eq $d.View "sql"}}
+<section class="panel">
+  <form method="post" action="{{$base}}" class="stack">
+    <label>{{.T "SQL statements"}}<textarea name="sql" rows="8" class="mono" spellcheck="false" placeholder="SELECT * FROM wp_options WHERE option_name = 'siteurl';">{{$d.SQL}}</textarea>
+      <small>{{.T "Runs in this database with the rights of its owner; at most 1000 rows per statement are shown and every statement stops after 30 seconds."}}</small></label>
+    <div><button class="primary">{{.T "Run"}}</button></div>
+  </form>
+</section>
+{{if $d.Ran}}{{template "resultsets" .}}{{if and (not $d.Sets) (not $d.Error)}}<p class="muted">{{.T "Done."}}</p>{{end}}{{end}}
+
+{{else if $d.Table}}
+<section class="panel">
+  <h2 class="row"><span class="mono">{{$d.Table}}</span>
+    <a class="btn {{if eq $d.View "rows"}}primary{{else}}ghost{{end}} sm" href="{{$base}}?table={{$d.Table}}">{{.T "Rows"}}</a>
+    <a class="btn {{if eq $d.View "structure"}}primary{{else}}ghost{{end}} sm" href="{{$base}}?table={{$d.Table}}&amp;view=structure">{{.T "Structure"}}</a>
+  </h2>
+  {{if eq $d.View "rows"}}{{if gt $d.Pages 1}}<p class="row small">{{if gt $d.Page 1}}<a class="btn ghost sm" href="{{$base}}?table={{$d.Table}}&amp;page={{add $d.Page -1}}">{{template "icon" "chevl"}}</a>{{end}}
+    <span>{{.T "Page %d of %d" $d.Page $d.Pages}}</span>
+    {{if lt $d.Page $d.Pages}}<a class="btn ghost sm" href="{{$base}}?table={{$d.Table}}&amp;page={{add $d.Page 1}}">{{template "icon" "chevr"}}</a>{{end}}</p>{{end}}{{end}}
+</section>
+{{template "resultsets" .}}
+
+{{else}}
+<section class="panel">
+  <h2>{{.T "Tables"}} <span class="muted small">{{len $d.Tables}}</span></h2>
+  {{if $d.Tables}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Name"}}</th><th class="num">{{.T "Rows"}}</th><th class="num">{{.T "Size"}}</th><th class="hide-sm">{{.T "Engine"}}</th><th></th></tr></thead>
+    <tbody>{{range $d.Tables}}<tr>
+      <td class="mono"><a href="{{$base}}?table={{.Name}}">{{.Name}}</a></td><td class="num">{{.Rows}}</td><td class="num">{{bytes .SizeB}}</td><td class="hide-sm small muted">{{.Engine}}</td>
+      <td class="actions"><a class="btn ghost sm" href="{{$base}}?table={{.Name}}&amp;view=structure">{{$.T "Structure"}}</a></td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<p class="muted">{{.T "The database has no tables yet."}}</p>{{end}}
+</section>
+<section class="panel">
+  <h2>{{template "icon" "download"}}{{.T "Export"}}</h2>
+  <p class="muted small">{{.T "A dump of the whole database (SQL, gzip) is written to the folder backups of your account; download it in Files. Import it again under Databases or with any MySQL tool."}}</p>
+  <form method="post" action="/databases/{{$d.DB}}/export"><button class="secondary">{{template "icon" "download"}}{{.T "Export the database"}}</button></form>
+</section>
+{{end}}
+{{end}}
+
+{{define "resultsets"}}{{range .Data.Sets}}
+<section class="panel">
+  {{if .Statement}}<p class="mono small muted">{{.Statement}}</p>{{end}}
+  {{if .Columns}}
+  <div class="table-wrap dbgrid"><table>
+    <thead><tr>{{range .Columns}}<th class="mono">{{.}}</th>{{end}}</tr></thead>
+    <tbody>{{range .Rows}}<tr>{{range .}}<td class="mono small">{{if .}}{{.}}{{else}}<span class="muted">NULL</span>{{end}}</td>{{end}}</tr>{{end}}</tbody>
+  </table></div>
+  <p class="small muted">{{$.T "%d rows" (len .Rows)}}{{if .Truncated}} · {{$.T "only the first 1000 rows are shown"}}{{end}}</p>
+  {{else}}<p class="small muted">{{$.T "No rows."}}</p>{{end}}
+</section>
+{{end}}{{end}}
