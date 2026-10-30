@@ -27,12 +27,12 @@
 <p>For one customer only, choose <b>Dedicated server</b> under Settings → Hosting. Package limits are then not applied; the isolation and security stay the same.</p>
 
 <h2 id="appliance">Appliance (VM image or ISO)</h2>
-<p>Instead of the installer you can start from the HostZit appliance: Debian 13 with everything HostZit needs, set up by itself at the first start. Each release has</p>
+<p>Instead of the installer you can start from the HostZit appliance: Debian 13 with everything HostZit needs, set up by itself at the first start. The newest release has (under https://github.com/Max-Zit/hostzit/releases/latest)</p>
 <ul>
-  <li><code>hostzit-appliance-X.ova</code> for VMware ESXi, Workstation and VirtualBox,</li>
-  <li><code>hostzit-appliance-X.qcow2</code> for Proxmox VE and KVM,</li>
-  <li><code>hostzit-appliance-X.vhdx</code> for Hyper-V (generation 1),</li>
-  <li><code>hostzit-appliance-X.iso</code> for physical servers and new VMs (erases the first disk).</li>
+  <li><code>hostzit-appliance.ova</code> for VMware ESXi, Workstation and VirtualBox,</li>
+  <li><code>hostzit-appliance.qcow2</code> for Proxmox VE and KVM,</li>
+  <li><code>hostzit-appliance-vhdx.zip</code> for Hyper-V (generation 1),</li>
+  <li><code>hostzit-appliance.iso</code> for physical servers and new VMs (erases the first disk).</li>
 </ul>
 <p>The VM disk is 32 GB; enlarge it in the virtualization host whenever you like, the appliance grows its file system at the next start. After the first start (a few minutes) the screen of the VM shows the addresses of both panels and the setup token.</p>
 <p>On the server's screen, sign in as <code>hzadmin</code> (first password <code>hostzit</code>, it must be changed): a menu sets the network, host name and time zone. In the admin panel the same is under <b>Settings → System</b>, together with restart and shut down. A static address whose gateway does not answer is not kept: the previous settings come back by themselves.</p>

@@ -27,12 +27,12 @@
 <p>Za samo jednog korisnika izaberite <b>Dedikovan server</b> u Podešavanja → Hosting. Ograničenja paketa se tada ne primenjuju; izolacija i bezbednost ostaju iste.</p>
 
 <h2 id="appliance">Appliance (VM slika ili ISO)</h2>
-<p>Umesto instalacione skripte možete krenuti od HostZit appliance-a: Debian 13 sa svim što HostZit treba, koji se sam podesi pri prvom pokretanju. Svako izdanje ima</p>
+<p>Umesto instalacione skripte možete krenuti od HostZit appliance-a: Debian 13 sa svim što HostZit treba, koji se sam podesi pri prvom pokretanju. Najnovije izdanje ima (na https://github.com/Max-Zit/hostzit/releases/latest)</p>
 <ul>
-  <li><code>hostzit-appliance-X.ova</code> za VMware ESXi, Workstation i VirtualBox,</li>
-  <li><code>hostzit-appliance-X.qcow2</code> za Proxmox VE i KVM,</li>
-  <li><code>hostzit-appliance-X.vhdx</code> za Hyper-V (generacija 1),</li>
-  <li><code>hostzit-appliance-X.iso</code> za fizičke servere i nove VM (briše prvi disk).</li>
+  <li><code>hostzit-appliance.ova</code> za VMware ESXi, Workstation i VirtualBox,</li>
+  <li><code>hostzit-appliance.qcow2</code> za Proxmox VE i KVM,</li>
+  <li><code>hostzit-appliance-vhdx.zip</code> za Hyper-V (generacija 1),</li>
+  <li><code>hostzit-appliance.iso</code> za fizičke servere i nove VM (briše prvi disk).</li>
 </ul>
 <p>Disk VM-a je 32 GB; povećajte ga na hostu za virtuelizaciju kad god želite, appliance proširi fajl sistem pri sledećem pokretanju. Posle prvog pokretanja (nekoliko minuta) ekran VM-a prikazuje adrese oba panela i setup token.</p>
 <p>Na ekranu servera prijavite se kao <code>hzadmin</code> (prva lozinka <code>hostzit</code>, mora se promeniti): meni podešava mrežu, ime hosta i vremensku zonu. U admin panelu je isto u <b>Podešavanja → Sistem</b>, zajedno sa restartom i gašenjem. Statička adresa čiji gateway ne odgovara se ne zadržava: prethodna podešavanja se sama vraćaju.</p>
