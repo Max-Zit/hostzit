@@ -1,1 +1,29 @@
-<h2>Start</h2><p>x</p>
+<h1>Getting started</h1>
+<p class="lead">HostZit is a self-hosted web hosting control panel. The <b>admin panel</b> runs the server (customers, packages, DNS, updates); every customer manages their own websites, domains, databases, files and WordPress in the <b>customer panel</b>. It is free software under the AGPL-3.0.</p>
+
+<h2 id="what">What HostZit does</h2>
+<table>
+  <tr><th>Area</th><th>What you get</th></tr>
+  <tr><td>Accounts</td><td>Each customer is an isolated account with its own limits; shared hosting for many customers or a dedicated server for one. <a href="/docs/customers">Customers and packages</a></td></tr>
+  <tr><td>Websites</td><td>nginx and PHP-FPM, free HTTPS certificates, HTTP/2 and HTTP/3, redirects, a page cache per site. <a href="/docs/sites">Websites</a></td></tr>
+  <tr><td>DNS</td><td>Authoritative name servers with an editor and DNSSEC. <a href="/docs/dns">Domains and DNS</a></td></tr>
+  <tr><td>WordPress</td><td>Install, one-click sign-in, updates with snapshots, staging copies. <a href="/docs/wordpress">WordPress</a></td></tr>
+  <tr><td>Security</td><td>Isolation between accounts, firewall, rate limits, malware scans, two-factor sign-in. <a href="/docs/security">Isolation and security</a></td></tr>
+  <tr><td>Billing</td><td>A REST API for your billing system or portal. <a href="/docs/api">REST API</a></td></tr>
+</table>
+
+<h2 id="how">How it works</h2>
+<ul>
+  <li><b>hostzit-server</b> serves both panels and the API. It runs as the unprivileged user <code>hostzit</code>: the admin panel on port <b>8442</b>, the customer panel on <b>8443</b>.</li>
+  <li><b>hostzit-helper</b> is the only part that runs as root. It accepts a short list of checked operations from the panel and writes the configuration of nginx, PHP, DNS and the accounts from its own templates.</li>
+  <li>Every change is written to the tamper-evident <a href="/audit">audit log</a>.</li>
+</ul>
+
+<h2 id="first-steps">First steps</h2>
+<ol>
+  <li><b>Install</b> HostZit on a fresh Debian server — <a href="/docs/install">Installing the server</a>.</li>
+  <li><b>Create the first administrator</b> with the setup token the installer shows, and set up two-factor sign-in.</li>
+  <li>Open <b>Settings → Hosting</b>: the server name, its IP address, the name servers and Let's Encrypt.</li>
+  <li>Create a <b>package</b> (disk space, CPU, memory, websites, databases) under <a href="/packages">Packages</a>.</li>
+  <li>Create the first <b>customer</b> with a domain under <a href="/customers">Customers</a>, or import a cPanel backup under <b>Import</b>.</li>
+</ol>

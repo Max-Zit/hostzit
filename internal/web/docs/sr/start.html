@@ -1,0 +1,29 @@
+<h1>Prvi koraci</h1>
+<p class="lead">HostZit je kontrolni panel za web hosting koji radi na vašem serveru. U <b>admin panelu</b> upravljate serverom (korisnici, paketi, DNS, ažuriranja), a svaki korisnik u <b>korisničkom panelu</b> uređuje svoje sajtove, domene, baze, fajlove i WordPress. Slobodan je softver pod licencom AGPL-3.0.</p>
+
+<h2 id="what">Šta HostZit radi</h2>
+<table>
+  <tr><th>Oblast</th><th>Šta dobijate</th></tr>
+  <tr><td>Nalozi</td><td>Svaki korisnik je izolovan nalog sa svojim ograničenjima; deljeni hosting za mnogo korisnika ili dedikovan server za jednog. <a href="/docs/customers">Korisnici i paketi</a></td></tr>
+  <tr><td>Sajtovi</td><td>nginx i PHP-FPM, besplatni HTTPS sertifikati, HTTP/2 i HTTP/3, preusmeravanja, keš stranica po sajtu. <a href="/docs/sites">Sajtovi</a></td></tr>
+  <tr><td>DNS</td><td>Autoritativni name serveri sa editorom i DNSSEC-om. <a href="/docs/dns">Domeni i DNS</a></td></tr>
+  <tr><td>WordPress</td><td>Instalacija, prijava jednim klikom, ažuriranja sa snimcima, staging kopije. <a href="/docs/wordpress">WordPress</a></td></tr>
+  <tr><td>Bezbednost</td><td>Izolacija naloga, firewall, ograničenja pokušaja, skeniranje malvera, prijava u dva koraka. <a href="/docs/security">Izolacija i bezbednost</a></td></tr>
+  <tr><td>Naplata</td><td>REST API za vaš sistem naplate ili portal. <a href="/docs/api">REST API</a></td></tr>
+</table>
+
+<h2 id="how">Kako radi</h2>
+<ul>
+  <li><b>hostzit-server</b> služi oba panela i API. Radi kao neprivilegovani korisnik <code>hostzit</code>: admin panel na portu <b>8442</b>, korisnički na <b>8443</b>.</li>
+  <li><b>hostzit-helper</b> je jedini deo koji radi kao root. Prihvata kratak spisak proverenih operacija od panela i piše konfiguraciju nginx-a, PHP-a, DNS-a i naloga iz sopstvenih šablona.</li>
+  <li>Svaka promena se upisuje u <a href="/audit">audit log</a> koji se ne može neprimetno menjati.</li>
+</ul>
+
+<h2 id="first-steps">Prvi koraci</h2>
+<ol>
+  <li><b>Instalirajte</b> HostZit na nov Debian server — <a href="/docs/install">Instalacija servera</a>.</li>
+  <li><b>Napravite prvog administratora</b> pomoću setup tokena koji instalacija prikaže i podesite prijavu u dva koraka.</li>
+  <li>Otvorite <b>Podešavanja → Hosting</b>: ime servera, IP adresa, name serveri i Let's Encrypt.</li>
+  <li>Napravite <b>paket</b> (prostor, CPU, memorija, sajtovi, baze) u <a href="/packages">Paketima</a>.</li>
+  <li>Napravite prvog <b>korisnika</b> sa domenom u <a href="/customers">Korisnicima</a> ili uvezite cPanel backup u <b>Uvozu</b>.</li>
+</ol>

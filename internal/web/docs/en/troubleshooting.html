@@ -1,0 +1,19 @@
+<h1>Troubleshooting and FAQ</h1>
+
+<h2 id="cert">The website has no certificate</h2>
+<p>The domain (and www) must point to the server's address in DNS, port 80 must be reachable, and Let's Encrypt must be on under Settings → Hosting. The website page shows the last error; HostZit tries again every few hours.</p>
+
+<h2 id="502">A website shows 502 or 503</h2>
+<p>502: PHP of the account is not running — use <b>Set up again</b> on the customer page; the account may be suspended or out of memory (see <b>Usage</b>). 503 with "temporarily unavailable": the account is suspended.</p>
+
+<h2 id="slow">The website is slow</h2>
+<p>Switch on the page cache, check the PHP workers and memory of the package and the CPU graph under <b>Usage</b>. A limit that is reached slows the account down instead of the whole server.</p>
+
+<h2 id="mail">Mail from a website does not arrive</h2>
+<p>Look at the queue under <b>Security</b> (customer) — messages above the hourly limit wait; check that a relay is set in Settings → Notifications with "Mail from websites" on.</p>
+
+<h2 id="locked">I locked myself out</h2>
+<p>On the server: <code>hostzit-server --unblock-ip all</code> and <code>hostzit-server --reset-allowlist</code>, then restart the service. A lost authenticator: another administrator resets the second factor; with only one administrator, use a recovery code.</p>
+
+<h2 id="logs">Logs</h2>
+<p>Panel: <code>/var/lib/hostzit/panel/logs/server.log</code>; helper: <code>/var/log/hostzit/helper.log</code>; websites: <code>/var/log/hostzit/sites/ID/</code>; firewall: <code>/var/log/hostzit/modsec_audit.log</code>.</p>

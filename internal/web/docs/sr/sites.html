@@ -1,0 +1,29 @@
+<h1>Sajtovi, PHP i keš stranica</h1>
+<p class="lead">Sajt je domen (sa www i drugim aliasima) koji se služi iz foldera naloga, podrazumevano <code>~/sites/DOMEN/public</code>.</p>
+
+<h2 id="new">Nov sajt</h2>
+<p>Unesite domen u <b>Sajtovi → Nov sajt</b>. HostZit pravi folder sa prvom stranicom, konfiguraciju web servera i, ako želite, DNS zonu. Usmerite domen na server (ili postavite name servere kod registra); besplatan <b>Let's Encrypt</b> sertifikat stiže sam i obnavlja se 30 dana pre isteka.</p>
+
+<h2 id="settings">Podešavanja</h2>
+<ul>
+  <li><b>Verzija PHP-a</b> po sajtu.</li>
+  <li><b>Glavna adresa</b>: sa ili bez www; druga se preusmerava.</li>
+  <li><b>Preusmeri HTTP na HTTPS</b> i <b>HSTS</b>.</li>
+  <li><b>Preusmeravanja</b>: jedno po redu, npr. <code>/staro /novo 301</code>.</li>
+  <li><b>Aliasi</b>: drugi domeni koji prikazuju isti sajt.</li>
+  <li><b>Sopstveni sertifikat</b>: nalepite sertifikat i ključ umesto Let's Encrypt-a.</li>
+</ul>
+
+<h2 id="cache">Keš stranica</h2>
+<p>Kada je <b>keš stranica</b> uključen, web server čuva gotove stranice i odgovara posetiocima bez pokretanja PHP-a: stranice su mnogo brže, a server ima daleko manje posla. Prijavljeni korisnici, WordPress admin, autori komentara, korpe, forme (POST) i adrese sa upitom uvek dobijaju sveže stranice. Stranice se čuvaju koliko izaberete; <b>Očisti keš</b> briše sve odjednom (posle izmene dizajna ili sadržaja). Zaglavlje odgovora <code>X-Cache</code> pokazuje HIT, MISS ili BYPASS.</p>
+
+<h2 id="access">Pristup i zaštita</h2>
+<ul>
+  <li><b>Web aplikacioni firewall</b> (ModSecurity sa OWASP Core Rule Set-om, podešen za WordPress) blokira SQL injection, cross-site scripting i skenere.</li>
+  <li><b>Samo ove adrese</b> / <b>Blokirane adrese</b>: IP pravila za ceo sajt.</li>
+  <li><b>Zaštita od hotlinkovanja</b>: drugi sajtovi ne mogu da ugrađuju vaše slike i video.</li>
+  <li><b>Folderi pod lozinkom</b>: posetioci foldera moraju da unesu korisničko ime i lozinku.</li>
+</ul>
+
+<h2 id="logs">Logovi</h2>
+<p><b>Logovi</b> prikazuju poslednje posete i greške sajta; PHP greške su u <code>~/logs/php-error.log</code>.</p>

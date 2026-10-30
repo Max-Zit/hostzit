@@ -1,0 +1,27 @@
+<h1>Installing the server</h1>
+<p class="lead">HostZit runs on <b>Debian 13</b> (or 12) with systemd and cgroups v2. Use a fresh server: the installer configures nginx, PHP, MariaDB, PowerDNS and SSH for hosting.</p>
+
+<h2 id="requirements">Requirements</h2>
+<ul>
+  <li>2 CPU cores and 2 GB of memory for a few accounts; for many WordPress sites plan about 10–20 MB of memory per account plus the visitors' PHP requests. 500 accounts fit on a server with 16–32 GB.</li>
+  <li>A public IPv4 address (IPv6 optional) and a host name such as <code>host1.example.com</code>.</li>
+  <li>For DNS hosting: two name server names (<code>ns1</code>, <code>ns2</code>) with glue records at the registrar of your domain.</li>
+  <li>User quotas on the file system of <code>/home</code> (ext4 or XFS) so disk limits are enforced; the installer switches them on for ext4.</li>
+</ul>
+
+<h2 id="install">Install</h2>
+<pre>curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash</pre>
+<p>The installer checks the signature of the release, installs the packages, creates the database and prints the address of the admin panel and the <b>setup token</b>. Options: <code>--version X.Y.Z</code>, <code>--php "8.3 8.4"</code>, <code>--no-dns</code>.</p>
+
+<h2 id="ports">Ports</h2>
+<table>
+  <tr><th>Port</th><th>Use</th></tr>
+  <tr><td>80, 443 (TCP and UDP)</td><td>websites (HTTP, HTTPS, HTTP/3)</td></tr>
+  <tr><td>53 (TCP and UDP)</td><td>DNS</td></tr>
+  <tr><td>22</td><td>SSH and SFTP of the customers</td></tr>
+  <tr><td>8443</td><td>customer panel</td></tr>
+  <tr><td>8442</td><td>admin panel — allow it only from your own networks</td></tr>
+</table>
+
+<h2 id="dedicated">Dedicated server</h2>
+<p>For one customer only, choose <b>Dedicated server</b> under Settings → Hosting. Package limits are then not applied; the isolation and security stay the same.</p>

@@ -1,0 +1,27 @@
+<h1>Korisnici i paketi</h1>
+<p class="lead"><b>Paket</b> je plan sa ograničenjima; <b>korisnik</b> je hosting nalog na paketu. Svaki korisnik je svoj Linux korisnik, pa su njegovi sajtovi, fajlovi i procesi odvojeni od svih ostalih.</p>
+
+<h2 id="packages">Paketi</h2>
+<ul>
+  <li><b>Prostor na disku</b> i <b>broj fajlova</b> važe kroz disk kvote.</li>
+  <li><b>CPU</b> (100 % = jedno jezgro), <b>memorija</b>, <b>procesi</b> i <b>prioritet diska</b> važe za sve što nalog pokreće: PHP, cron, SSH i alate.</li>
+  <li><b>PHP radnici</b> ograničavaju koliko zahteva PHP obrađuje istovremeno; <b>memorija po zahtevu</b> i <b>najveći upload</b> idu u podešavanja PHP-a.</li>
+  <li><b>Mejlova na sat</b> ograničava mejl sa sajtova.</li>
+  <li><b>SSH</b> daje pristup ljusci; bez njega korisnik ima samo SFTP.</li>
+</ul>
+<p>Promena paketa odmah primenjuje nova ograničenja na sve njegove korisnike.</p>
+
+<h2 id="customers">Korisnici</h2>
+<ul>
+  <li><b>Ime naloga</b>: 3–16 malih slova i cifara. To je Linux korisnik, SFTP prijava i prefiks baza (<code>shop_wp</code>).</li>
+  <li><b>Suspenduj</b>: sajtovi prikazuju stranicu „privremeno nedostupno", PHP i prijava korisnika staju. <b>Ukloni suspenziju</b> vraća sve.</li>
+  <li><b>Ugasi</b>: kao suspenzija; fajlovi se brišu posle perioda čekanja (Podešavanja → Hosting).</li>
+  <li><b>Otvori korisnički panel</b> vas prijavljuje kao korisnika uz obaveštenje; sve što uradite beleži se sa vašim imenom.</li>
+  <li><b>Podesi ponovo</b> ponovo upisuje sistemsku konfiguraciju naloga (posle obnove ili ručne izmene).</li>
+</ul>
+
+<h2 id="import">Uvoz iz cPanel-a</h2>
+<p>Kopirajte pune cPanel backup-e (<code>cpmove-KORISNIK.tar.gz</code>) u <code>/var/lib/hostzit/import</code> i pokrenite uvoz u <b>Uvozu</b>. HostZit pravi nalog i prebacuje sajtove (glavni, addon, sub i parked domeni), baze sa korisnicima i lozinkama, DNS zone (sa novom adresom servera) i cron poslove. Zadržite isto ime naloga da podešavanja baza u sajtovima ostanu ispravna. Ostatak starog home foldera je u <code>~/cpanel-home</code>.</p>
+
+<h2 id="approval">Odobrenje u četiri oka</h2>
+<p>Kada je uključeno <b>odobrenje u četiri oka</b> (Podešavanja → Prijava i bezbednost), brisanje ili gašenje korisnika i brisanje paketa čekaju u <b>Odobrenjima</b> dok ih drugi administrator ne odobri.</p>

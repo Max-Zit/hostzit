@@ -1,0 +1,27 @@
+<h1>Korisnici panela, podešavanja i ažuriranja</h1>
+
+<h2 id="users">Administratori</h2>
+<p>U <b>Administratorima</b>: <b>administratori</b> rade sve, <b>operateri</b> upravljaju korisnicima, sajtovima i DNS-om, <b>posmatrači</b> samo gledaju (podrška). Svaki administrator se prijavljuje u dva koraka; dodajte e-mail adresu za kompanijsku prijavu i obaveštenja.</p>
+
+<h2 id="settings">Podešavanja</h2>
+<ul>
+  <li><b>Hosting</b>: deljeni ili dedikovan, ime servera, IP adrese, name serveri, sekundarni name serveri, podrazumevani PHP, Let's Encrypt, period čekanja ugašenih korisnika.</li>
+  <li><b>Mreža i pristup</b>: portovi i dozvoljene mreže oba panela.</li>
+  <li><b>Prijava i bezbednost</b>: trajanje sesije, blokiranje prijava, prijava u dva koraka za korisnike, odobrenje u četiri oka, adrese blokirane za ceo server.</li>
+  <li><b>Kompanijska prijava</b>: OpenID Connect za administratore.</li>
+  <li><b>Ažuriranja</b>: provera i instalacija potpisanih novih verzija; kanal zvanični ili testni.</li>
+  <li><b>Rezervna kopija panela</b>: noćne šifrovane kopije baze panela i ključeva.</li>
+  <li><b>EmailZit</b>: veza sa mejl hostingom.</li>
+  <li><b>Obaveštenja</b>: SMTP server za obaveštenja i za mejl sa sajtova.</li>
+</ul>
+
+<h2 id="updates">Ažuriranja</h2>
+<p>Izdanja potpisuje MaxZit. Server instalira izdanje samo ako se potpis i kontrolni zbir slažu; baza panela se prvo sačuva. Sajtovi rade i tokom ažuriranja.</p>
+
+<h2 id="restore">Obnova panela</h2>
+<p>Na novom serveru: instalirajte HostZit, zaustavite <code>hostzit-server</code>, pokrenite <code>hostzit-server --restore FAJL.hzb</code> (traži se lozinka kopije), pokrenite servis i za svakog korisnika kliknite <b>Podesi ponovo</b>. Fajlovi i baze korisnika dolaze iz njihovih rezervnih kopija.</p>
+
+<h2 id="cli">Komandna linija</h2>
+<pre>hostzit-server --unblock-ip ADRESA|all       ukida blokadu prijave
+hostzit-server --reset-allowlist             ponovo dozvoljava admin panel iz privatnih mreža
+/usr/lib/hostzit/hostzit-helper ops          spisak operacija helpera</pre>

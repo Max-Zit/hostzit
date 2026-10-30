@@ -1,0 +1,25 @@
+<h1>Izolacija i bezbednost</h1>
+<p class="lead">Hosting server pokreće tuđi kod, pa HostZit svaki nalog tretira kao moguće kompromitovan i razdvaja naloge u više slojeva.</p>
+
+<h2 id="isolation">Izolacija naloga</h2>
+<ul>
+  <li><b>Svoj Linux korisnik</b> po nalogu; PHP-FPM radi kao taj korisnik, nikad kao root.</li>
+  <li><b>Svoja kontrolna grupa</b> (cgroups v2) sa ograničenjima CPU-a, memorije, IO-a i procesa iz paketa za PHP, cron, SSH i alate.</li>
+  <li><b>Privatan pogled na fajl sistem</b>: PHP, cron, SSH i SFTP vide samo home svog naloga, privatan /tmp i sistem samo za čitanje; drugi home folderi, tuđi procesi, fajlovi panela i konfiguracija web servera tu ne postoje.</li>
+  <li><b>Disk kvote</b>, posebni korisnici baza, PHP <code>open_basedir</code>, pokretanje programa iz PHP-a isključeno ako ga paket ne dozvoli.</li>
+  <li>Web server nikad ne prati link ka fajlu drugog vlasnika.</li>
+  <li>Izolacioni testovi (nalog A pokušava da čita, izlista, piše, šalje signale i povezuje se na nalog B) se pokreću na pravim serverima.</li>
+</ul>
+
+<h2 id="mail">Mejl sa sajtova</h2>
+<p>Nalozi ne mogu direktno da šalju mejl (firewall im odbija odlazni SMTP). PHP <code>mail()</code> stavlja poruke u red; HostZit ih šalje preko relay servera iz Podešavanja → Obaveštenja, uz ograničenje po satu iz paketa. Korisnici vide svoj red u <b>Bezbednosti</b>.</p>
+
+<h2 id="panel">Panel</h2>
+<ul>
+  <li>Root poslovi samo kroz <b>hostzit-helper</b>, sa fiksnim spiskom proverenih operacija; konfiguracija se piše iz šablona, nikad iz teksta korisnika.</li>
+  <li>Prijava u dva koraka (obavezna za administratore), uloge, blokiranje posle neuspelih prijava, dozvoljene mreže za admin panel, prijava preko kompanijskog naloga (OpenID Connect).</li>
+  <li><a href="/audit">Audit log</a> sa lancem hash-eva, tajne šifrovane na disku, potpisana ažuriranja, odobrenje u četiri oka.</li>
+</ul>
+
+<h2 id="scan">Skeniranje malvera</h2>
+<p>Kada je ClamAV instaliran, korisnici pokreću skeniranje u <b>Bezbednosti</b>, a administratori sa stranice korisnika. Pronađeni fajlovi se prikazuju i javljaju e-mailom; ništa se ne briše samo.</p>

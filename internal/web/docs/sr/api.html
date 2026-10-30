@@ -1,0 +1,31 @@
+<h1>REST API za naplatu</h1>
+<p class="lead">Vaš sistem naplate ili portal pravi, suspenduje i gasi naloge, menja pakete i otvara korisnički panel preko API-ja admin panela (port 8442).</p>
+
+<h2 id="tokens">Tokeni</h2>
+<p>Napravite token u <b>Moj nalog → API tokeni</b> i izaberite šta sme: <code>customers:read</code>, <code>customers:write</code>, <code>usage:read</code>, <code>sso:create</code>, <code>dns:mail</code> (EmailZit). Šaljite ga kao <code>Authorization: Bearer hzt_…</code>.</p>
+
+<h2 id="conventions">Pravila</h2>
+<ul>
+  <li>JSON, vreme u RFC 3339 UTC; liste sa <code>?limit=</code> i <code>?cursor=</code>, odgovor <code>{"items": […], "next_cursor": "…"}</code>.</li>
+  <li>Greške: <code>{"error": {"code": "invalid", "message": "…", "field": "domain"}}</code>.</li>
+  <li><code>Idempotency-Key</code> uz POST: ponovljen zahtev vraća prvi odgovor (24 sata).</li>
+  <li>Spori poslovi odgovaraju sa <code>202</code> i <code>job_id</code>; pratite ih na <code>GET /api/v1/jobs/{id}</code>.</li>
+  <li><code>{id}</code> je UUID korisnika, <code>ext:</code> + vaš id, ili ime naloga.</li>
+</ul>
+
+<h2 id="endpoints">Pozivi</h2>
+<pre>GET    /api/v1/packages
+GET    /api/v1/customers
+POST   /api/v1/customers                {"id","external_id","username","package","name","email","password","domain","dns"}
+GET    /api/v1/customers/{id}
+PATCH  /api/v1/customers/{id}           {"name","email","password"}
+PUT    /api/v1/customers/{id}/package   {"package": "wp-pro"}
+POST   /api/v1/customers/{id}/suspend   {"reason": "billing"}
+POST   /api/v1/customers/{id}/unsuspend
+POST   /api/v1/customers/{id}/terminate
+GET    /api/v1/customers/{id}/usage
+POST   /api/v1/customers/{id}/sso       → {"url": "…"} jednokratni link za prijavu, 60 s
+POST   /api/v1/customers/{id}/export    → posao: rezervna kopija naloga u ~/backups
+GET    /api/v1/customers/{id}/backups
+GET    /api/v1/jobs/{id}
+GET    /api/v1/server/status</pre>

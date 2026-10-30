@@ -1,0 +1,14 @@
+<h1>Domains and DNS</h1>
+<p class="lead">HostZit runs authoritative name servers (PowerDNS). Zones of the customers are published within seconds of a change.</p>
+
+<h2 id="zones">Zones</h2>
+<p>A zone is created with a new website (when asked) or under <b>Domains and DNS</b>. New zones get A/AAAA records for the domain and www, a CAA record for Let's Encrypt and the SPF record set by the administrator. To use them, enter the server's name servers at the domain registrar.</p>
+
+<h2 id="records">Records</h2>
+<p>The editor accepts A, AAAA, CNAME, MX, TXT, SRV, CAA, NS (delegation of a subdomain), TLSA, HTTPS, SVCB and PTR. Names are relative to the zone: <code>@</code> for the domain itself, <code>www</code>, <code>_dmarc</code>. Values are checked before they are saved. Records managed by EmailZit are marked and cannot be changed here.</p>
+
+<h2 id="dnssec">DNSSEC</h2>
+<p><b>Sign the zone</b> switches DNSSEC on; put the DS record shown at the registrar. Before switching it off, remove the DS record at the registrar first.</p>
+
+<h2 id="secondary">Secondary name servers</h2>
+<p>Under Settings → Hosting, enter the IP addresses of other name servers that should copy every zone (for example a second server as <code>ns2</code>). They may then transfer the zones (AXFR) and are notified of each change.</p>

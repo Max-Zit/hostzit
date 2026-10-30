@@ -1,0 +1,19 @@
+<h1>Rešavanje problema i česta pitanja</h1>
+
+<h2 id="cert">Sajt nema sertifikat</h2>
+<p>Domen (i www) moraju u DNS-u da pokazuju na adresu servera, port 80 mora biti dostupan, a Let's Encrypt uključen u Podešavanja → Hosting. Stranica sajta prikazuje poslednju grešku; HostZit pokušava ponovo na nekoliko sati.</p>
+
+<h2 id="502">Sajt prikazuje 502 ili 503</h2>
+<p>502: PHP naloga ne radi — kliknite <b>Podesi ponovo</b> na stranici korisnika; nalog je možda suspendovan ili bez memorije (vidi <b>Potrošnju</b>). 503 sa „privremeno nedostupno": nalog je suspendovan.</p>
+
+<h2 id="slow">Sajt je spor</h2>
+<p>Uključite keš stranica, proverite PHP radnike i memoriju paketa i CPU grafik u <b>Potrošnji</b>. Dostignuto ograničenje usporava samo taj nalog, a ne ceo server.</p>
+
+<h2 id="mail">Mejl sa sajta ne stiže</h2>
+<p>Pogledajte red u <b>Bezbednosti</b> (korisnik) — poruke preko ograničenja po satu čekaju; proverite da je relay postavljen u Podešavanja → Obaveštenja sa uključenim „Mejl sa sajtova".</p>
+
+<h2 id="locked">Zaključao sam sebe</h2>
+<p>Na serveru: <code>hostzit-server --unblock-ip all</code> i <code>hostzit-server --reset-allowlist</code>, pa restartujte servis. Izgubljen autentifikator: drugi administrator resetuje drugi faktor; sa samo jednim administratorom koristite kod za oporavak.</p>
+
+<h2 id="logs">Logovi</h2>
+<p>Panel: <code>/var/lib/hostzit/panel/logs/server.log</code>; helper: <code>/var/log/hostzit/helper.log</code>; sajtovi: <code>/var/log/hostzit/sites/ID/</code>; firewall: <code>/var/log/hostzit/modsec_audit.log</code>.</p>

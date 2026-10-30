@@ -1,0 +1,14 @@
+<h1>Fajlovi, SFTP i SSH</h1>
+<p class="lead">Vaš nalog vidi samo svoj home folder. Sajtovi su u <code>~/sites</code>, logovi u <code>~/logs</code>, rezervne kopije u <code>~/backups</code>.</p>
+
+<h2 id="manager">Fajl menadžer</h2>
+<p><b>Fajlovi</b> prikazuju, otpremaju (do 48 MB po fajlu), preuzimaju, uređuju tekstualne fajlove, preimenuju, menjaju dozvole i brišu. Za mnogo ili velike fajlove koristite SFTP.</p>
+
+<h2 id="sftp">SFTP i SSH</h2>
+<p>U <b>SFTP i SSH</b> postavite posebnu lozinku ili dodajte SSH ključeve. Povežite se FileZilla-om, WinSCP-om, Cyberduck-om ili sa <code>sftp NALOG@SERVER</code>. Ako vaš paket ima SSH, dobijate ljusku (<code>ssh NALOG@SERVER</code>) u sopstvenom okruženju: vidite samo svoje fajlove i procese; tu su PHP, WP-CLI, git, tar i MariaDB klijent.</p>
+
+<h2 id="cron">Zakazani poslovi</h2>
+<p><b>Zakazani poslovi</b> pokreću komande po rasporedu u cron sintaksi (<code>*/15 * * * *</code> na 15 minuta, <code>0 3 * * *</code> svaki dan u 3:00, <code>@hourly</code>). Rade kao vaš nalog, u vašem okruženju i sa vašim ograničenjima; <b>Pokreni sada</b> odmah pokreće posao, a izlaz se čuva u njegovom logu.</p>
+
+<h2 id="backups">Rezervne kopije</h2>
+<p><b>Napravi rezervnu kopiju</b> čuva sve fajlove, sve baze i podešavanja sajtova, zona i poslova u <code>~/backups/hostzit-DATUM.tar.gz</code>. Računa se u vaš prostor; preuzmite je SFTP-om i brišite stare.</p>

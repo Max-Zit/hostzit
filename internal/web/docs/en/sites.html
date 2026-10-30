@@ -1,0 +1,29 @@
+<h1>Websites, PHP and page cache</h1>
+<p class="lead">A website is a domain (with www and more aliases) served from a folder of the account, by default <code>~/sites/DOMAIN/public</code>.</p>
+
+<h2 id="new">New website</h2>
+<p>Enter the domain under <b>Websites → New website</b>. HostZit creates the folder with a first page, the web server configuration and, when you ask for it, the DNS zone. Point the domain to the server (or set the name servers at the registrar); a free <b>Let's Encrypt</b> certificate follows automatically and is renewed 30 days before it expires.</p>
+
+<h2 id="settings">Settings</h2>
+<ul>
+  <li><b>PHP version</b> per website.</li>
+  <li><b>Main address</b>: with or without www; the other one redirects.</li>
+  <li><b>Redirect HTTP to HTTPS</b> and <b>HSTS</b>.</li>
+  <li><b>Redirects</b>: one per line, e.g. <code>/old /new 301</code>.</li>
+  <li><b>Aliases</b>: more domains that show the same website.</li>
+  <li><b>Own certificate</b>: paste a certificate and its key instead of Let's Encrypt.</li>
+</ul>
+
+<h2 id="cache">Page cache</h2>
+<p>With the <b>page cache</b> on, the web server keeps finished pages and answers visitors without starting PHP: pages come much faster and the server has far less work. Logged-in users, the WordPress admin, comment authors, shopping carts, forms (POST) and addresses with a query always get fresh pages. Pages are kept for the time you choose; <b>Clear cache</b> removes everything at once (use it after changes to the design or content). The response header <code>X-Cache</code> shows HIT, MISS or BYPASS.</p>
+
+<h2 id="access">Access and protection</h2>
+<ul>
+  <li><b>Web application firewall</b> (ModSecurity with the OWASP Core Rule Set, tuned for WordPress) blocks SQL injection, cross-site scripting and scanners.</li>
+  <li><b>Only these addresses</b> / <b>Blocked addresses</b>: IP rules for the whole website.</li>
+  <li><b>Hotlink protection</b>: other websites cannot embed your images and videos.</li>
+  <li><b>Folders with a password</b>: visitors of a folder must enter a user name and password.</li>
+</ul>
+
+<h2 id="logs">Logs</h2>
+<p><b>Logs</b> shows the last visits and errors of the website; PHP errors are in <code>~/logs/php-error.log</code>.</p>

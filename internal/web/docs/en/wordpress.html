@@ -1,0 +1,17 @@
+<h1>WordPress</h1>
+<p class="lead">The WordPress toolkit installs and looks after WordPress sites. It uses WP-CLI, which runs as your account in your own environment.</p>
+
+<h2 id="install">Install</h2>
+<p><b>WordPress → Install WordPress</b>: choose the website, the title, the administrator name (not <code>admin</code>) and e-mail, and the language. HostZit makes a database and user, downloads WordPress, writes <code>wp-config.php</code> (readable only by your account), switches off the file editor in wp-admin and sets up pretty links. Sites uploaded by hand or imported from cPanel are found with <b>Find existing installs</b>.</p>
+
+<h2 id="login">Sign in</h2>
+<p><b>Open wp-admin</b> signs you in as the administrator with a one-time link (valid 60 seconds, once).</p>
+
+<h2 id="updates">Updates and snapshots</h2>
+<p><b>Check now</b> lists new versions of WordPress, plugins and themes; <b>Update everything</b> first makes a <b>snapshot</b> (files and database in <code>~/backups</code>), then updates and clears the page cache. <b>Restore</b> puts a snapshot back. Automatic updates run every night with a snapshot first: security updates of WordPress (default), everything, or off.</p>
+
+<h2 id="staging">Staging</h2>
+<p><b>Create a staging copy</b> copies the site to <code>staging.DOMAIN</code> with its own database; search engines are told to stay away. Try updates and changes there; <b>Push to live</b> copies the staging site over the live one (after a snapshot of the live site), keeping the live <code>wp-config.php</code>.</p>
+
+<h2 id="security">Security</h2>
+<p>Always on: PHP files in uploads are not run, <code>wp-config.php</code> and hidden files are never served, password guessing on <code>wp-login.php</code> and <code>xmlrpc.php</code> is slowed down. Optional: block xmlrpc.php, debug output off, new security keys, the web application firewall of the website.</p>

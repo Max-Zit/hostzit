@@ -64,16 +64,17 @@ func (s *Server) handleDocs(w http.ResponseWriter, r *http.Request) {
 	if slug == "" {
 		slug = "start"
 	}
-	d := &docsData{Pages: DocPages, Page: slug}
+	pages := docPagesFor(panelOf(r))
+	d := &docsData{Pages: pages, Page: slug}
 	title := ""
-	for i, p := range DocPages {
+	for i, p := range pages {
 		if p.Slug == slug {
 			title = p.Title
 			if i > 0 {
-				d.Prev = &DocPages[i-1]
+				d.Prev = &pages[i-1]
 			}
-			if i < len(DocPages)-1 {
-				d.Next = &DocPages[i+1]
+			if i < len(pages)-1 {
+				d.Next = &pages[i+1]
 			}
 		}
 	}
@@ -93,7 +94,7 @@ func (s *Server) handleDocsSearch(w http.ResponseWriter, r *http.Request) {
 	}
 	lang := s.lang(r, userFrom(r))
 	s.render(w, r, http.StatusOK, "docsearch", &Page{Title: "Search the guide", Nav: "docs", Lang: lang,
-		Data: &docsData{Pages: DocPages, Q: q, Hits: searchDocs(lang, q)}})
+		Data: &docsData{Pages: docPagesFor(panelOf(r)), Q: q, Hits: filterHits(searchDocs(lang, q), panelOf(r))}})
 }
 
 type docSection struct {
@@ -239,4 +240,34 @@ func snippet(text, lower string, terms []string) template.HTML {
 		b.WriteString(" …")
 	}
 	return template.HTML(b.String()) // #nosec G203 -- every piece is escaped above
+}
+
+// adminDocs are the guide pages only administrators see.
+var adminDocs = map[string]bool{"install": true, "customers": true, "api": true, "admin": true}
+
+// docPagesFor lists the guide pages of a panel.
+func docPagesFor(panel string) []DocPage {
+	if panel == PanelAdmin {
+		return DocPages
+	}
+	var out []DocPage
+	for _, p := range DocPages {
+		if !adminDocs[p.Slug] {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+func filterHits(h []docHit, panel string) []docHit {
+	if panel == PanelAdmin {
+		return h
+	}
+	out := h[:0]
+	for _, x := range h {
+		if !adminDocs[x.Slug] {
+			out = append(out, x)
+		}
+	}
+	return out
 }

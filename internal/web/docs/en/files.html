@@ -1,0 +1,14 @@
+<h1>Files, SFTP and SSH</h1>
+<p class="lead">Your account sees only its own home folder. Websites are in <code>~/sites</code>, logs in <code>~/logs</code>, backups in <code>~/backups</code>.</p>
+
+<h2 id="manager">File manager</h2>
+<p><b>Files</b> lists, uploads (up to 48 MB per file), downloads, edits text files, renames, changes permissions and deletes. For many or large files use SFTP.</p>
+
+<h2 id="sftp">SFTP and SSH</h2>
+<p>Under <b>SFTP and SSH</b> set a separate password or add SSH keys. Connect with FileZilla, WinSCP, Cyberduck or <code>sftp ACCOUNT@SERVER</code>. With SSH in your package you get a shell (<code>ssh ACCOUNT@SERVER</code>) in your own environment: you see only your files and processes; tools like PHP, WP-CLI, git, tar and the MariaDB client are there.</p>
+
+<h2 id="cron">Scheduled jobs</h2>
+<p><b>Scheduled jobs</b> run commands on a schedule in cron syntax (<code>*/15 * * * *</code> every 15 minutes, <code>0 3 * * *</code> daily at 3:00, <code>@hourly</code>). They run as your account in your own environment and with your limits; <b>Run now</b> starts a job at once, the output is kept in its log.</p>
+
+<h2 id="backups">Backups</h2>
+<p><b>Make a backup now</b> saves all files, all databases and the settings of the websites, zones and jobs into <code>~/backups/hostzit-DATE.tar.gz</code>. It counts against your disk space; download it with SFTP and delete old ones.</p>

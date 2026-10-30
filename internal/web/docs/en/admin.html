@@ -1,0 +1,27 @@
+<h1>Users, settings and updates</h1>
+
+<h2 id="users">Administrators</h2>
+<p>Under <b>Administrators</b>: <b>administrators</b> do everything, <b>operators</b> manage customers, websites and DNS, <b>viewers</b> only look (support). Every administrator signs in with two-factor sign-in; add an e-mail address for company sign-in and notices.</p>
+
+<h2 id="settings">Settings</h2>
+<ul>
+  <li><b>Hosting</b>: shared or dedicated, server name, IP addresses, name servers, secondary name servers, default PHP, Let's Encrypt, grace period of terminated customers.</li>
+  <li><b>Network and access</b>: ports and allowed networks of both panels.</li>
+  <li><b>Sign-in and security</b>: session length, sign-in blocks, two-factor sign-in for customers, four-eyes approval, addresses blocked for the whole server.</li>
+  <li><b>Company sign-in</b>: OpenID Connect for administrators.</li>
+  <li><b>Updates</b>: check and install signed new versions; release channel official or testing.</li>
+  <li><b>Panel backup</b>: nightly encrypted backups of the panel database and keys.</li>
+  <li><b>EmailZit</b>: link to the mail hosting.</li>
+  <li><b>Notifications</b>: SMTP server for notices and for mail from websites.</li>
+</ul>
+
+<h2 id="updates">Updates</h2>
+<p>Releases are signed by MaxZit. The server installs a release only if its signature and checksum match; the panel database is saved first. Websites keep running during an update.</p>
+
+<h2 id="restore">Restore the panel</h2>
+<p>On a new server: install HostZit, stop <code>hostzit-server</code>, run <code>hostzit-server --restore FILE.hzb</code> (the passphrase is asked), start the service, then use <b>Set up again</b> for each customer. The customers' files and databases come from their own backups.</p>
+
+<h2 id="cli">Command line</h2>
+<pre>hostzit-server --unblock-ip ADDRESS|all     lift a sign-in block
+hostzit-server --reset-allowlist             allow the admin panel from private networks again
+/usr/lib/hostzit/hostzit-helper ops          list the helper's operations</pre>

@@ -1,0 +1,25 @@
+<h1>Isolation and security</h1>
+<p class="lead">A hosting server runs other people's code, so HostZit treats every account as possibly compromised and keeps the accounts apart in several layers.</p>
+
+<h2 id="isolation">Isolation between accounts</h2>
+<ul>
+  <li><b>Own Linux user</b> per account; PHP-FPM runs as that user, never as root.</li>
+  <li><b>Own control group</b> (cgroups v2) with the CPU, memory, IO and process limits of the package for PHP, cron, SSH and tools.</li>
+  <li><b>Private file system view</b>: PHP, cron jobs, SSH and SFTP see only the account's own home, a private /tmp and a read-only system; other homes, other processes, the panel's files and the web server configuration are not there.</li>
+  <li><b>Disk quotas</b>, separate database users, PHP <code>open_basedir</code>, programs from PHP off unless the package allows them.</li>
+  <li>The web server never follows a link to a file of another owner.</li>
+  <li>An isolation test suite (account A tries to read, list, write, signal and connect to account B) runs on real servers.</li>
+</ul>
+
+<h2 id="mail">Mail from websites</h2>
+<p>Accounts cannot send mail directly (the firewall rejects outgoing SMTP for them). PHP's <code>mail()</code> puts messages into a queue; HostZit sends them through the relay set under Settings → Notifications, with the hourly limit of the package. Customers see their queue under <b>Security</b>.</p>
+
+<h2 id="panel">The panel</h2>
+<ul>
+  <li>Root work only through <b>hostzit-helper</b>, with a fixed list of checked operations; configuration is written from templates, never from customer text.</li>
+  <li>Two-factor sign-in (required for administrators), roles, sign-in blocks after failed attempts, allowed networks for the admin panel, company sign-in (OpenID Connect).</li>
+  <li>Hash-chained <a href="/audit">audit log</a>, secrets encrypted at rest, signed updates, four-eyes approval.</li>
+</ul>
+
+<h2 id="scan">Malware scans</h2>
+<p>With ClamAV installed, customers start a scan under <b>Security</b> and administrators from the customer page. Found files are listed and reported by e-mail; nothing is deleted automatically.</p>

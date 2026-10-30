@@ -1,0 +1,27 @@
+<h1>Instalacija servera</h1>
+<p class="lead">HostZit radi na <b>Debianu 13</b> (ili 12) sa systemd-om i cgroups v2. Koristite nov server: instalacija podešava nginx, PHP, MariaDB, PowerDNS i SSH za hosting.</p>
+
+<h2 id="requirements">Zahtevi</h2>
+<ul>
+  <li>2 jezgra i 2 GB memorije za nekoliko naloga; za mnogo WordPress sajtova računajte oko 10–20 MB po nalogu plus PHP zahteve posetilaca. 500 naloga staje na server sa 16–32 GB.</li>
+  <li>Javna IPv4 adresa (IPv6 po želji) i ime servera, npr. <code>host1.example.com</code>.</li>
+  <li>Za DNS hosting: dva imena name servera (<code>ns1</code>, <code>ns2</code>) sa glue zapisima kod registra vašeg domena.</li>
+  <li>Korisničke kvote na fajl sistemu <code>/home</code> (ext4 ili XFS) da bi ograničenja prostora važila; za ext4 ih instalacija uključuje.</li>
+</ul>
+
+<h2 id="install">Instalacija</h2>
+<pre>curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash</pre>
+<p>Instalacija proverava potpis izdanja, instalira pakete, pravi bazu i ispisuje adresu admin panela i <b>setup token</b>. Opcije: <code>--version X.Y.Z</code>, <code>--php "8.3 8.4"</code>, <code>--no-dns</code>.</p>
+
+<h2 id="ports">Portovi</h2>
+<table>
+  <tr><th>Port</th><th>Namena</th></tr>
+  <tr><td>80, 443 (TCP i UDP)</td><td>sajtovi (HTTP, HTTPS, HTTP/3)</td></tr>
+  <tr><td>53 (TCP i UDP)</td><td>DNS</td></tr>
+  <tr><td>22</td><td>SSH i SFTP korisnika</td></tr>
+  <tr><td>8443</td><td>korisnički panel</td></tr>
+  <tr><td>8442</td><td>admin panel — dozvolite ga samo iz svojih mreža</td></tr>
+</table>
+
+<h2 id="dedicated">Dedikovan server</h2>
+<p>Za samo jednog korisnika izaberite <b>Dedikovan server</b> u Podešavanja → Hosting. Ograničenja paketa se tada ne primenjuju; izolacija i bezbednost ostaju iste.</p>

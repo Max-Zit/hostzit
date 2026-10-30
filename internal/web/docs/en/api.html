@@ -1,0 +1,31 @@
+<h1>REST API for billing</h1>
+<p class="lead">Your billing system or portal creates, suspends and terminates accounts, changes packages and opens the customer panel through the API of the admin panel (port 8442).</p>
+
+<h2 id="tokens">Tokens</h2>
+<p>Create a token under <b>My account → API tokens</b> and choose what it may do: <code>customers:read</code>, <code>customers:write</code>, <code>usage:read</code>, <code>sso:create</code>, <code>dns:mail</code> (EmailZit). Send it as <code>Authorization: Bearer hzt_…</code>.</p>
+
+<h2 id="conventions">Conventions</h2>
+<ul>
+  <li>JSON, times in RFC 3339 UTC; lists with <code>?limit=</code> and <code>?cursor=</code>, answer <code>{"items": […], "next_cursor": "…"}</code>.</li>
+  <li>Errors: <code>{"error": {"code": "invalid", "message": "…", "field": "domain"}}</code>.</li>
+  <li><code>Idempotency-Key</code> on POST: a repeated request returns the first answer (24 hours).</li>
+  <li>Slow work answers <code>202</code> with a <code>job_id</code>; follow it at <code>GET /api/v1/jobs/{id}</code>.</li>
+  <li><code>{id}</code> is the customer UUID, <code>ext:</code> + your own id, or the account name.</li>
+</ul>
+
+<h2 id="endpoints">Endpoints</h2>
+<pre>GET    /api/v1/packages
+GET    /api/v1/customers
+POST   /api/v1/customers                {"id","external_id","username","package","name","email","password","domain","dns"}
+GET    /api/v1/customers/{id}
+PATCH  /api/v1/customers/{id}           {"name","email","password"}
+PUT    /api/v1/customers/{id}/package   {"package": "wp-pro"}
+POST   /api/v1/customers/{id}/suspend   {"reason": "billing"}
+POST   /api/v1/customers/{id}/unsuspend
+POST   /api/v1/customers/{id}/terminate
+GET    /api/v1/customers/{id}/usage
+POST   /api/v1/customers/{id}/sso       → {"url": "…"} one-time sign-in link, 60 s
+POST   /api/v1/customers/{id}/export    → job: account backup in ~/backups
+GET    /api/v1/customers/{id}/backups
+GET    /api/v1/jobs/{id}
+GET    /api/v1/server/status</pre>

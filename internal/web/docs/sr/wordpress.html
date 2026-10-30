@@ -1,0 +1,17 @@
+<h1>WordPress</h1>
+<p class="lead">WordPress alat instalira i održava WordPress sajtove. Koristi WP-CLI, koji radi kao vaš nalog u vašem okruženju.</p>
+
+<h2 id="install">Instalacija</h2>
+<p><b>WordPress → Instaliraj WordPress</b>: izaberite sajt, naslov, ime administratora (ne <code>admin</code>) i e-mail, i jezik. HostZit pravi bazu i korisnika, preuzima WordPress, piše <code>wp-config.php</code> (čita ga samo vaš nalog), isključuje editor fajlova u wp-admin-u i podešava lepe linkove. Sajtove postavljene ručno ili uvezene iz cPanel-a pronalazi <b>Pronađi postojeće instalacije</b>.</p>
+
+<h2 id="login">Prijava</h2>
+<p><b>Otvori wp-admin</b> vas prijavljuje kao administratora jednokratnim linkom (važi 60 sekundi, jednom).</p>
+
+<h2 id="updates">Ažuriranja i snimci</h2>
+<p><b>Proveri sada</b> prikazuje nove verzije WordPress-a, pluginova i tema; <b>Ažuriraj sve</b> prvo pravi <b>snimak</b> (fajlovi i baza u <code>~/backups</code>), zatim ažurira i čisti keš stranica. <b>Vrati</b> vraća snimak. Automatska ažuriranja rade svake noći, uz snimak pre toga: bezbednosna ažuriranja WordPress-a (podrazumevano), sve, ili isključeno.</p>
+
+<h2 id="staging">Staging</h2>
+<p><b>Napravi staging kopiju</b> kopira sajt na <code>staging.DOMEN</code> sa sopstvenom bazom; pretraživačima je rečeno da ga ne indeksiraju. Tamo probajte ažuriranja i izmene; <b>Prebaci na live</b> kopira staging preko pravog sajta (posle snimka pravog sajta), uz zadržavanje <code>wp-config.php</code> pravog sajta.</p>
+
+<h2 id="security">Bezbednost</h2>
+<p>Uvek uključeno: PHP fajlovi u uploads se ne izvršavaju, <code>wp-config.php</code> i skriveni fajlovi se nikad ne služe, pogađanje lozinki na <code>wp-login.php</code> i <code>xmlrpc.php</code> je usporeno. Po izboru: blokiranje xmlrpc.php, isključen debug, novi bezbednosni ključevi, web aplikacioni firewall sajta.</p>

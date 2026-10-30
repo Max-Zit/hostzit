@@ -1,0 +1,27 @@
+<h1>Customers and packages</h1>
+<p class="lead">A <b>package</b> is a plan with limits; a <b>customer</b> is a hosting account on a package. Each customer is its own Linux user, so its websites, files and processes are separate from all others.</p>
+
+<h2 id="packages">Packages</h2>
+<ul>
+  <li><b>Disk space</b> and <b>files</b> are enforced by disk quotas.</li>
+  <li><b>CPU</b> (100 % = one core), <b>memory</b>, <b>processes</b> and <b>disk priority</b> apply to everything the account runs: PHP, cron jobs, SSH and tools.</li>
+  <li><b>PHP workers</b> limit how many requests PHP handles at the same time; <b>memory per request</b> and <b>largest upload</b> go into PHP's settings.</li>
+  <li><b>Mails per hour</b> limits mail from the websites.</li>
+  <li><b>SSH</b> gives shell access; without it the customer has SFTP only.</li>
+</ul>
+<p>Changing a package applies the new limits to all its customers at once.</p>
+
+<h2 id="customers">Customers</h2>
+<ul>
+  <li><b>Account name</b>: 3–16 lowercase letters and digits. It is the Linux user, the SFTP login and the prefix of the databases (<code>shop_wp</code>).</li>
+  <li><b>Suspend</b>: websites show a "temporarily unavailable" page, PHP and the customer's sign-in stop. <b>Unsuspend</b> brings everything back.</li>
+  <li><b>Terminate</b>: like suspend; the files are deleted after the grace period (Settings → Hosting).</li>
+  <li><b>Open the customer panel</b> signs you in as the customer with a banner; everything you do is recorded with your name.</li>
+  <li><b>Set up again</b> writes the account's system configuration again (after a restore or a manual change).</li>
+</ul>
+
+<h2 id="import">cPanel import</h2>
+<p>Copy full cPanel backups (<code>cpmove-USER.tar.gz</code>) to <code>/var/lib/hostzit/import</code> and start the import under <b>Import</b>. HostZit creates the account and moves the websites (main, addon, sub and parked domains), databases with their users and passwords, DNS zones (with the new server address) and cron jobs. Keep the same account name so the websites' database settings stay valid. The rest of the old home folder is in <code>~/cpanel-home</code>.</p>
+
+<h2 id="approval">Four-eyes approval</h2>
+<p>With <b>four-eyes approval</b> on (Settings → Sign-in and security), deleting or terminating a customer and deleting a package wait under <b>Approvals</b> until a second administrator approves them.</p>

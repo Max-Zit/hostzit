@@ -1,0 +1,14 @@
+<h1>Domeni i DNS</h1>
+<p class="lead">HostZit pokreće autoritativne name servere (PowerDNS). Zone korisnika se objavljuju nekoliko sekundi posle izmene.</p>
+
+<h2 id="zones">Zone</h2>
+<p>Zona se pravi uz nov sajt (ako to izaberete) ili u <b>Domeni i DNS</b>. Nove zone dobijaju A/AAAA zapise za domen i www, CAA zapis za Let's Encrypt i SPF zapis koji je postavio administrator. Da bi radile, unesite name servere servera kod registra domena.</p>
+
+<h2 id="records">Zapisi</h2>
+<p>Editor prima A, AAAA, CNAME, MX, TXT, SRV, CAA, NS (delegacija poddomena), TLSA, HTTPS, SVCB i PTR. Imena su relativna u odnosu na zonu: <code>@</code> za sam domen, <code>www</code>, <code>_dmarc</code>. Vrednosti se proveravaju pre čuvanja. Zapisi kojima upravlja EmailZit su označeni i ovde se ne mogu menjati.</p>
+
+<h2 id="dnssec">DNSSEC</h2>
+<p><b>Potpiši zonu</b> uključuje DNSSEC; DS zapis koji se prikaže unesite kod registra. Pre isključivanja prvo uklonite DS zapis kod registra.</p>
+
+<h2 id="secondary">Sekundarni name serveri</h2>
+<p>U Podešavanja → Hosting unesite IP adrese drugih name servera koji treba da kopiraju svaku zonu (npr. drugi server kao <code>ns2</code>). Oni tada smeju da preuzmu zone (AXFR) i dobijaju obaveštenje o svakoj izmeni.</p>
