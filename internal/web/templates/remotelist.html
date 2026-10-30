@@ -1,0 +1,17 @@
+{{template "app" .}}
+{{define "content"}}
+{{$c := .Data.C}}
+<h1>{{.T "Remote backups"}} <span class="mono">{{$c.Username}}</span></h1>
+<section class="panel">
+  <p class="muted small">{{.T "Restoring fetches the copy into the import folder; then choose it under Import. The account is set up again from the copy (files, databases, settings)."}}</p>
+  {{if .Data.Files}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "File"}}</th><th class="num">{{.T "Size"}}</th><th class="hide-sm">{{.T "Made"}}</th><th></th></tr></thead>
+    <tbody>{{range .Data.Files}}<tr>
+      <td class="mono small">{{.Key}}</td><td class="num">{{bytes .Size}}</td><td class="hide-sm">{{$.Time .Time}}</td>
+      <td class="actions"><form method="post" action="/customers/{{$c.ID}}/remote-backups/fetch" data-confirm="{{$.T "Fetch this copy into the import folder?"}}"><input type="hidden" name="key" value="{{.Key}}"><button class="secondary sm">{{template "icon" "download"}}{{$.T "Restore"}}</button></form></td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<p class="muted">{{.T "No backups yet."}}</p>{{end}}
+</section>
+{{end}}

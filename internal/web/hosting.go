@@ -477,6 +477,7 @@ func (s *Server) Run(ctx context.Context) {
 			s.collectUsage(ctx)
 			s.checkNotices(ctx)
 		case <-hourly.C:
+			go s.remoteBackupRound(ctx, false)
 			_ = s.store.PurgeSessions(ctx)
 			_ = s.store.PruneUsage(ctx)
 			s.purgeTerminated(ctx)

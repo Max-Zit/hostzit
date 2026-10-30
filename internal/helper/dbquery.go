@@ -111,8 +111,8 @@ func (h *Helper) tempDBUser(ctx context.Context, account string, dbs []string) (
 		_, _ = h.sql(context.Background(), "DROP USER IF EXISTS '"+user+"'@'localhost'")
 		return "", "", nil, err
 	}
-	cnf = "/var/lib/hostzit/tmp/" + user + ".cnf"
-	_ = h.Sys.Mkdir("/var/lib/hostzit/tmp", 0o700, 0, 0)
+	cnf = "/var/lib/hostzit/private/" + user + ".cnf"
+	_ = h.Sys.Mkdir("/var/lib/hostzit/private", 0o700, 0, 0)
 	if err := h.Sys.WriteFile(cnf, []byte("[client]\nuser="+user+"\npassword="+pw+"\n"), 0o600, 0, 0); err != nil {
 		_, _ = h.sql(context.Background(), "DROP USER IF EXISTS '"+user+"'@'localhost'")
 		return "", "", nil, err

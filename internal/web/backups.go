@@ -44,6 +44,18 @@ type Manifest struct {
 // backupAccount makes ~/backups/hostzit-<time>.tar.gz with the files, the
 // databases and a manifest of the account's settings.
 func (s *Server) backupAccount(ctx context.Context, by string, c *store.Customer) (string, int64, error) {
+	name, dbs, manifest := s.backupRequest(ctx, c)
+	var res struct {
+		File string `json:"file"`
+		Size int64  `json:"size"`
+	}
+	err := s.call(ctx, by, "backup.create", map[string]any{"account": c.Username, "name": name, "dbs": dbs, "manifest": manifest}, &res)
+	return res.File, res.Size, err
+}
+
+// backupRequest is the archive name, the databases and the manifest of an
+// account backup.
+func (s *Server) backupRequest(ctx context.Context, c *store.Customer) (name string, dbs []string, manifest string) {
 	man := Manifest{Product: "hostzit", Version: s.Version, Package: c.PackageSlug, Zones: map[string][]hosting.Record{}, DBUsers: map[string][]string{},
 		Customer: map[string]string{"id": c.UUID, "username": c.Username, "name": c.DisplayName, "email": c.Email}}
 	sites, _ := s.store.Sites(ctx, c.ID)
@@ -57,8 +69,8 @@ func (s *Server) backupAccount(ctx context.Context, by string, c *store.Customer
 			man.Zones[z.Name] = append(man.Zones[z.Name], r.Record)
 		}
 	}
-	dbs, _ := s.store.Databases(ctx, c.ID)
-	for _, d := range dbs {
+	dbList, _ := s.store.Databases(ctx, c.ID)
+	for _, d := range dbList {
 		man.Databases = append(man.Databases, d.Name)
 	}
 	users, _ := s.store.DBUsers(ctx, c.ID)
@@ -70,13 +82,8 @@ func (s *Server) backupAccount(ctx context.Context, by string, c *store.Customer
 		man.Cron = append(man.Cron, hosting.CronJob{ID: j.ID, Schedule: j.Schedule, Command: j.Command, Enabled: j.Enabled})
 	}
 	mb, _ := json.MarshalIndent(man, "", "  ")
-	name := "hostzit-" + s.now().UTC().Format("20060102-150405")
-	var res struct {
-		File string `json:"file"`
-		Size int64  `json:"size"`
-	}
-	err := s.call(ctx, by, "backup.create", map[string]any{"account": c.Username, "name": name, "dbs": man.Databases, "manifest": string(mb)}, &res)
-	return res.File, res.Size, err
+	name = "hostzit-" + s.now().UTC().Format("20060102-150405")
+	return name, man.Databases, string(mb)
 }
 
 type backupsData struct {

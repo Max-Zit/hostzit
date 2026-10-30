@@ -60,8 +60,8 @@ func (h *Helper) addSury(ctx context.Context) error {
 	if codename != "bookworm" && codename != "trixie" {
 		return userErr("other PHP versions are available on Debian 12 and 13 only")
 	}
-	_ = h.Sys.Mkdir("/var/lib/hostzit/tmp", 0o700, 0, 0)
-	key := "/var/lib/hostzit/tmp/debsuryorg-archive-keyring.deb"
+	_ = h.Sys.Mkdir("/var/lib/hostzit/private", 0o700, 0, 0)
+	key := "/var/lib/hostzit/private/debsuryorg-archive-keyring.deb"
 	if _, err := h.Sys.Run(ctx, nil, "curl", "-fsSL", "--proto", "=https", "-o", key, "https://packages.sury.org/debsuryorg-archive-keyring.deb"); err != nil {
 		return userErr("the repository key could not be downloaded: " + err.Error())
 	}

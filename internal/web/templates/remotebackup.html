@@ -1,0 +1,46 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+{{$r := .Data.R}}{{$d := $r.Dest}}
+<section class="panel">
+  <h2>{{template "icon" "disk"}}{{.T "Remote backups"}}</h2>
+  <p class="muted small">{{.T "Every night each active account (files, databases and its settings) is archived and uploaded to an SFTP server or an S3 bucket; the newest copies of each account are kept there. Restore a copy from the customer's page: it is fetched into the import folder and restored with Import."}}</p>
+  {{if not $r.LastRun.IsZero}}<p class="small">{{.T "Last run:"}} {{.Time $r.LastRun}} · {{if $r.Running}}<span class="badge"><i></i>{{.T "running"}}</span>{{else}}<span class="badge {{if $r.LastFail}}warn{{else}}ok{{end}}"><i></i>{{.T "%d done, %d failed" $r.LastOK $r.LastFail}}</span>{{end}}{{if $r.LastError}} <span class="muted mono small">{{$r.LastError}}</span>{{end}}</p>{{end}}
+  <form method="post" action="/settings/remote-backup" class="stack">
+    <label class="check"><input type="checkbox" name="enabled" {{if $r.Enabled}}checked{{end}}><span>{{.T "Back up every night"}}</span></label>
+    <div class="cols">
+      <label>{{.T "Destination"}}<select name="type"><option value="sftp" {{if eq $d.Type "sftp"}}selected{{end}}>SFTP</option><option value="s3" {{if eq $d.Type "s3"}}selected{{end}}>S3 (AWS, MinIO, Wasabi, Backblaze …)</option></select></label>
+      <label>{{.T "Folder or prefix"}}<input name="path" value="{{$d.Path}}" class="mono" spellcheck="false" placeholder="hostzit"><small>{{.T "Each account gets a folder below it."}}</small></label>
+      <label>{{.T "Time (hour, server time)"}}<input type="number" name="hour" value="{{$r.Hour}}" min="0" max="23"></label>
+      <label>{{.T "Copies kept per account"}}<input type="number" name="keep" value="{{$r.Keep}}" min="1" max="365"></label>
+    </div>
+    <h3>SFTP</h3>
+    <div class="cols">
+      <label>{{.T "Server"}}<input name="host" value="{{$d.Host}}" class="mono" spellcheck="false" placeholder="backup.example.com"></label>
+      <label>{{.T "Port"}}<input type="number" name="port" value="{{$d.Port}}" min="1" max="65535"></label>
+      <label>{{.T "User"}}<input name="user" value="{{$d.User}}" class="mono" spellcheck="false" autocomplete="off"></label>
+      <label>{{.T "Password"}} <small>{{if .Data.HasPassword}}{{.T "saved; empty keeps it"}}{{else}}{{.T "optional"}}{{end}}</small><input type="password" name="password" autocomplete="new-password"></label>
+    </div>
+    {{if $r.PublicKey}}<p class="small">{{.T "Or add this key to ~/.ssh/authorized_keys of the user on the backup server (no password needed then):"}}</p><pre class="token small" id="bkkey">{{$r.PublicKey}}</pre><p><button type="button" class="btn secondary sm" data-copy="#bkkey">{{template "icon" "copy"}}{{.T "Copy"}}</button></p>{{end}}
+    {{if $d.HostKey}}<p class="small muted">{{.T "Host key of the server:"}} <span class="mono">{{$d.HostKey}}</span></p>{{end}}
+    <h3>S3</h3>
+    <div class="cols">
+      <label>{{.T "Address"}} <small>{{.T "optional"}}</small><input name="endpoint" value="{{$d.Endpoint}}" class="mono" spellcheck="false" placeholder="https://s3.eu-central-003.backblazeb2.com"><small>{{.T "Empty: Amazon S3."}}</small></label>
+      <label>{{.T "Region"}}<input name="region" value="{{$d.Region}}" class="mono" spellcheck="false" placeholder="eu-central-1"></label>
+      <label>{{.T "Bucket"}}<input name="bucket" value="{{$d.Bucket}}" class="mono" spellcheck="false"></label>
+      <label>{{.T "Access key"}}<input name="access_key" value="{{$d.AccessKey}}" class="mono" spellcheck="false" autocomplete="off"></label>
+      <label>{{.T "Secret key"}} <small>{{if .Data.HasSecret}}{{.T "saved; empty keeps it"}}{{end}}</small><input type="password" name="secret_key" autocomplete="new-password"></label>
+    </div>
+    <div class="row"><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+  <div class="row mt">
+    <form method="post" action="/settings/remote-backup/test"><button class="secondary">{{.T "Test the connection"}}</button></form>
+    <form method="post" action="/settings/remote-backup/run" data-confirm="{{.T "Back up all accounts now?"}}"><button class="secondary">{{template "icon" "upload"}}{{.T "Back up all accounts now"}}</button></form>
+  </div>
+</section>
+</div>
+</div>
+{{end}}

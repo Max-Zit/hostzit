@@ -101,6 +101,7 @@
   <a href="/settings/signin" class="{{if eq .Title "Company sign-in"}}on{{end}}">{{template "icon" "key"}}<span>{{.T "Company sign-in"}}<small>{{.T "OpenID Connect for administrators"}}</small></span></a>
   <a href="/settings/updates" class="{{if eq .Title "Updates"}}on{{end}}">{{template "icon" "download"}}<span>{{.T "Updates"}}<small>{{.T "Signed new versions"}}</small></span></a>
   <a href="/settings/backup" class="{{if eq .Title "Panel backup"}}on{{end}}">{{template "icon" "disk"}}<span>{{.T "Panel backup"}}<small>{{.T "Nightly encrypted backups of the panel"}}</small></span></a>
+  <a href="/settings/remote-backup" class="{{if eq .Title "Remote backups"}}on{{end}}">{{template "icon" "upload"}}<span>{{.T "Remote backups"}}<small>{{.T "Accounts to SFTP or S3 every night"}}</small></span></a>
   <a href="/settings/emailzit" class="{{if eq .Title "EmailZit"}}on{{end}}">{{template "icon" "link"}}<span>EmailZit<small>{{.T "Link to the mail hosting"}}</small></span></a>
   <a href="/settings/mail" class="{{if eq .Title "Notifications"}}on{{end}}">{{template "icon" "mail"}}<span>{{.T "Notifications"}}<small>{{.T "E-mail to administrators and customers"}}</small></span></a>
   <a href="/settings/php" class="{{if eq .Title "PHP"}}on{{end}}">{{template "icon" "service"}}<span>PHP<small>{{.T "Versions for the websites"}}</small></span></a>

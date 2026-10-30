@@ -165,6 +165,9 @@ type backupArgs struct {
 	Name     string   `json:"name"`
 	DBs      []string `json:"dbs"`
 	Manifest string   `json:"manifest"` // JSON written into the archive
+	// toTmp makes the archive in the account's private tmp (for the remote
+	// backups) instead of ~/backups.
+	toTmp bool
 }
 
 // backupCreate makes ~/backups/<name>.tar.gz: the home (without backups),
@@ -190,7 +193,11 @@ func (h *Helper) backupCreate(ctx context.Context, a backupArgs) (any, error) {
 			_ = os.Remove(filepath.Join(tmp, f))
 		}
 	}()
-	tarArgs := []string{"/usr/bin/tar", "-czf", hosting.HomeDir(a.Account) + "/backups/" + a.Name + ".tar.gz", "--exclude=./backups", "--exclude=./.hz-import", "--exclude=./.hz-keep", "--exclude=./.wp-cli/cache",
+	archive := hosting.HomeDir(a.Account) + "/backups/" + a.Name + ".tar.gz"
+	if a.toTmp {
+		archive = "/tmp/" + a.Name + ".tar.gz"
+	}
+	tarArgs := []string{"/usr/bin/tar", "-czf", archive, "--exclude=./backups", "--exclude=./.hz-import", "--exclude=./.hz-keep", "--exclude=./.wp-cli/cache",
 		"-C", hosting.HomeDir(a.Account), "."}
 	var extra []string
 	for _, db := range a.DBs {
@@ -229,6 +236,9 @@ func (h *Helper) backupCreate(ctx context.Context, a backupArgs) (any, error) {
 	tarArgs = append(tarArgs, extra...)
 	if out, err := h.inCage(ctx, a.Account, nil, tarArgs...); err != nil {
 		return nil, userErr("archive failed: " + tail(string(out)+" "+err.Error(), 300))
+	}
+	if a.toTmp {
+		return map[string]any{"file": filepath.Join(tmp, a.Name+".tar.gz")}, nil
 	}
 	st, err := h.files(ctx, filesArgs{Account: a.Account, Req: WorkerReq{Op: "stat", Path: "backups/" + a.Name + ".tar.gz"}})
 	var size int64

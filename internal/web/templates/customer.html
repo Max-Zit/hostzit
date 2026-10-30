@@ -2,7 +2,7 @@
 {{define "content"}}
 {{$c := .Data.C}}
 <div class="pagehead"><h1>{{$c.Username}} {{template "badge" (st $ $c.Status)}}</h1>
-  {{if and .User.CanWrite (eq $c.Status "active")}}<form method="post" action="/customers/{{$c.ID}}/login"><button class="secondary">{{template "icon" "logout"}}{{.T "Open the customer panel"}}</button></form>{{end}}</div>
+  {{if and .User.CanWrite (eq $c.Status "active")}}<form method="post" action="/customers/{{$c.ID}}/login"><button class="secondary">{{template "icon" "logout"}}{{.T "Open the customer panel"}}</button></form>{{end}}<a class="btn ghost" href="/customers/{{$c.ID}}/remote-backups">{{template "icon" "upload"}}{{.T "Remote backups"}}</a></div>
 {{if $c.ApplyError}}<div class="flash err" role="alert">{{template "icon" "alert"}}<span>{{.T "The system account is not up to date:"}} {{$c.ApplyError}}</span></div>{{end}}
 {{if $c.SuspendReason}}<p class="muted">{{.T "Reason:"}} {{$c.SuspendReason}}</p>{{end}}
 <div class="cards2">
