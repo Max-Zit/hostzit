@@ -94,7 +94,7 @@ func (s *Server) sendMail(ctx context.Context, to []string, subject, body string
 	_ = conn.SetDeadline(time.Now().Add(time.Minute))
 	c, err := smtp.NewClient(conn, m.Host)
 	if err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return err
 	}
 	defer c.Close()

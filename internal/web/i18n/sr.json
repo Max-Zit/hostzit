@@ -867,6 +867,7 @@
   "saved; empty keeps it": "sačuvana; prazno je zadržava",
   "secret key must be 32 bytes": "tajni ključ mora imati 32 bajta",
   "security updates": "bezbednosna ažuriranja",
+  "self-signed (certificates are off)": "samopotpisan (sertifikati su isključeni)",
   "server": "server",
   "set the server name above to get a certificate for the panels; until then they use their own (self-signed) one": "podesite ime servera iznad da bi paneli dobili sertifikat; do tada koriste sopstveni (samopotpisan)",
   "signed": "potpisan",

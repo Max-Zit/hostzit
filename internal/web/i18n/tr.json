@@ -867,6 +867,7 @@
   "saved; empty keeps it": "kayıtlı; boş bırakılırsa kalır",
   "secret key must be 32 bytes": "gizli anahtar 32 bayt olmalıdır",
   "security updates": "güvenlik güncellemeleri",
+  "self-signed (certificates are off)": "kendinden imzalı (sertifikalar kapalı)",
   "server": "sunucu",
   "set the server name above to get a certificate for the panels; until then they use their own (self-signed) one": "paneller sertifika alsın diye yukarıda sunucu adını ayarlayın; o zamana kadar kendilerininkini (kendinden imzalı) kullanırlar",
   "signed": "imzalı",

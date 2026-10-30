@@ -258,6 +258,10 @@ func main() {
 		}
 		_, err = c.post(args[2], form)
 		must(err)
+		if os.Getenv("LABQA_BODY") != "" {
+			_, body, _, _ := c.do("POST", args[2], form)
+			fmt.Println(body)
+		}
 		fmt.Println("ok")
 	case "apost":
 		// as the administrator: PATH key=value…

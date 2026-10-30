@@ -84,7 +84,7 @@ func sysMknod(path string, major, minor uint32) error {
 	if err := unix.Mknod(path, unix.S_IFCHR|0o666, int(unix.Mkdev(major, minor))); err != nil { // #nosec G115 -- small device numbers
 		return err
 	}
-	return os.Chmod(path, 0o666)
+	return os.Chmod(path, 0o666) // #nosec G302 -- /dev/null, /dev/zero … in a cage are world-writable devices
 }
 
 // peerUID is the uid of the process on the other end of a Unix socket.

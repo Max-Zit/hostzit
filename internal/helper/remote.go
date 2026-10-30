@@ -130,13 +130,13 @@ func openSFTP(ctx context.Context, d RemoteDest) (remoteStore, string, error) {
 	}
 	sc, chans, reqs, err := ssh.NewClientConn(raw, addr, cfg)
 	if err != nil {
-		raw.Close()
+		_ = raw.Close()
 		return nil, seen, userErr("SSH: " + err.Error())
 	}
 	conn := ssh.NewClient(sc, chans, reqs)
 	c, err := sftp.NewClient(conn)
 	if err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, seen, userErr("SFTP: " + err.Error())
 	}
 	return &sftpStore{conn: conn, c: c}, seen, nil
@@ -152,7 +152,7 @@ func (s *sftpStore) Put(_ context.Context, key string, r io.Reader, _ int64) err
 		return err
 	}
 	if _, err := f.ReadFrom(r); err != nil {
-		f.Close()
+		_ = f.Close()
 		_ = s.c.Remove(tmp)
 		return err
 	}
@@ -193,7 +193,7 @@ func (s *sftpStore) Get(_ context.Context, key string, w io.Writer) error {
 func (s *sftpStore) Delete(_ context.Context, key string) error { return s.c.Remove(key) }
 
 func (s *sftpStore) Close() error {
-	s.c.Close()
+	_ = s.c.Close()
 	return s.conn.Close()
 }
 
@@ -309,7 +309,7 @@ func (s *s3Store) do(ctx context.Context, method, key string, q url.Values, body
 	}
 	if resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		var e struct {
 			Code    string `xml:"Code"`
 			Message string `xml:"Message"`
@@ -329,7 +329,7 @@ func (s *s3Store) Put(ctx context.Context, key string, r io.Reader, size int64) 
 		if err != nil {
 			return err
 		}
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		return nil
 	}
 	// multipart upload in parts of 64 MiB
@@ -341,13 +341,13 @@ func (s *s3Store) Put(ctx context.Context, key string, r io.Reader, size int64) 
 		UploadID string `xml:"UploadId"`
 	}
 	err = xml.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&init)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	if err != nil || init.UploadID == "" {
 		return errors.New("S3: no upload id")
 	}
 	abort := func() {
 		if r, err := s.do(context.Background(), http.MethodDelete, key, url.Values{"uploadId": {init.UploadID}}, nil, 0, []byte{}); err == nil {
-			r.Body.Close()
+			_ = r.Body.Close()
 		}
 	}
 	var parts strings.Builder
@@ -362,7 +362,7 @@ func (s *s3Store) Put(ctx context.Context, key string, r io.Reader, size int64) 
 				abort()
 				return err
 			}
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			fmt.Fprintf(&parts, "<Part><PartNumber>%d</PartNumber><ETag>%s</ETag></Part>", n, resp.Header.Get("ETag"))
 		}
 		if errors.Is(rerr, io.EOF) || errors.Is(rerr, io.ErrUnexpectedEOF) {
@@ -379,7 +379,7 @@ func (s *s3Store) Put(ctx context.Context, key string, r io.Reader, size int64) 
 		abort()
 		return err
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	return nil
 }
 
@@ -405,7 +405,7 @@ func (s *s3Store) List(ctx context.Context, prefix string) ([]remoteObject, erro
 			NextToken   string `xml:"NextContinuationToken"`
 		}
 		err = xml.NewDecoder(io.LimitReader(resp.Body, 32<<20)).Decode(&res)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if err != nil {
 			return nil, err
 		}
@@ -434,8 +434,22 @@ func (s *s3Store) Delete(ctx context.Context, key string) error {
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	return nil
 }
 
 func (s *s3Store) Close() error { return nil }
+
+// createBucket makes the bucket (outside us-east-1 with its region).
+func (s *s3Store) createBucket(ctx context.Context) error {
+	body := []byte{}
+	if s.d.Region != "us-east-1" {
+		body = []byte("<CreateBucketConfiguration><LocationConstraint>" + s.d.Region + "</LocationConstraint></CreateBucketConfiguration>")
+	}
+	resp, err := s.do(ctx, http.MethodPut, "", nil, nil, 0, body)
+	if err != nil {
+		return err
+	}
+	_ = resp.Body.Close()
+	return nil
+}

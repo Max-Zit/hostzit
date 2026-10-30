@@ -58,7 +58,7 @@ func soaQuery(zone string) ([]byte, uint16, error) {
 		if l == "" || len(l) > 63 {
 			return nil, 0, errors.New("invalid zone name")
 		}
-		m = append(m, byte(len(l)))
+		m = append(m, byte(len(l))) // #nosec G115 -- at most 63, checked above
 		m = append(m, l...)
 	}
 	m = append(m, 0, 0, 6, 0, 1) // root, type SOA, class IN

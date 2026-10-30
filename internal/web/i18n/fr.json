@@ -867,6 +867,7 @@
   "saved; empty keeps it": "enregistré ; vide le conserve",
   "secret key must be 32 bytes": "la clé secrète doit faire 32 octets",
   "security updates": "mises à jour de sécurité",
+  "self-signed (certificates are off)": "auto-signé (certificats désactivés)",
   "server": "serveur",
   "set the server name above to get a certificate for the panels; until then they use their own (self-signed) one": "indiquez le nom du serveur ci-dessus pour obtenir un certificat pour les panneaux ; d'ici là, ils utilisent leur propre certificat (auto-signé)",
   "signed": "signé",

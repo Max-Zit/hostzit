@@ -85,7 +85,7 @@ func (h *Helper) updateInstall(ctx context.Context, a updateArgs) (any, error) {
 		return nil, err
 	}
 	out, err := runToFile(ctx, df, "runuser", "-u", "postgres", "--", "pg_dump", "hostzit")
-	df.Close()
+	_ = df.Close()
 	if err != nil {
 		return nil, fmt.Errorf("database backup: %v %s", err, tail(out, 200))
 	}

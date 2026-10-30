@@ -196,7 +196,7 @@ type dbExportArgs struct {
 // only creates the dump in the account's private tmp; compressing and
 // moving it happen as the account in its cage (no root writes in the home).
 func (h *Helper) dbExport(ctx context.Context, a dbExportArgs) (any, error) {
-	if err := (dbArgs{Account: a.Account, Name: a.Name}).check(); err != nil {
+	if err := dbArgs(a).check(); err != nil {
 		return nil, err
 	}
 	uid, ok := h.lookupID(ctx, "passwd", a.Account)
@@ -214,7 +214,7 @@ func (h *Helper) dbExport(ctx context.Context, a dbExportArgs) (any, error) {
 		_ = os.Remove(filepath.Join(tmp, name+".gz"))
 	}()
 	out, err := h.dumpTo(ctx, a.Name, f)
-	f.Close()
+	_ = f.Close()
 	if err != nil {
 		return nil, fmt.Errorf("dump: %v %s", err, tail(out, 200))
 	}

@@ -867,6 +867,7 @@
   "saved; empty keeps it": "uloženo; prázdné ho ponechá",
   "secret key must be 32 bytes": "tajný klíč musí mít 32 bajtů",
   "security updates": "bezpečnostní aktualizace",
+  "self-signed (certificates are off)": "podepsaný sám sebou (certifikáty jsou vypnuté)",
   "server": "server",
   "set the server name above to get a certificate for the panels; until then they use their own (self-signed) one": "nastavte výše název serveru, aby panely dostaly certifikát; do té doby používají vlastní (podepsaný sám sebou)",
   "signed": "podepsáno",

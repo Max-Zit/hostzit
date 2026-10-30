@@ -34,7 +34,7 @@ func rootCreate(path string, uid int) (*os.File, error) {
 		return nil, err
 	}
 	if err := f.Chown(uid, uid); err != nil {
-		f.Close()
+		_ = f.Close()
 		_ = os.Remove(path)
 		return nil, err
 	}
@@ -101,7 +101,7 @@ func (h *Helper) importStage(ctx context.Context, a stageArgs) (any, error) {
 		return nil, err
 	}
 	if _, err := io.Copy(dst, src); err != nil {
-		dst.Close()
+		_ = dst.Close()
 		return nil, err
 	}
 	if err := dst.Close(); err != nil {
@@ -211,7 +211,7 @@ func (h *Helper) backupCreate(ctx context.Context, a backupArgs) (any, error) {
 		}
 		made = append(made, name)
 		out, err := h.dumpTo(ctx, db, f)
-		f.Close()
+		_ = f.Close()
 		if err != nil {
 			return nil, fmt.Errorf("dump of %s: %v %s", db, err, tail(out, 200))
 		}
@@ -227,7 +227,7 @@ func (h *Helper) backupCreate(ctx context.Context, a backupArgs) (any, error) {
 		return nil, err
 	}
 	_, _ = mf.WriteString(a.Manifest)
-	mf.Close()
+	_ = mf.Close()
 	made = append(made, mname)
 	_, _ = h.inCage(ctx, a.Account, nil, "/usr/bin/mv", "/tmp/"+mname, "/tmp/hostzit-manifest.json")
 	made = append(made, "hostzit-manifest.json")

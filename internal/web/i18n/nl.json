@@ -867,6 +867,7 @@
   "saved; empty keeps it": "opgeslagen; leeg behoudt het",
   "secret key must be 32 bytes": "de geheime sleutel moet 32 bytes zijn",
   "security updates": "beveiligingsupdates",
+  "self-signed (certificates are off)": "zelfondertekend (certificaten staan uit)",
   "server": "server",
   "set the server name above to get a certificate for the panels; until then they use their own (self-signed) one": "stel hierboven de servernaam in om een certificaat voor de panelen te krijgen; tot dan gebruiken ze een eigen (zelfondertekend)",
   "signed": "ondertekend",

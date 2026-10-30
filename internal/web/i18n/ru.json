@@ -867,6 +867,7 @@
   "saved; empty keeps it": "сохранён; пусто — оставить",
   "secret key must be 32 bytes": "секретный ключ должен быть 32 байта",
   "security updates": "обновления безопасности",
+  "self-signed (certificates are off)": "самоподписанный (сертификаты выключены)",
   "server": "сервер",
   "set the server name above to get a certificate for the panels; until then they use their own (self-signed) one": "укажите выше имя сервера, чтобы панели получили сертификат; до тех пор они используют собственный (самоподписанный)",
   "signed": "с подписью",

@@ -140,7 +140,7 @@ func (h *Helper) mailRelay(_ context.Context, a relayArgs) (any, error) {
 	if r.Domain != "" && !hosting.ValidDomain(r.Domain) {
 		return nil, userErr("invalid sender domain")
 	}
-	b, _ := json.Marshal(r)
+	b, _ := json.Marshal(r) // #nosec G117 -- the relay password goes into a root-only file (0600) of the helper
 	return nil, h.Sys.WriteFile(relayFile, b, 0o600, 0, 0)
 }
 
@@ -353,7 +353,7 @@ func sendVia(ctx context.Context, relay RelayConfig, account string, q queued, m
 	_ = conn.SetDeadline(time.Now().Add(2 * time.Minute))
 	c, err := smtp.NewClient(conn, relay.Host)
 	if err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return err
 	}
 	defer c.Close()

@@ -867,6 +867,7 @@
   "saved; empty keeps it": "保存済み。空欄ならそのまま",
   "secret key must be 32 bytes": "秘密鍵は 32 バイトである必要があります",
   "security updates": "セキュリティ更新",
+  "self-signed (certificates are off)": "自己署名（証明書はオフ）",
   "server": "サーバー",
   "set the server name above to get a certificate for the panels; until then they use their own (self-signed) one": "パネルの証明書を取得するには上でサーバー名を設定してください。それまでは独自の（自己署名）証明書を使います",
   "signed": "署名あり",

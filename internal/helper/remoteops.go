@@ -96,7 +96,14 @@ func (h *Helper) backupRemoteTest(ctx context.Context, a remoteDestArgs) (any, e
 	}
 	defer store.Close()
 	k := a.Dest.key(".hostzit-test")
-	if err := store.Put(ctx, k, strings.NewReader("HostZit\n"), 8); err != nil {
+	err = store.Put(ctx, k, strings.NewReader("HostZit\n"), 8)
+	if s3, ok := store.(*s3Store); ok && err != nil && strings.Contains(err.Error(), "NoSuchBucket") {
+		// a new bucket (MinIO, a fresh account): make it
+		if err = s3.createBucket(ctx); err == nil {
+			err = store.Put(ctx, k, strings.NewReader("HostZit\n"), 8)
+		}
+	}
+	if err != nil {
 		return nil, userErr("writing failed: " + err.Error())
 	}
 	_ = store.Delete(ctx, k)
@@ -140,14 +147,17 @@ func (h *Helper) backupRemoteFetch(ctx context.Context, a remoteDestArgs) (any, 
 	if err := h.Sys.Mkdir(ImportDir, 0o700, 0, 0); err != nil {
 		return nil, err
 	}
-	name := "hostzit-" + strings.TrimSuffix(base, ".tar.gz") + ".tar.gz"
+	name := base
+	if !strings.HasPrefix(name, "hostzit-") {
+		name = "hostzit-" + name
+	}
 	tmp := filepath.Join(ImportDir, "."+name+".part")
 	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY|noFollowFile, 0o600) // #nosec G304 -- root-only import folder
 	if err != nil {
 		return nil, err
 	}
 	if err := store.Get(ctx, a.Key, f); err != nil {
-		f.Close()
+		_ = f.Close()
 		_ = os.Remove(tmp)
 		return nil, userErr("download failed: " + err.Error())
 	}

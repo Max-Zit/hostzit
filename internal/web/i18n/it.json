@@ -867,6 +867,7 @@
   "saved; empty keeps it": "salvata; vuoto la mantiene",
   "secret key must be 32 bytes": "la chiave segreta deve essere di 32 byte",
   "security updates": "aggiornamenti di sicurezza",
+  "self-signed (certificates are off)": "autofirmato (certificati disattivati)",
   "server": "server",
   "set the server name above to get a certificate for the panels; until then they use their own (self-signed) one": "imposta sopra il nome del server per ottenere un certificato per i pannelli; fino ad allora usano il proprio (autofirmato)",
   "signed": "firmato",
