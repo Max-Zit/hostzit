@@ -2,6 +2,7 @@
 # HostZit installer for Debian 12/13.
 #
 #   install.sh [--mode shared|dedicated] [--version X.Y.Z | --local DIR] [--no-dns] [--php "8.3 8.4"]
+#   install.sh --dns-only --primary IP --catalog NAME   (second name server only)
 #
 # Installs the server software HostZit drives (nginx, PHP-FPM, MariaDB,
 # PowerDNS, PostgreSQL, OpenSSH, quota tools, WP-CLI), creates the hostzit
@@ -10,7 +11,7 @@
 # freshly built binaries). Run it as root on a fresh server.
 set -euo pipefail
 
-MODE=shared LOCAL="" DNS=1 PHPS="" HZ_VERSION=""
+MODE=shared LOCAL="" DNS=1 PHPS="" HZ_VERSION="" DNSONLY=0 PRIMARY="" CATALOG=""
 while [ $# -gt 0 ]; do
 	case "$1" in
 	--mode) MODE=$2; shift 2 ;;
@@ -18,6 +19,9 @@ while [ $# -gt 0 ]; do
 	--no-dns) DNS=0; shift ;;
 	--php) PHPS=$2; shift 2 ;;
 	--version) HZ_VERSION=$2; shift 2 ;;
+	--dns-only) DNSONLY=1; shift ;;
+	--primary) PRIMARY=$2; shift 2 ;;
+	--catalog) CATALOG=$2; shift 2 ;;
 	*) echo "unknown option $1" >&2; exit 2 ;;
 	esac
 done
@@ -26,6 +30,69 @@ done
 case "$VERSION_ID" in 12|13) ;; *) echo "Debian 12 or 13 is required (found $PRETTY_NAME)" >&2; exit 1 ;; esac
 export DEBIAN_FRONTEND=noninteractive
 say() { printf '\n==> %s\n' "$*"; }
+
+# DNS-only server (like cPanel's DNSOnly): only PowerDNS, as secondary of
+# one or more HostZit servers. Each primary publishes a catalog zone (RFC
+# 9432) listing its zones; this server consumes it, so zones are added and
+# removed here by themselves. Run again with another --primary/--catalog to
+# follow one more HostZit server.
+if [ "$DNSONLY" = 1 ]; then
+	[ -n "$PRIMARY" ] && [ -n "$CATALOG" ] || { echo "--dns-only needs --primary IP and --catalog NAME (shown in the admin panel: Settings → Hosting)" >&2; exit 2; }
+	case "$PRIMARY" in *[!0-9a-fA-F.:]*) echo "--primary must be an IP address" >&2; exit 2 ;; esac
+	case "$CATALOG" in *[!a-zA-Z0-9.-]*|.*) echo "--catalog must be a DNS name" >&2; exit 2 ;; esac
+	CATALOG=${CATALOG%.}
+	say "PowerDNS (DNS-only server)"
+	apt-get update -q
+	apt-get -y -q install pdns-server pdns-backend-sqlite3 sqlite3 nftables
+	db=/var/lib/powerdns/pdns.sqlite3
+	if [ ! -s "$db" ]; then
+		install -d -o pdns -g pdns /var/lib/powerdns
+		sqlite3 "$db" < /usr/share/pdns-backend-sqlite3/schema/schema.sqlite3.sql
+		chown pdns:pdns "$db"; chmod 640 "$db"
+	fi
+	rm -f /etc/powerdns/pdns.d/bind.conf
+	# every primary that was added (one per line) may send NOTIFY
+	install -d -m 0755 /etc/hostzit
+	touch /etc/hostzit/dns-primaries
+	grep -qxF "$PRIMARY" /etc/hostzit/dns-primaries || echo "$PRIMARY" >> /etc/hostzit/dns-primaries
+	cat > /etc/powerdns/pdns.d/hostzit-dnsonly.conf <<EOF
+# HostZit DNS-only server (generated)
+launch=gsqlite3
+gsqlite3-database=$db
+gsqlite3-dnssec=yes
+secondary=yes
+allow-notify-from=$(paste -sd, /etc/hostzit/dns-primaries)
+local-address=0.0.0.0, ::
+api=no
+EOF
+	chmod 644 /etc/powerdns/pdns.d/hostzit-dnsonly.conf
+	if systemctl is-active -q systemd-resolved; then
+		install -d /etc/systemd/resolved.conf.d
+		printf '[Resolve]\nDNSStubListener=no\n' > /etc/systemd/resolved.conf.d/hostzit.conf
+		ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+		systemctl restart systemd-resolved
+	fi
+	systemctl enable pdns >/dev/null 2>&1
+	if ! systemctl restart pdns; then
+		if systemd-detect-virt -c -q; then
+			echo "PowerDNS could not start in this container: switch on nesting (Proxmox: the container's Options → Features → Nesting) and run the command again." >&2
+		fi
+		exit 1
+	fi
+	sleep 1
+	if ! pdnsutil list-all-zones 2>/dev/null | grep -qxF "$CATALOG."; then
+		pdnsutil create-secondary-zone "$CATALOG" "$PRIMARY" >/dev/null
+	fi
+	pdnsutil set-kind "$CATALOG" consumer >/dev/null
+	pdnsutil change-secondary-zone-primary "$CATALOG" "$PRIMARY" >/dev/null 2>&1 || true
+	# fetch the catalog now instead of waiting for the next NOTIFY
+	pdns_control retrieve "$CATALOG" >/dev/null 2>&1 || true
+	say "Done"
+	echo "This server follows the zones of $PRIMARY (catalog $CATALOG)."
+	echo "On that HostZit server enter this server's address under Settings → Hosting → Secondary name servers:"
+	hostname -I | awk '{print "  " $1}'
+	exit 0
+fi
 
 say "Installing server software"
 apt-get update -q

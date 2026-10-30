@@ -533,10 +533,16 @@ type hostingSettingsData struct {
 	H   HostingSettings
 	NS  string
 	PHP []string
+	// Secondaries is the state of each secondary name server.
+	Secondaries []secondaryState
 }
 
 func (s *Server) showHostingSettings(w http.ResponseWriter, r *http.Request, status int, h HostingSettings, errMsg string) {
-	p := &Page{Title: "Hosting", Nav: "settings", Data: &hostingSettingsData{H: h, NS: strings.Join(h.Nameservers, "\n"), PHP: s.phpVersions(r.Context())}}
+	d := &hostingSettingsData{H: h, NS: strings.Join(h.Nameservers, "\n"), PHP: s.phpVersions(r.Context())}
+	if status == http.StatusOK && len(h.Secondaries) > 0 {
+		d.Secondaries = s.secondaryStates(r.Context(), h)
+	}
+	p := &Page{Title: "Hosting", Nav: "settings", Data: d}
 	if errMsg != "" {
 		p.Error = translate(s.lang(r, userFrom(r)), errMsg)
 	}
@@ -560,6 +566,10 @@ func (s *Server) handleHostingSettingsSave(w http.ResponseWriter, r *http.Reques
 		s.showHostingSettings(w, r, http.StatusBadRequest, h, err.Error())
 		return
 	}
+	h.Catalog = s.hostingSettings(r.Context()).Catalog // fixed once chosen: DNS-only servers consume it by name
+	if h.Catalog == "" && len(h.Secondaries) > 0 {
+		h.Catalog = catalogName(h)
+	}
 	if !slices.Contains(s.phpVersions(r.Context()), h.DefaultPHP) {
 		s.showHostingSettings(w, r, http.StatusBadRequest, h, "This PHP version is not installed.")
 		return
@@ -569,7 +579,7 @@ func (s *Server) handleHostingSettingsSave(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	s.audit(r, "settings.hosting", "settings", "mode %s, server %s, %s, name servers %s, certificates %q", h.Mode, h.ServerName, h.IPv4, strings.Join(h.Nameservers, " "), h.ACME)
-	if err := s.call(r.Context(), actor(r), "dns.secondaries", map[string]any{"ips": h.Secondaries}, nil); err != nil {
+	if err := s.call(r.Context(), actor(r), "dns.secondaries", map[string]any{"ips": h.Secondaries, "catalog": h.Catalog}, nil); err != nil {
 		s.redirectErr(w, r, "/settings/hosting", storeErr(err))
 		return
 	}

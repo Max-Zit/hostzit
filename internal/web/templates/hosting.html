@@ -33,6 +33,21 @@
     <label>{{.T "Secondary name servers"}} <small>{{.T "optional"}}</small><input name="secondaries" value="{{join .Data.H.Secondaries " "}}" class="mono" spellcheck="false" placeholder="198.51.100.53"><small>{{.T "IP addresses of other name servers (for example ns2) that copy every zone from this server; they are notified of each change."}}</small></label>
     <label>{{.T "SPF record of new zones"}}<input name="spf" value="{{$h.SPF}}" spellcheck="false" class="mono"><small>{{.T "Empty: no SPF record."}}</small></label>
   </div>
+  {{if $h.Catalog}}
+  <h3>{{.T "DNS-only server"}}</h3>
+  <p class="muted small">{{.T "Install the second name server on a small Debian 12 or 13 server with this command. It runs only PowerDNS and takes every zone of this server by itself, also zones added later; deleted zones disappear there too. One DNS-only server can follow several HostZit servers: run the command again with the address and catalog of the other server."}}</p>
+  <pre class="mono small">curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash -s -- --dns-only --primary {{or $h.IPv4 "IP"}} --catalog {{$h.Catalog}}</pre>
+  {{if .Data.Secondaries}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Secondary name servers"}}</th><th>{{.T "State"}}</th><th>{{.T "Zones"}}</th></tr></thead>
+    <tbody>{{range .Data.Secondaries}}<tr>
+      <td class="mono">{{.IP}}</td>
+      <td>{{if not .Answer}}<span class="badge bad"><i></i>{{$.T "no answer"}}</span>{{else if eq .Synced .Total}}<span class="badge ok"><i></i>{{$.T "in sync"}}</span>{{else}}<span class="badge warn"><i></i>{{$.T "behind"}}</span>{{end}}</td>
+      <td>{{$.T "Zones in sync: %d of %d" .Synced .Total}}{{if .Behind}}<br><span class="small mono muted">{{join .Behind " "}}</span>{{end}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{end}}
+  {{end}}
 </section>
 <section class="panel">
   <h2>{{template "icon" "lock"}}{{.T "Certificates (HTTPS)"}}</h2>

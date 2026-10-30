@@ -12,3 +12,7 @@
 
 <h2 id="secondary">Sekundarni name serveri</h2>
 <p>U Podešavanja → Hosting unesite IP adrese drugih name servera koji treba da kopiraju svaku zonu (npr. drugi server kao <code>ns2</code>). Oni tada smeju da preuzmu zone (AXFR) i dobijaju obaveštenje o svakoj izmeni.</p>
+<h2 id="dns-only">DNS-only server</h2>
+<p>Kao cPanel-ov DNSOnly, drugi name server može biti mali Debian 12 ili 13 server na kome radi samo PowerDNS. Unesite njegovu adresu u Sekundarni name serveri i sačuvajte: stranica tada prikazuje komandu koju pokrećete tamo, na primer:</p>
+<pre>curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash -s -- --dns-only --primary 203.0.113.10 --catalog host1.example.com.catalog.invalid</pre>
+<p>HostZit sve zone navodi u catalog zoni (RFC 9432); DNS-only server je prati, pa se nove zone tamo pojave za minut, a obrisane nestanu. Izmene zapisa stižu za nekoliko sekundi (NOTIFY). Jedan DNS-only server može da prati više HostZit servera: pokrenite komandu ponovo sa adresom i katalogom svakog. Tabela ispod komande poredi serijski broj svake zone na svakom sekundarnom serveru. U Proxmox kontejneru prvo uključite <i>Nesting</i>.</p>

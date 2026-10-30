@@ -5,7 +5,7 @@ set -e
 IP=${1:-192.168.101.170}
 cd "$(dirname "$0")/../.."
 export GOTMPDIR=$(cygpath -m "$PWD/.gotmp" 2>/dev/null || echo "$PWD/.gotmp") GOOS=linux GOARCH=amd64
-V="0.1.0-dev+$(git rev-parse --short HEAD)"
+V=${HZ_VERSION:-"0.1.0-dev+$(git rev-parse --short HEAD)"}
 mkdir -p .gotmp/lin
 go build -ldflags "-X main.version=$V" -o .gotmp/lin/hostzit-server ./cmd/hostzit-server
 go build -ldflags "-X main.version=$V" -o .gotmp/lin/hostzit-helper ./cmd/hostzit-helper

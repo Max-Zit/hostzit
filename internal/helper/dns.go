@@ -94,6 +94,9 @@ type pdnsZone struct {
 	RRSets      []pdnsRRSet `json:"rrsets,omitempty"`
 	DNSSEC      bool        `json:"dnssec,omitempty"`
 	SOAEdit     string      `json:"soa_edit_api,omitempty"`
+	// Catalog is the catalog zone (RFC 9432) that lists this zone for
+	// secondaries; "" when the zone is in none.
+	Catalog string `json:"catalog,omitempty"`
 }
 
 type zoneArgs struct {
@@ -103,6 +106,10 @@ type zoneArgs struct {
 	// Hostmaster is the SOA contact (e.g. hostmaster.example.com).
 	Hostmaster string `json:"hostmaster"`
 }
+
+// soaEditAPI makes PowerDNS raise the SOA serial (YYYYMMDDnn) on every
+// change through the API, so secondaries see that the zone changed.
+const soaEditAPI = "DEFAULT"
 
 // dnsApply makes the zone hold exactly the given records (desired state):
 // the zone is created when missing, record sets that are not wanted any
@@ -171,7 +178,7 @@ func (h *Helper) dnsApply(ctx context.Context, a zoneArgs) (any, error) {
 	err = h.pdns(ctx, http.MethodGet, "/zones/"+zone+".", nil, &cur)
 	created := false
 	if errors.Is(err, errZoneMissing) {
-		z := pdnsZone{Name: zone + ".", Kind: "Master", SOAEdit: "INCEPTION-INCREMENT", RRSets: []pdnsRRSet{soa, nsSet}}
+		z := pdnsZone{Name: zone + ".", Kind: "Master", SOAEdit: soaEditAPI, RRSets: []pdnsRRSet{soa, nsSet}, Catalog: h.dnsCatalog()}
 		z.RRSets[0].ChangeType, z.RRSets[1].ChangeType = "", ""
 		if err := h.pdns(ctx, http.MethodPost, "/zones", z, &cur); err != nil {
 			return nil, err
@@ -179,9 +186,10 @@ func (h *Helper) dnsApply(ctx context.Context, a zoneArgs) (any, error) {
 		created = true
 	} else if err != nil {
 		return nil, err
-	} else if cur.Kind != "Master" && cur.Kind != "Primary" {
-		// zones made before secondaries existed: primary zones send NOTIFY
-		_ = h.pdns(ctx, http.MethodPut, "/zones/"+zone+".", map[string]string{"kind": "Master"}, nil)
+	} else if cur.Kind != "Master" && cur.Kind != "Primary" || cur.SOAEdit != soaEditAPI {
+		// zones made by older versions: primary zones send NOTIFY, and
+		// their serial must rise with every change (secondaries compare it)
+		_ = h.pdns(ctx, http.MethodPut, "/zones/"+zone+".", map[string]string{"kind": "Master", "soa_edit_api": soaEditAPI}, nil)
 	}
 	var patch []pdnsRRSet
 	for _, s := range cur.RRSets {
@@ -279,10 +287,31 @@ func (h *Helper) dnsDNSSEC(ctx context.Context, a dnssecArgs) (any, error) {
 
 type secondariesArgs struct {
 	IPs []string `json:"ips"`
+	// Catalog is the catalog zone (RFC 9432) the secondaries consume:
+	// every zone of this server is listed in it, so a DNS-only server adds
+	// and removes zones by itself.
+	Catalog string `json:"catalog"`
 }
 
-// dnsSecondaries lets other name servers copy the zones (AXFR) and tells
-// them about changes (NOTIFY).
+const secondaryConf = "/etc/powerdns/pdns.d/hostzit-secondary.conf"
+
+// dnsCatalog is the catalog zone new zones join ("" while none is set);
+// it is kept as a comment in the secondaries file of PowerDNS.
+func (h *Helper) dnsCatalog() string {
+	b, err := h.Sys.ReadFile(secondaryConf)
+	if err != nil {
+		return ""
+	}
+	for _, l := range strings.Split(string(b), "\n") {
+		if c, ok := strings.CutPrefix(l, "# catalog="); ok {
+			return strings.TrimSpace(c)
+		}
+	}
+	return ""
+}
+
+// dnsSecondaries lets other name servers copy the zones (AXFR), tells them
+// about changes (NOTIFY) and keeps every zone in the catalog zone.
 func (h *Helper) dnsSecondaries(ctx context.Context, a secondariesArgs) (any, error) {
 	ips, err := hosting.CleanNets(a.IPs)
 	if err != nil {
@@ -293,17 +322,76 @@ func (h *Helper) dnsSecondaries(ctx context.Context, a secondariesArgs) (any, er
 			return nil, userErr("enter single addresses of the secondary servers, not networks")
 		}
 	}
-	f := "/etc/powerdns/pdns.d/hostzit-secondary.conf"
+	catalog := ""
+	if a.Catalog != "" {
+		c, err := hosting.NormalizeDomain(a.Catalog)
+		if err != nil {
+			return nil, userErr("catalog zone: " + err.Error())
+		}
+		catalog = c + "."
+	}
 	if len(ips) == 0 {
-		_ = h.Sys.Remove(f)
+		_ = h.Sys.Remove(secondaryConf)
 	} else {
-		conf := "# HostZit (generated, do not edit)\nprimary=yes\nallow-axfr-ips=" + strings.Join(ips, ",") + "\nalso-notify=" + strings.Join(ips, ",") + "\n"
-		if err := h.Sys.WriteFile(f, []byte(conf), 0o644, 0, 0); err != nil {
+		conf := "# HostZit (generated, do not edit)\n# catalog=" + catalog + "\nprimary=yes\nallow-axfr-ips=" + strings.Join(ips, ",") + "\nalso-notify=" + strings.Join(ips, ",") + "\n"
+		if err := h.Sys.WriteFile(secondaryConf, []byte(conf), 0o644, 0, 0); err != nil {
 			return nil, err
 		}
 	}
 	if err := h.systemctl(ctx, "restart", "pdns"); err != nil {
 		return nil, err
 	}
-	return map[string]int{"secondaries": len(ips)}, nil
+	members := 0
+	if len(ips) > 0 && catalog != "" {
+		if members, err = h.dnsFillCatalog(ctx, catalog); err != nil {
+			return nil, err
+		}
+	}
+	return map[string]int{"secondaries": len(ips), "catalog_zones": members}, nil
+}
+
+// dnsFillCatalog creates the producer catalog zone when missing and puts
+// every primary zone into it; PowerDNS keeps the list current from then on
+// (new zones join it at creation, deleted zones leave it).
+func (h *Helper) dnsFillCatalog(ctx context.Context, catalog string) (int, error) {
+	// PowerDNS may still be starting after the restart.
+	var zones []pdnsZone
+	var err error
+	for i := 0; i < 20; i++ {
+		if err = h.pdns(ctx, http.MethodGet, "/zones", nil, &zones); err == nil {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	if err != nil {
+		return 0, err
+	}
+	have := false
+	for _, z := range zones {
+		if z.Name == catalog {
+			have = true
+		}
+	}
+	if !have {
+		if err := h.pdns(ctx, http.MethodPost, "/zones", pdnsZone{Name: catalog, Kind: "Producer"}, nil); err != nil {
+			return 0, err
+		}
+	}
+	n := 0
+	for _, z := range zones {
+		// zones made before secondaries existed are Native: they become
+		// primaries (send NOTIFY) like dnsApply does
+		if z.Name == catalog || z.Kind != "Master" && z.Kind != "Primary" && z.Kind != "Native" {
+			continue
+		}
+		n++
+		if z.Catalog == catalog && z.Kind != "Native" && z.SOAEdit == soaEditAPI {
+			continue
+		}
+		if err := h.pdns(ctx, http.MethodPut, "/zones/"+z.Name, map[string]string{"kind": "Master", "catalog": catalog, "soa_edit_api": soaEditAPI}, nil); err != nil {
+			return n, err
+		}
+	}
+	_ = h.pdns(ctx, http.MethodPut, "/zones/"+catalog+"/notify", nil, nil)
+	return n, nil
 }

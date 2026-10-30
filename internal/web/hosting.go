@@ -42,6 +42,9 @@ type HostingSettings struct {
 	SPF string `json:"spf"`
 	// Secondaries are other name servers that copy the zones (AXFR + NOTIFY).
 	Secondaries []string `json:"secondaries"`
+	// Catalog is the catalog zone (RFC 9432) listing every zone of this
+	// server; DNS-only servers follow it. Chosen once, then kept.
+	Catalog string `json:"catalog,omitempty"`
 }
 
 func defaultHosting() HostingSettings {
@@ -540,4 +543,14 @@ func (s *Server) collectUsage(ctx context.Context) {
 		}
 		_ = s.store.AddUsage(ctx, c.ID, store.UsageSample{At: now, DiskKB: u.DiskKB, Inodes: u.Inodes, DBB: dbb, MemoryB: u.MemoryB, CPUUsec: u.CPUUsec, IOB: u.IOReadB + u.IOWriteB, Tasks: int(u.Tasks)})
 	}
+}
+
+// catalogName names the catalog zone of this server: unique per server so
+// one DNS-only server can follow several HostZit servers.
+func catalogName(h HostingSettings) string {
+	base := h.ServerName
+	if base == "" {
+		base = "hostzit-" + strings.NewReplacer(".", "-", ":", "-").Replace(h.IPv4)
+	}
+	return strings.TrimSuffix(base, ".") + ".catalog.invalid"
 }

@@ -12,3 +12,7 @@
 
 <h2 id="secondary">Secondary name servers</h2>
 <p>Under Settings → Hosting, enter the IP addresses of other name servers that should copy every zone (for example a second server as <code>ns2</code>). They may then transfer the zones (AXFR) and are notified of each change.</p>
+<h2 id="dns-only">DNS-only server</h2>
+<p>Like cPanel's DNSOnly, the second name server can be a small Debian 12 or 13 server that runs only PowerDNS. Enter its address under Secondary name servers and save: the page then shows the command to run there, for example:</p>
+<pre>curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash -s -- --dns-only --primary 203.0.113.10 --catalog host1.example.com.catalog.invalid</pre>
+<p>HostZit lists every zone in a catalog zone (RFC 9432); the DNS-only server follows it, so new zones appear there within a minute and deleted zones disappear. Changes of records arrive within seconds (NOTIFY). One DNS-only server can follow several HostZit servers: run the command again with the address and catalog of each. The table under the command compares the serial of every zone on each secondary. In a Proxmox container switch on <i>Nesting</i> first.</p>
