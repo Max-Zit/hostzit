@@ -79,5 +79,5 @@ func (s *Server) handleUpdateInstall(w http.ResponseWriter, r *http.Request) {
 		s.redirectErr(w, r, "/settings/updates", storeErr(err))
 		return
 	}
-	s.redirect(w, r, "/settings/updates", "The new version is installed; the panel restarts. Reload the page in a minute.")
+	s.redirect(w, r, "/settings/updates", "The new version is being installed; the panel restarts in a moment. Reload the page in a minute.")
 }

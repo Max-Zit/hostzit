@@ -89,13 +89,12 @@ func (h *Helper) updateInstall(ctx context.Context, a updateArgs) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("database backup: %v %s", err, tail(out, 200))
 	}
-	if out, err := h.Sys.Run(ctx, nil, "dpkg", "-i", pkg); err != nil {
+	// dpkg runs in a unit of its own: the package restarts the helper and the
+	// panel, which must not stop the installation itself
+	unit := "hostzit-update-" + strings.ReplaceAll(m.Version, ".", "-")
+	if out, err := h.Sys.Run(ctx, nil, "systemd-run", "--unit="+unit, "--collect", "--on-active=2", "--setenv=DEBIAN_FRONTEND=noninteractive", "dpkg", "-i", pkg); err != nil {
 		return nil, fmt.Errorf("install: %v %s", err, tail(string(out), 400))
 	}
-	_ = h.systemctl(ctx, "daemon-reload")
-	_ = h.systemctl(ctx, "restart", "hostzit-server")
-	// the helper itself restarts a moment later, after it answered
-	_, _ = h.Sys.Run(ctx, nil, "systemd-run", "--on-active=3", "--unit=hostzit-helper-restart-"+strings.ReplaceAll(m.Version, ".", "-"), "systemctl", "restart", "hostzit-helper")
-	h.logf("updated to %s", m.Version)
-	return map[string]string{"version": m.Version}, nil
+	h.logf("update to %s started (%s)", m.Version, unit)
+	return map[string]string{"version": m.Version, "started": "yes"}, nil
 }

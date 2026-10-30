@@ -93,10 +93,10 @@ func main() {
 func describe(n string) update.File {
 	f := update.File{Name: n, Kind: "other"}
 	switch {
-	case strings.HasPrefix(n, "hostzit-server"):
+	case strings.HasPrefix(n, "hostzit-server"), strings.HasPrefix(n, "hostzit_"), strings.HasPrefix(n, "hostzit-") && strings.HasSuffix(n, ".rpm"):
 		f.Kind = "server"
-	case strings.HasPrefix(n, "hostzit-agent"):
-		f.Kind = "agent"
+	case strings.HasPrefix(n, "hostzit-helper"):
+		f.Kind = "helper"
 	}
 	switch {
 	case strings.HasSuffix(n, ".deb"):
