@@ -260,7 +260,13 @@ func (h *Helper) cageMount(_ context.Context, account string) error {
 		if h.Sys.Mounted(t) {
 			continue
 		}
-		if err := h.Sys.Mkdir(t, 0o755, 0, 0); err != nil {
+		if m.File {
+			if !h.Sys.Exists(t) {
+				if err := h.Sys.WriteFile(t, nil, 0o644, 0, 0); err != nil {
+					return err
+				}
+			}
+		} else if err := h.Sys.Mkdir(t, 0o755, 0, 0); err != nil {
 			return err
 		}
 		if err := h.Sys.Mount(MountReq{Source: m.Source, Target: t, ReadOnly: m.ReadOnly}); err != nil {

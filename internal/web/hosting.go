@@ -452,6 +452,9 @@ func (s *Server) Run(ctx context.Context) {
 			_ = s.store.PurgeSessions(ctx)
 			_ = s.store.PruneUsage(ctx)
 			s.purgeTerminated(ctx)
+			if s.now().Hour() == 3 {
+				go s.autoUpdateWP(ctx)
+			}
 		}
 	}
 }

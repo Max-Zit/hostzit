@@ -37,7 +37,7 @@ func CageMounts(account string) []Mount {
 		{Source: TmpDir(account), Target: "/tmp"},
 		{Source: TmpDir(account), Target: "/var/tmp"},
 		{Source: "/run/mysqld", Target: "/run/mysqld", Optional: true},
-		{Source: "/run/emailzit/submit", Target: "/run/emailzit/submit", Optional: true},
+		{Source: "/run/emailzit/submit.sock", Target: "/run/emailzit/submit.sock", File: true, Optional: true},
 	}
 	for _, d := range cageEtcDirs {
 		m = append(m, Mount{Source: "/etc/" + d, Target: "/etc/" + d, ReadOnly: true, Optional: true})
@@ -65,7 +65,7 @@ var CageDirs = []struct {
 }
 
 // CageSymlinks are the merged-/usr links (Debian 12+).
-var CageSymlinks = map[string]string{"/bin": "usr/bin", "/sbin": "usr/sbin", "/lib": "usr/lib", "/lib64": "usr/lib64"}
+var CageSymlinks = map[string]string{"/bin": "usr/bin", "/sbin": "usr/sbin", "/lib": "usr/lib", "/lib64": "usr/lib64", "/var/run": "../run", "/var/lock": "../run/lock"}
 
 // CagePasswd renders the cage's /etc/passwd: root, the account, nobody.
 func CagePasswd(a Account) (string, error) {

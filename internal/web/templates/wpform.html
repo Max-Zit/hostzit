@@ -1,0 +1,24 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Install WordPress"}}</h1>
+{{if not .Data.Sites}}
+<div class="flash warn" role="alert">{{template "icon" "alert"}}<span>{{.T "Every website already has WordPress, or there is no website yet."}} <a href="/sites/new">{{.T "New website"}}</a></span></div>
+{{else}}
+<section class="panel">
+<form method="post" action="/wordpress/new" class="stack">
+  <label>{{.T "Website"}}<select name="site" required>{{range .Data.Sites}}<option value="{{.ID}}" {{if eq (printf "%d" .ID) (index $.Data.F "site")}}selected{{end}}>{{.Domain}}</option>{{end}}</select><small>{{.T "WordPress goes into the document root of the website; the files there are kept."}}</small></label>
+  <label>{{.T "Title of the website"}}<input name="title" value="{{index .Data.F "title"}}" required maxlength="200"></label>
+  <div class="cols">
+    <label>{{.T "Administrator name"}}<input name="user" value="{{index .Data.F "user"}}" required pattern="[A-Za-z0-9._@\-]{3,60}" autocomplete="off"><small>{{.T "Not admin: that is the first name attackers try."}}</small></label>
+    <label>{{.T "Administrator e-mail"}}<input type="email" name="email" value="{{index .Data.F "email"}}" required></label>
+  </div>
+  <div class="cols">
+    <label>{{.T "Password"}} <small>{{.T "optional"}}</small><input type="password" name="password" minlength="12" autocomplete="new-password"><small>{{.T "Empty: a strong password is generated and shown once."}}</small></label>
+    <label>{{.T "Language"}}<select name="lang">{{$l := index .Data.F "lang"}}{{range list "en_US" "de_DE" "fr_FR" "es_ES" "it_IT" "pt_PT" "nl_NL" "pl_PL" "cs_CZ" "sr_RS" "hr" "tr_TR" "ru_RU" "zh_CN" "ja"}}<option {{if eq . $l}}selected{{end}}>{{.}}</option>{{end}}</select></label>
+  </div>
+  <p class="small muted">{{.T "A database and its user are created for it, the file editor in wp-admin is switched off and pretty links are set up."}}</p>
+  <div><button class="primary">{{template "icon" "wordpress"}}{{.T "Install WordPress"}}</button></div>
+</form>
+</section>
+{{end}}
+{{end}}

@@ -1,0 +1,16 @@
+{{template "app" .}}
+{{define "content"}}
+<div class="pagehead"><h1>WordPress</h1><div class="row"><form method="post" action="/wordpress/scan"><button class="ghost">{{template "icon" "refresh"}}{{.T "Find existing installs"}}</button></form><a class="btn primary" href="/wordpress/new">{{template "icon" "plus"}}{{.T "Install WordPress"}}</a></div></div>
+{{if .Data.Installs}}
+<div class="table-wrap"><table>
+  <thead><tr><th>{{.T "Website"}}</th><th>{{.T "Version"}}</th><th>{{.T "Updates"}}</th><th class="hide-sm">{{.T "Automatic updates"}}</th></tr></thead>
+  <tbody>{{range .Data.Installs}}<tr>
+    <td><a href="/wordpress/{{.ID}}"><b>{{.Domain}}</b></a></td><td>{{.Version}}</td>
+    <td>{{if .Updates.Count}}<span class="badge warn"><i></i>{{.Updates.Count}}</span>{{else if .CheckedAt}}<span class="badge ok"><i></i>{{$.T "up to date"}}</span>{{else}}<span class="muted">—</span>{{end}}</td>
+    <td class="hide-sm">{{if eq .AutoUpdate "all"}}{{$.T "everything"}}{{else if eq .AutoUpdate "minor"}}{{$.T "security updates"}}{{else}}{{$.T "off"}}{{end}}</td>
+  </tr>{{end}}</tbody>
+</table></div>
+{{else}}
+<div class="empty">{{template "icon" "wordpress"}}<p>{{.T "No WordPress sites yet. Install WordPress on one of your websites in a minute."}}</p><a class="btn primary" href="/wordpress/new">{{template "icon" "plus"}}{{.T "Install WordPress"}}</a></div>
+{{end}}
+{{end}}

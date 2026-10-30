@@ -1,0 +1,61 @@
+{{template "app" .}}
+{{define "content"}}
+{{$w := .Data.W}}
+<div class="pagehead"><h1>{{$w.Domain}} <span class="muted small">WordPress {{$w.Version}}</span></h1>
+  <form method="post" action="/wordpress/{{$w.ID}}/login"><button class="primary">{{template "icon" "logout"}}{{.T "Open wp-admin"}}</button></form></div>
+{{with .Data.NewPassword}}
+<section class="panel accent">
+  <h2>{{$.T "Administrator password"}}</h2>
+  <p>{{$.T "Sign in to wp-admin as %s with this password. It is shown only now; you can always sign in with the button above." $w.AdminUser}}</p>
+  <pre class="token" id="wppw">{{.}}</pre><p><button type="button" class="btn secondary sm" data-copy="#wppw">{{template "icon" "copy"}}{{$.T "Copy"}}</button></p>
+</section>
+{{end}}
+{{if $w.LastError}}<div class="flash err" role="alert">{{template "icon" "alert"}}<span>{{$w.LastError}}</span></div>{{end}}
+<section class="panel">
+  <div class="titlebar"><h2>{{template "icon" "refresh"}}{{.T "Updates"}}</h2>
+    <div class="row"><form method="post" action="/wordpress/{{$w.ID}}/check"><button class="ghost sm">{{.T "Check now"}}</button></form>
+    {{if $w.Updates.Count}}<form method="post" action="/wordpress/{{$w.ID}}/update" data-confirm="{{.T "Update WordPress, all plugins and themes? A snapshot is made first."}}"><button class="primary sm">{{.T "Update everything"}}</button></form>{{end}}</div></div>
+  {{if $w.CheckedAt}}
+    {{if $w.Updates.Count}}
+    <ul>
+      {{with $w.Updates.Core}}<li><b>WordPress</b> {{$w.Version}} → {{.}}</li>{{end}}
+      {{range $w.Updates.Plugins}}<li>{{$.T "Plugin"}} <b>{{.Name}}</b> {{.Version}} → {{.New}}</li>{{end}}
+      {{range $w.Updates.Themes}}<li>{{$.T "Theme"}} <b>{{.Name}}</b> {{.Version}} → {{.New}}</li>{{end}}
+    </ul>
+    {{else}}<p><span class="badge ok"><i></i>{{.T "up to date"}}</span></p>{{end}}
+    <p class="small muted">{{.T "Checked %s." (.Ago $w.CheckedAt)}}{{with $w.UpdatedAt}} {{$.T "Last update %s." ($.Ago .)}}{{end}}</p>
+  {{else}}<p class="muted">{{.T "Not checked yet."}}</p>{{end}}
+  <form method="post" action="/wordpress/{{$w.ID}}/auto" class="row mt">
+    <label>{{.T "Automatic updates (every night, with a snapshot first)"}}<select name="policy" data-autosubmit>
+      <option value="minor" {{if eq $w.AutoUpdate "minor"}}selected{{end}}>{{.T "Security updates of WordPress"}}</option>
+      <option value="all" {{if eq $w.AutoUpdate "all"}}selected{{end}}>{{.T "Everything: WordPress, plugins and themes"}}</option>
+      <option value="off" {{if eq $w.AutoUpdate "off"}}selected{{end}}>{{.T "Off"}}</option>
+    </select></label><noscript><button class="secondary sm">{{.T "Save"}}</button></noscript>
+  </form>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "shield"}}{{.T "Security"}}</h2>
+  <form method="post" action="/wordpress/{{$w.ID}}/harden" class="stack">
+    <label class="check"><input type="checkbox" name="file_edit" checked><span>{{.T "Switch off the theme and plugin editor in wp-admin (DISALLOW_FILE_EDIT)"}}</span></label>
+    <label class="check"><input type="checkbox" name="debug_off" checked><span>{{.T "Debug output off (WP_DEBUG false)"}}</span></label>
+    <label class="check"><input type="checkbox" name="xmlrpc" {{if .Data.Site}}{{if .Data.Site.BlockXMLRPC}}checked{{end}}{{end}}><span>{{.T "Block xmlrpc.php (stops many password-guessing attacks; Jetpack and the mobile app need it)"}}</span></label>
+    <label class="check"><input type="checkbox" name="salts"><span>{{.T "New security keys (signs everyone out)"}}</span></label>
+    <p class="small muted">{{.T "Always on: PHP files in uploads are not run, wp-config.php is never served, other accounts cannot read your files."}}</p>
+    <div><button class="secondary">{{.T "Apply"}}</button></div>
+  </form>
+</section>
+<section class="panel">
+  <div class="titlebar"><h2>{{template "icon" "disk"}}{{.T "Snapshots"}}</h2><form method="post" action="/wordpress/{{$w.ID}}/snapshot"><button class="ghost sm">{{template "icon" "plus"}}{{.T "Make a snapshot"}}</button></form></div>
+  <p class="small muted">{{.T "A snapshot holds the files and the database. It is made automatically before every update and stored in ~/backups."}}</p>
+  {{if .Data.Snapshots}}
+  <div class="table-wrap"><table><tbody>{{range .Data.Snapshots}}<tr>
+    <td>{{$.Time .CreatedAt}}</td><td class="muted small">{{$.T .Note}}</td><td class="num">{{bytes .SizeB}}</td>
+    <td class="actions"><form method="post" action="/wordpress/{{$w.ID}}/snapshots/{{.ID}}/restore" data-confirm="{{$.T "Put the website back to this snapshot? Changes since then are lost."}}"><button class="secondary sm">{{$.T "Restore"}}</button></form>
+      <form method="post" action="/wordpress/{{$w.ID}}/snapshots/{{.ID}}/delete" data-confirm="{{$.T "Delete this snapshot?"}}"><button class="ghost sm" aria-label="{{$.T "Delete"}}">{{template "icon" "trash"}}</button></form></td>
+  </tr>{{end}}</tbody></table></div>
+  {{end}}
+</section>
+<p class="small muted">{{.T "Folder:"}} <span class="mono">~/{{$w.Path}}</span>{{with $w.DBName}} · {{$.T "Database:"}} <span class="mono">{{.}}</span>{{end}}
+  · <a href="/sites/{{$w.SiteID}}">{{.T "Website settings and page cache"}}</a></p>
+<form method="post" action="/wordpress/{{$w.ID}}/forget" data-confirm="{{.T "Remove from the list? The files and the database stay."}}"><button class="ghost sm">{{.T "Remove from the list"}}</button></form>
+{{end}}
