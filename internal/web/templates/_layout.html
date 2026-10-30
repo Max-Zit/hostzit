@@ -103,6 +103,7 @@
   <a href="/settings/backup" class="{{if eq .Title "Panel backup"}}on{{end}}">{{template "icon" "disk"}}<span>{{.T "Panel backup"}}<small>{{.T "Nightly encrypted backups of the panel"}}</small></span></a>
   <a href="/settings/emailzit" class="{{if eq .Title "EmailZit"}}on{{end}}">{{template "icon" "link"}}<span>EmailZit<small>{{.T "Link to the mail hosting"}}</small></span></a>
   <a href="/settings/mail" class="{{if eq .Title "Notifications"}}on{{end}}">{{template "icon" "mail"}}<span>{{.T "Notifications"}}<small>{{.T "E-mail to administrators and customers"}}</small></span></a>
+  <a href="/settings/php" class="{{if eq .Title "PHP"}}on{{end}}">{{template "icon" "service"}}<span>PHP<small>{{.T "Versions for the websites"}}</small></span></a>
   <a href="/settings/system" class="{{if eq .Title "System"}}on{{end}}">{{template "icon" "cpu"}}<span>{{.T "System"}}<small>{{if .Appliance}}{{.T "Network, host name, time zone, restart"}}{{else}}{{.T "Host name, address, time zone"}}{{end}}</small></span></a>
 </nav>{{end}}
 

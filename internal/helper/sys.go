@@ -49,7 +49,7 @@ var writablePrefixes = []string{
 	"/var/lib/hostzit/", "/var/cache/hostzit/", "/var/log/hostzit/", "/etc/ssh/sshd_config.d/hostzit.conf",
 	"/usr/share/hostzit/", "/var/lib/zit-acme/", "/etc/nftables.d/hostzit.nft", "/etc/hostzit/",
 	"/etc/mysql/mariadb.conf.d/90-hostzit.cnf", "/etc/powerdns/pdns.d/hostzit.conf", "/etc/powerdns/pdns.d/hostzit-secondary.conf", "/etc/php/", "/var/spool/hostzit/",
-	"/etc/systemd/network/50-hostzit.network",
+	"/etc/systemd/network/50-hostzit.network", "/etc/apt/sources.list.d/hostzit-php-sury.list",
 }
 
 func allowedWrite(p string) bool {

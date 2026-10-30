@@ -1,0 +1,28 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+<section class="panel">
+  <h2>{{template "icon" "service"}}{{.T "PHP versions"}}</h2>
+  <p class="muted small">{{.T "Every installed version can be chosen per website; each account runs its own PHP processes per version. Versions other than Debian's come from packages.sury.org, the repository of Debian's PHP maintainer."}}</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>PHP</th><th class="num">{{.T "Websites"}}</th><th></th></tr></thead>
+    <tbody>{{range .Data.Installed}}<tr>
+      <td><b>{{.Version}}</b>{{if .Default}} <span class="badge ok"><i></i>{{$.T "Default PHP"}}</span>{{end}}</td>
+      <td class="num">{{.Sites}}</td>
+      <td class="actions">{{if and (not .Default) (eq .Sites 0)}}<form method="post" action="/settings/php/remove" data-confirm="{{$.T "Remove PHP %s from the server?" .Version}}"><input type="hidden" name="version" value="{{.Version}}"><button class="ghost sm danger" aria-label="{{$.T "Delete"}}">{{template "icon" "trash"}}</button></form>{{end}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{if .Data.Offered}}
+  <form method="post" action="/settings/php/install" class="row mt" data-confirm="{{.T "Install this PHP version? It takes a minute or two."}}">
+    <select name="version" aria-label="PHP">{{range .Data.Offered}}<option>{{.}}</option>{{end}}</select>
+    <button class="primary">{{template "icon" "plus"}}{{.T "Install"}}</button>
+  </form>
+  <p class="small muted">{{.T "Old versions (5.6 to 8.0) no longer get security fixes from PHP; use them only for websites that cannot run on a newer one."}}</p>
+  {{end}}
+</section>
+</div>
+</div>
+{{end}}
