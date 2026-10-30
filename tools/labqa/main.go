@@ -258,6 +258,16 @@ func main() {
 		_, err = c.post(args[2], form)
 		must(err)
 		fmt.Println("ok")
+	case "apost":
+		// as the administrator: PATH key=value…
+		form := url.Values{}
+		for _, kv := range args[2:] {
+			k, v, _ := strings.Cut(kv, "=")
+			form.Add(k, v)
+		}
+		_, err := a.post(args[1], form)
+		must(err)
+		fmt.Println("ok")
 	case "page":
 		_, body, _, err := a.do("GET", args[1], nil)
 		must(err)

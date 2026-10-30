@@ -28,7 +28,7 @@ say() { printf '\n==> %s\n' "$*"; }
 
 say "Installing server software"
 apt-get update -q
-pkgs="nginx mariadb-server postgresql openssh-server quota curl ca-certificates unzip nftables"
+pkgs="nginx libnginx-mod-http-modsecurity modsecurity-crs mariadb-server postgresql openssh-server quota curl ca-certificates unzip nftables fail2ban"
 [ "$DNS" = 1 ] && pkgs="$pkgs pdns-server pdns-backend-sqlite3 sqlite3"
 if [ -z "$PHPS" ]; then
 	PHPS=$(apt-cache search --names-only '^php[0-9.]+-fpm$' | sed -E 's/^php([0-9.]+)-fpm.*/\1/' | sort -V | tail -1)
@@ -91,7 +91,7 @@ EOF
 fi
 
 say "Disk quotas"
-if quotaon -p -u / 2>&1 | grep -q " is on"; then
+if (quotaon -p -u / 2>&1 || true) | grep -q " is on"; then
 	echo "user quotas are active on /"
 else
 	fstype=$(findmnt -no FSTYPE /)
@@ -113,7 +113,7 @@ install -d /usr/lib/hostzit
 if [ -n "$LOCAL" ]; then
 	install -m 0755 "$LOCAL/hostzit-server" /usr/bin/hostzit-server
 	install -m 0755 "$LOCAL/hostzit-helper" /usr/lib/hostzit/hostzit-helper
-	install -m 0644 "$LOCAL/hostzit-server.service" "$LOCAL/hostzit-helper.service" /etc/systemd/system/
+	install -m 0644 "$LOCAL/hostzit-server.service" "$LOCAL/hostzit-helper.service" "$LOCAL/hostzit-firewall.service" /etc/systemd/system/
 else
 	echo "release downloads come with 0.8; use --local DIR" >&2; exit 1
 fi
@@ -121,7 +121,7 @@ systemctl daemon-reload
 systemctl enable --now hostzit-helper
 sleep 1
 /usr/lib/hostzit/hostzit-helper setup >/dev/null
-systemctl enable hostzit-server >/dev/null 2>&1
+systemctl enable hostzit-server hostzit-firewall >/dev/null 2>&1
 systemctl restart hostzit-server
 sleep 3
 say "Done"

@@ -119,6 +119,30 @@ func (h *Helper) siteApply(ctx context.Context, a siteApplyArgs) (any, error) {
 	} else {
 		remove = append(remove, zonePath)
 	}
+	// password files of protected folders (only nginx may read them)
+	if err := h.Sys.Mkdir(hosting.NginxAuthDir, 0o750, 0, h.nginxGID()); err != nil {
+		return nil, err
+	}
+	prefix := strconv.FormatInt(s.ID, 10) + "-"
+	keep := map[string]bool{}
+	for i, p := range s.Protected {
+		f := hosting.HtpasswdPath(s.ID, i)
+		keep[f] = true
+		if err := h.Sys.WriteFile(f, []byte(hosting.Htpasswd(p)), 0o640, 0, h.nginxGID()); err != nil {
+			return nil, err
+		}
+	}
+	if ents, err := h.Sys.ReadDir(hosting.NginxAuthDir); err == nil {
+		for _, e := range ents {
+			f := hosting.NginxAuthDir + "/" + e.Name()
+			if strings.HasPrefix(e.Name(), prefix) && !keep[f] {
+				_ = h.Sys.Remove(f)
+			}
+		}
+	}
+	if s.WAF && !h.Sys.Exists(hosting.ModSecConf) {
+		return nil, userErr("the web application firewall (ModSecurity) is not installed on this server")
+	}
 	if err := h.nginxApply(ctx, files, remove); err != nil {
 		return nil, err
 	}
@@ -270,4 +294,11 @@ func (h *Helper) admGID() int {
 		return id
 	}
 	return 4
+}
+
+func (h *Helper) nginxGID() int {
+	if id, ok := h.lookupID(context.Background(), "group", "www-data"); ok {
+		return id
+	}
+	return 33
 }

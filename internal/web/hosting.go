@@ -441,6 +441,12 @@ func (s *Server) Run(ctx context.Context) {
 	defer usage.Stop()
 	defer hourly.Stop()
 	go s.runCerts(ctx)
+	go func() {
+		// the firewall table and the mail relay live in files of the helper; load them
+		time.Sleep(2 * time.Second)
+		_ = s.applyFirewall(ctx, "system")
+		_ = s.applyRelay(ctx, "system")
+	}()
 	time.AfterFunc(time.Minute, func() { s.collectUsage(ctx) })
 	for {
 		select {

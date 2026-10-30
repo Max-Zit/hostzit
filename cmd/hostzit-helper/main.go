@@ -56,6 +56,10 @@ func run() error {
 		}
 		return helper.RunWorker(home, os.Stdin, os.Stdout)
 	}
+	if cmd == "sendmail" {
+		// PHP's mail() inside a cage, as the account: into the spool
+		return helper.RunSendmail("/.spool", args[1:], os.Stdin)
+	}
 	if cmd == "version" {
 		fmt.Println("hostzit-helper", version)
 		return nil
@@ -132,6 +136,7 @@ func run() error {
 		return err
 	}
 	go func() { <-ctx.Done(); _ = l.Close() }()
+	go h.RunMailer(ctx)
 	log.Info("HostZit helper started", "version", version, "socket", *socket, "panel_uid", h.PanelUID, "ops", len(h.Ops()))
 	return h.Serve(ctx, l)
 }

@@ -33,6 +33,8 @@ type MailSettings struct {
 	From     string   `json:"from"`
 	Admins   []string `json:"admins"`   // addresses of the administrators
 	Customer bool     `json:"customer"` // also tell customers about their own account
+	// WebRelay: mail from websites also goes through this server.
+	WebRelay bool `json:"web_relay"`
 }
 
 // Validate checks the settings.
@@ -198,7 +200,7 @@ func (s *Server) handleMailSettings(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleMailSettingsSave(w http.ResponseWriter, r *http.Request) {
 	old := s.mailSettings(r.Context())
 	m := MailSettings{Host: strings.TrimSpace(r.FormValue("host")), Port: formInt(r, "port"), Security: r.FormValue("security"), User: strings.TrimSpace(r.FormValue("user")),
-		From: strings.TrimSpace(r.FormValue("from")), Admins: netacl.Split(r.FormValue("admins")), Customer: r.FormValue("customer") != "", Password: old.Password}
+		From: strings.TrimSpace(r.FormValue("from")), Admins: netacl.Split(r.FormValue("admins")), Customer: r.FormValue("customer") != "", WebRelay: r.FormValue("web_relay") != "", Password: old.Password}
 	if pw := r.FormValue("password"); pw != "" {
 		m.Password = s.store.SealSecret("mail.password", pw)
 	}
@@ -210,6 +212,10 @@ func (s *Server) handleMailSettingsSave(w http.ResponseWriter, r *http.Request) 
 	}
 	if err := s.store.SetSetting(r.Context(), settingMail, m); err != nil {
 		s.serverError(w, r, err)
+		return
+	}
+	if err := s.applyRelay(r.Context(), actor(r)); err != nil {
+		s.redirectErr(w, r, "/settings/mail", storeErr(err))
 		return
 	}
 	s.audit(r, "settings.mail", "settings", "SMTP %s:%d (%s), %d administrators", m.Host, m.Port, m.Security, len(m.Admins))
@@ -231,4 +237,16 @@ func (s *Server) handleMailTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.redirect(w, r, "/settings/mail", translate(s.lang(r, userFrom(r)), "A test message was sent to %s.", strings.Join(to, ", ")))
+}
+
+// applyRelay tells the helper where mail from websites goes.
+func (s *Server) applyRelay(ctx context.Context, by string) error {
+	m := s.mailSettings(ctx)
+	relay := map[string]any{"host": "", "port": 0}
+	if m.WebRelay && m.Host != "" {
+		pw, _ := s.store.OpenSecret("mail.password", m.Password)
+		dom := s.hostingSettings(ctx).ServerName
+		relay = map[string]any{"host": m.Host, "port": m.Port, "security": m.Security, "user": m.User, "password": pw, "domain": dom}
+	}
+	return s.call(ctx, by, "mail.relay", map[string]any{"relay": relay}, nil)
 }

@@ -66,6 +66,7 @@
     <a href="/files" class="{{if eq .Nav "files"}}on{{end}}">{{template "icon" "folder"}}{{.T "Files"}}</a>
     <a href="/access" class="{{if eq .Nav "access"}}on{{end}}">{{template "icon" "terminal"}}{{.T "SFTP and SSH"}}</a>
     <a href="/cron" class="{{if eq .Nav "cron"}}on{{end}}">{{template "icon" "clock"}}{{.T "Scheduled jobs"}}</a>
+    <a href="/security" class="{{if eq .Nav "security"}}on{{end}}">{{template "icon" "shield"}}{{.T "Security"}}</a>
     <a href="/usage" class="{{if eq .Nav "usage"}}on{{end}}">{{template "icon" "disk"}}{{.T "Usage"}}</a>
     <a href="/docs" class="{{if eq .Nav "docs"}}on{{end}}">{{template "icon" "book"}}{{.T "User guide"}}</a>
   </nav>{{end}}

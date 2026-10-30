@@ -36,6 +36,7 @@ func CageMounts(account string) []Mount {
 		{Source: home, Target: home},
 		{Source: TmpDir(account), Target: "/tmp"},
 		{Source: TmpDir(account), Target: "/var/tmp"},
+		{Source: "/var/spool/hostzit/" + account, Target: "/.spool"},
 		{Source: "/run/mysqld", Target: "/run/mysqld", Optional: true},
 		{Source: "/run/emailzit/submit.sock", Target: "/run/emailzit/submit.sock", File: true, Optional: true},
 	}

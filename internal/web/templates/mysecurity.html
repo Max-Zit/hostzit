@@ -1,0 +1,36 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Security"}}</h1>
+<section class="panel">
+  <div class="titlebar"><h2>{{template "icon" "shield"}}{{.T "Malware scan"}}</h2><form method="post" action="/security/scan"><button class="secondary">{{.T "Scan now"}}</button></form></div>
+  <p class="muted small">{{.T "ClamAV checks all files of your account for known malware (web shells, infected plugins). Nothing is changed or deleted."}}</p>
+  {{with .Data.Scan}}
+    {{if .Running}}<p><span class="badge warn"><i></i>{{$.T "running"}}</span> {{$.T "started %s" ($.Ago .At)}}</p>
+    {{else if .Error}}<p class="err-text">{{.Error}}</p>
+    {{else if .Found}}
+      <p><span class="badge bad"><i></i>{{$.T "%d infected files" (len .Found)}}</span> {{$.Time .At}}</p>
+      <div class="table-wrap"><table><tbody>{{range .Found}}<tr><td class="mono small ds"><a href="/files/edit?path={{.Path}}">{{.Path}}</a></td><td class="small">{{.Signature}}</td></tr>{{end}}</tbody></table></div>
+      <p class="small muted">{{$.T "Delete or replace these files, change the passwords of your websites and update WordPress and its plugins."}}</p>
+    {{else}}<p><span class="badge ok"><i></i>{{$.T "nothing found"}}</span> {{$.Time .At}}</p>{{end}}
+  {{else}}<p class="muted">{{.T "No scan yet."}}</p>{{end}}
+</section>
+<section class="panel">
+  <h2>{{template "icon" "mail"}}{{.T "Mail from your websites"}}</h2>
+  <p class="muted small">{{.T "Contact forms and WordPress send mail through the server's queue; your package allows a number of messages per hour. Messages above the limit wait for the next hour."}}</p>
+  {{if .Data.Queue}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "To"}}</th><th>{{.T "Subject"}}</th><th class="hide-sm">{{.T "Since"}}</th><th class="hide-sm">{{.T "Last error"}}</th></tr></thead>
+    <tbody>{{range .Data.Queue}}<tr><td class="small">{{join .To ", "}}</td><td class="small">{{.Subject}}</td><td class="hide-sm muted small">{{$.Ago .At}}</td><td class="hide-sm small err-text">{{.LastErr}}</td></tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<p><span class="badge ok"><i></i>{{.T "the queue is empty"}}</span></p>{{end}}
+</section>
+<section class="panel">
+  <h2>{{template "icon" "lock"}}{{.T "Always on"}}</h2>
+  <ul class="small">
+    <li>{{.T "Your files, processes and databases are invisible to the other accounts on this server."}}</li>
+    <li>{{.T "PHP runs as your own user with its own limits; programs started from PHP are off unless your package allows them."}}</li>
+    <li>{{.T "Password guessing on wp-login.php and xmlrpc.php is slowed down."}}</li>
+    <li>{{.T "Each website can switch on the web application firewall, IP rules and folders with a password (Websites → Access and protection)."}}</li>
+  </ul>
+</section>
+{{end}}

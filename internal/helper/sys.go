@@ -48,7 +48,7 @@ var writablePrefixes = []string{
 	"/etc/nginx/zit.d/hostzit/", "/etc/nginx/conf.d/hostzit.conf", "/etc/systemd/system/hz-", "/etc/systemd/system/user-",
 	"/var/lib/hostzit/", "/var/cache/hostzit/", "/var/log/hostzit/", "/etc/ssh/sshd_config.d/hostzit.conf",
 	"/usr/share/hostzit/", "/var/lib/zit-acme/", "/etc/nftables.d/hostzit.nft", "/etc/hostzit/",
-	"/etc/mysql/mariadb.conf.d/90-hostzit.cnf", "/etc/powerdns/pdns.d/hostzit.conf", "/etc/php/",
+	"/etc/mysql/mariadb.conf.d/90-hostzit.cnf", "/etc/powerdns/pdns.d/hostzit.conf", "/etc/php/", "/var/spool/hostzit/",
 }
 
 func allowedWrite(p string) bool {

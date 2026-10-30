@@ -65,6 +65,7 @@
     {{end}}
     {{if ne $c.Status "terminated"}}<form method="post" action="/customers/{{$c.ID}}/status" data-confirm="{{.T "Terminate %s? The websites stop at once; the files are deleted after the grace period." $c.Username}}"><input type="hidden" name="status" value="terminated"><button class="ghost danger">{{.T "Terminate"}}</button></form>{{end}}
     <form method="post" action="/customers/{{$c.ID}}/apply"><button class="ghost">{{template "icon" "refresh"}}{{.T "Set up again"}}</button></form>
+    <form method="post" action="/customers/{{$c.ID}}/scan"><button class="ghost">{{template "icon" "shield"}}{{.T "Scan for malware"}}</button></form>
   </div>
   <form method="post" action="/customers/{{$c.ID}}/password" class="row mt">
     <input type="password" name="password" minlength="12" required autocomplete="new-password" placeholder="{{.T "New panel password"}}" aria-label="{{.T "New panel password"}}">

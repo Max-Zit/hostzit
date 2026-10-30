@@ -261,3 +261,46 @@ func TestOnCalendar(t *testing.T) {
 		t.Fatal("the command reached the unit file")
 	}
 }
+
+func TestNginxSecurity(t *testing.T) {
+	s := testSite()
+	s.IPAllow = []string{"192.0.2.0/24", "2001:db8::1"}
+	s.IPDeny = []string{"192.0.2.66"}
+	s.Hotlink, s.WAF = true, true
+	s.Protected = []Protected{{Path: "/private", Users: []HTUser{{Name: "ana", Hash: "$2a$10$abcdefghijklmnopqrstuuJ3Wq0x8m2Qe3OQ9cRkDuB6m4bkLQ8Wq"}}}}
+	out, err := NginxSite(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"allow 192.0.2.0/24;", "allow 2001:db8::1;", "deny 192.0.2.66;", "deny all;", "modsecurity on;", "valid_referers none blocked server_names;",
+		"location = /wp-login.php {\n        limit_req zone=hz_login", "location ^~ /private/ {", "auth_basic_user_file /etc/nginx/zit.d/hostzit/auth/7-0.htpasswd;", "            fastcgi_pass unix:"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+	if strings.Count(out, "{") != strings.Count(out, "}") {
+		t.Fatal("unbalanced braces")
+	}
+	for i, bad := range []func(*Site){
+		func(s *Site) { s.IPAllow = []string{"1.2.3.4; allow all"} },
+		func(s *Site) { s.IPDeny = []string{"10.0.0.0/33"} },
+		func(s *Site) {
+			s.Protected = []Protected{{Path: "/p", Users: []HTUser{{Name: "a:b", Hash: s.Protected[0].Users[0].Hash}}}}
+		},
+		func(s *Site) { s.Protected = []Protected{{Path: "/p {", Users: s.Protected[0].Users}} },
+		func(s *Site) { s.Protected = []Protected{{Path: "/p", Users: []HTUser{{Name: "a", Hash: "plain"}}}} },
+		func(s *Site) { s.Protected = []Protected{{Path: "/p"}} },
+	} {
+		x := s
+		bad(&x)
+		if x.Validate() == nil {
+			t.Errorf("case %d accepted", i)
+		}
+	}
+	if n, err := CleanNets([]string{" 10.1.2.3/8 ", "", "::1"}); err != nil || strings.Join(n, ",") != "10.0.0.0/8,::1" {
+		t.Fatal(n, err)
+	}
+	if !strings.Contains(NginxBase(), "limit_req_zone $binary_remote_addr zone=hz_login") {
+		t.Fatal("base without the login limit")
+	}
+}

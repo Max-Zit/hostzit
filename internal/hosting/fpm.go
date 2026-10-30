@@ -56,7 +56,11 @@ func FPMConf(a Account, version string) (string, error) {
 	w("php_admin_value[upload_max_filesize] = %dM\nphp_admin_value[post_max_size] = %dM\n", l.UploadMB, l.UploadMB)
 	w("php_admin_value[max_execution_time] = 300\nphp_admin_flag[allow_url_include] = off\nphp_admin_flag[expose_php] = off\nphp_admin_flag[log_errors] = on\n")
 	w("php_admin_value[error_log] = %s/logs/php-error.log\n", home)
-	w("php_admin_value[sendmail_path] = /usr/sbin/sendmail -t -i\n")
+	sm := "/usr/lib/hostzit/hostzit-helper sendmail"
+	if a.Sendmail == "/usr/sbin/emailzit-sendmail" {
+		sm = a.Sendmail
+	}
+	w("php_admin_value[sendmail_path] = %s -t -i\n", sm)
 	if !l.AllowExec {
 		w("php_admin_value[disable_functions] = %s\n", disabledFunctions)
 	}

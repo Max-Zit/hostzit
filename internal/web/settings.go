@@ -11,8 +11,9 @@ import (
 )
 
 type securityData struct {
-	X      SecuritySettings
-	Blocks []store.Block
+	X       SecuritySettings
+	Blocks  []store.Block
+	Blocked string
 }
 
 func (s *Server) handleSecurity(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +26,7 @@ func (s *Server) showSecurity(w http.ResponseWriter, r *http.Request, status int
 		s.serverError(w, r, err)
 		return
 	}
-	p := &Page{Title: "Sign-in and security", Nav: "settings", Data: &securityData{X: x, Blocks: blocks}}
+	p := &Page{Title: "Sign-in and security", Nav: "settings", Data: &securityData{X: x, Blocks: blocks, Blocked: strings.Join(s.blockedList(r.Context()), "\n")}}
 	if errMsg != "" {
 		p.Error = translate(s.lang(r, userFrom(r)), errMsg)
 	}

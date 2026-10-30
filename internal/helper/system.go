@@ -48,10 +48,26 @@ func (h *Helper) setup(ctx context.Context, _ struct{}) (any, error) {
 			return nil, err
 		}
 	}
+	if err := h.Sys.Mkdir(SpoolRoot, 0o711, 0, 0); err != nil {
+		return nil, err
+	}
+	if !h.Sys.Exists("/etc/hostzit/firewall.nft") && h.Sys.Exists("/usr/sbin/nft") {
+		if _, err := h.firewall(ctx, firewallArgs{}); err != nil {
+			h.logf("firewall: %v", err)
+		}
+	}
 	if err := h.Sys.WriteFile(hosting.SuspendedPage+"/index.html", []byte(suspendedHTML), 0o644, 0, 0); err != nil {
 		return nil, err
 	}
 	_ = h.Sys.Remove("/etc/nginx/sites-enabled/default") // its default_server would clash
+	// ModSecurity + OWASP CRS, when the packages are installed: sites switch it on one by one.
+	if h.Sys.Exists("/usr/share/modsecurity-crs/rules") && h.Sys.Exists("/etc/modsecurity/crs/crs-setup.conf") {
+		if err := h.Sys.WriteFile(hosting.ModSecConf, []byte(modsecConf), 0o644, 0, 0); err != nil {
+			return nil, err
+		}
+	} else {
+		_ = h.Sys.Remove(hosting.ModSecConf)
+	}
 	if h.Sys.Exists("/usr/sbin/nginx") {
 		if err := h.nginxApply(ctx, map[string][]byte{"/etc/nginx/conf.d/hostzit.conf": []byte(hosting.NginxBase())}, nil); err != nil {
 			return nil, err
@@ -305,3 +321,30 @@ func (h *Helper) register() {
 	h.ops["dns.dnssec"] = op{handle(h.dnsDNSSEC), false}
 	h.registerMore()
 }
+
+// modsecConf turns the recommended ModSecurity settings into blocking mode
+// with the OWASP Core Rule Set and its WordPress exclusions.
+const modsecConf = `# HostZit (generated, do not edit)
+SecRuleEngine On
+SecRequestBodyAccess On
+SecRequestBodyLimitAction Reject
+SecResponseBodyAccess Off
+SecTmpDir /tmp
+SecDataDir /tmp
+SecArgumentSeparator &
+SecCookieFormat 0
+SecStatusEngine Off
+SecAuditLogRelevantStatus "^(?:5|4(?!04))"
+SecAuditLogType Serial
+SecRule REQUEST_HEADERS:Content-Type "^(?:application(?:/soap\+|/)|text/)xml" "id:200000,phase:1,t:none,t:lowercase,pass,nolog,ctl:requestBodyProcessor=XML"
+SecRule REQUEST_HEADERS:Content-Type "^application/json" "id:200001,phase:1,t:none,t:lowercase,pass,nolog,ctl:requestBodyProcessor=JSON"
+SecRule REQBODY_ERROR "!@eq 0" "id:200002,phase:2,t:none,log,deny,status:400,msg:'Failed to parse request body.'"
+SecRequestBodyLimit 268435456
+SecRequestBodyNoFilesLimit 1048576
+SecAuditEngine RelevantOnly
+SecAuditLogParts ABHZ
+SecAuditLog /var/log/hostzit/modsec_audit.log
+SecAction "id:900130,phase:1,nolog,pass,t:none,setvar:tx.crs_exclusions_wordpress=1"
+Include /etc/modsecurity/crs/crs-setup.conf
+Include /usr/share/modsecurity-crs/rules/*.conf
+`

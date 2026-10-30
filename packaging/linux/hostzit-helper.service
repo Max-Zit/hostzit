@@ -10,9 +10,8 @@ RestartSec=2s
 RuntimeDirectory=hostzit
 RuntimeDirectoryMode=0750
 RuntimeDirectoryPreserve=yes
-ProtectKernelModules=yes
-ProtectKernelLogs=yes
-ProtectClock=yes
+# No options that give the helper its own mount namespace: the cages it
+# mounts must be visible to the whole system (PHP, SSH, cron).
 LockPersonality=yes
 RestrictRealtime=yes
 SystemCallArchitectures=native

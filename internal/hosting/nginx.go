@@ -15,6 +15,8 @@ const (
 	SiteLogDir       = "/var/log/hostzit/sites"         // <site id>/access.log, error.log
 	ACMEChallengeDir = "/var/lib/zit-acme/challenges"   // shared with EmailZit
 	SuspendedPage    = "/usr/share/hostzit/suspended"   // index.html
+	NginxAuthDir     = "/etc/nginx/zit.d/hostzit/auth"  // <site id>-<n>.htpasswd
+	ModSecConf       = "/etc/nginx/zit.d/hostzit/modsec.conf"
 )
 
 // SiteConfPath is the nginx file of a site.
@@ -103,6 +105,19 @@ func siteBody(b *strings.Builder, s Site, root, sock string) {
 		}
 	}
 	w("    root %s;\n    index index.php index.html index.htm;\n", root)
+	for _, a := range s.IPAllow {
+		w("    allow %s;\n", a)
+	}
+	for _, a := range s.IPDeny {
+		w("    deny %s;\n", a)
+	}
+	if len(s.IPAllow) > 0 {
+		w("    deny all;\n")
+	}
+	if s.WAF {
+		// ModSecurity with the OWASP Core Rule Set (WordPress exclusions on).
+		w("    modsecurity on;\n    modsecurity_rules_file %s;\n", ModSecConf)
+	}
 	w("    client_max_body_size %dm;\n", s.UploadMB)
 	// Never follow a symlink to a file of another owner: one account cannot
 	// publish another account's files by linking to them.
@@ -120,6 +135,10 @@ func siteBody(b *strings.Builder, s Site, root, sock string) {
 		}
 		w("    location = /favicon.ico {\n        log_not_found off;\n    }\n    location = /robots.txt {\n        try_files $uri /index.php?$args;\n        log_not_found off;\n    }\n")
 	}
+	if s.Hotlink {
+		// images and media only for pages of this site (and direct visits)
+		w("    location ~* \\.(?:png|jpe?g|gif|webp|avif|svg|mp4|webm)$ {\n        valid_referers none blocked server_names;\n        if ($invalid_referer) {\n            return 403;\n        }\n        expires 30d;\n        access_log off;\n        try_files $uri =404;\n    }\n")
+	}
 	w("    location ~* \\.(?:css|js|mjs|png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|eot|mp4|webm|pdf)$ {\n        expires 30d;\n        access_log off;\n        try_files $uri =404;\n    }\n")
 	w("    location / {\n        try_files $uri $uri/ /index.php?$args;\n    }\n")
 	if s.Cache {
@@ -132,20 +151,61 @@ func siteBody(b *strings.Builder, s Site, root, sock string) {
 		w("    if ($request_uri ~* \"(/wp-admin/|/wp-login\\.php|/xmlrpc\\.php|/wp-json/|/feed/|sitemap(_index)?\\.xml|/cart/|/checkout/|/my-account/|/basket/)\") {\n        set $hz_nocache 1;\n    }\n")
 		w("    if ($http_cookie ~* \"(comment_author|wordpress_[a-f0-9]+|wp-postpass|wordpress_no_cache|wordpress_logged_in|woocommerce_items_in_cart|woocommerce_cart_hash|PHPSESSID)\") {\n        set $hz_nocache 1;\n    }\n")
 	}
-	w("    location ~ \\.php$ {\n        try_files $fastcgi_script_name =404;\n        fastcgi_split_path_info ^(.+\\.php)(/.+)$;\n        include fastcgi_params;\n")
-	w("        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;\n        fastcgi_param PATH_INFO $fastcgi_path_info;\n        fastcgi_param HTTPS $https if_not_empty;\n")
-	w("        fastcgi_pass unix:%s;\n        fastcgi_read_timeout 300s;\n", sock)
-	if s.Cache {
-		w("        fastcgi_cache %s;\n        fastcgi_cache_key \"$scheme$request_method$host$request_uri\";\n", CacheZoneName(s.ID))
-		w("        fastcgi_cache_valid 200 301 302 %dm;\n        fastcgi_cache_valid 404 1m;\n", s.CacheMinutes)
-		w("        fastcgi_cache_bypass $hz_nocache;\n        fastcgi_no_cache $hz_nocache;\n")
-		w("        fastcgi_cache_use_stale error timeout updating http_500 http_503;\n        fastcgi_cache_background_update on;\n        fastcgi_cache_lock on;\n")
-		w("        add_header X-Cache $upstream_cache_status always;\n        add_header X-Content-Type-Options nosniff always;\n        add_header Referrer-Policy strict-origin-when-cross-origin always;\n")
-		if s.TLS && s.HSTS {
-			w("        add_header Strict-Transport-Security \"max-age=31536000\" always;\n")
+	if s.WordPress {
+		// Password guessing: a few tries per minute and address.
+		w("    location = /wp-login.php {\n        limit_req zone=hz_login burst=5 nodelay;\n")
+		phpBlock(b, s, sock, "        ")
+		w("    }\n")
+		if !s.BlockXMLRPC {
+			w("    location = /xmlrpc.php {\n        limit_req zone=hz_login burst=10 nodelay;\n")
+			phpBlock(b, s, sock, "        ")
+			w("    }\n")
 		}
 	}
+	for i, p := range s.Protected {
+		w("    location ^~ %s/ {\n        auth_basic \"Protected\";\n        auth_basic_user_file %s;\n        try_files $uri $uri/ /index.php?$args;\n", p.Path, HtpasswdPath(s.ID, i))
+		w("        location ~ \\.php$ {\n")
+		phpBlock(b, s, sock, "            ")
+		w("        }\n    }\n")
+	}
+	w("    location ~ \\.php$ {\n")
+	phpBlock(b, s, sock, "        ")
 	w("    }\n")
+}
+
+// phpBlock writes the FastCGI part of a PHP location (in = indentation).
+func phpBlock(b *strings.Builder, s Site, sock, in string) {
+	w := func(format string, a ...any) { b.WriteString(in); fmt.Fprintf(b, format, a...); b.WriteString("\n") }
+	w("try_files $fastcgi_script_name =404;")
+	w("fastcgi_split_path_info ^(.+\\.php)(/.+)$;")
+	w("include fastcgi_params;")
+	w("fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;")
+	w("fastcgi_param PATH_INFO $fastcgi_path_info;")
+	w("fastcgi_param HTTPS $https if_not_empty;")
+	w("fastcgi_pass unix:%s;", sock)
+	w("fastcgi_read_timeout 300s;")
+	if s.Cache {
+		w("fastcgi_cache %s;", CacheZoneName(s.ID))
+		w("fastcgi_cache_key \"$scheme$request_method$host$request_uri\";")
+		w("fastcgi_cache_valid 200 301 302 %dm;", s.CacheMinutes)
+		w("fastcgi_cache_valid 404 1m;")
+		w("fastcgi_cache_bypass $hz_nocache;")
+		w("fastcgi_no_cache $hz_nocache;")
+		w("fastcgi_cache_use_stale error timeout updating http_500 http_503;")
+		w("fastcgi_cache_background_update on;")
+		w("fastcgi_cache_lock on;")
+		w("add_header X-Cache $upstream_cache_status always;")
+		w("add_header X-Content-Type-Options nosniff always;")
+		w("add_header Referrer-Policy strict-origin-when-cross-origin always;")
+		if s.TLS && s.HSTS {
+			w("add_header Strict-Transport-Security \"max-age=31536000\" always;")
+		}
+	}
+}
+
+// HtpasswdPath is the password file of a protected folder of a site.
+func HtpasswdPath(siteID int64, n int) string {
+	return fmt.Sprintf("%s/%d-%d.htpasswd", NginxAuthDir, siteID, n)
 }
 
 // NginxBase is the http-level configuration HostZit adds once
@@ -154,6 +214,8 @@ func siteBody(b *strings.Builder, s Site, root, sock string) {
 func NginxBase() string {
 	return `# HostZit (generated, do not edit)
 log_format hostzit '$remote_addr - [$time_iso8601] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_cache_status';
+limit_req_zone $binary_remote_addr zone=hz_login:10m rate=10r/m;
+limit_req_status 429;
 fastcgi_buffers 16 16k;
 fastcgi_buffer_size 32k;
 gzip_vary on;

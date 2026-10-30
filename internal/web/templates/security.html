@@ -22,6 +22,11 @@
   </form>
 </section>
 <section class="panel">
+  <h2>{{template "icon" "shield"}}{{.T "Blocked for the whole server"}}</h2>
+  <p class="muted small">{{.T "These addresses and networks cannot reach any website, the panels or SSH. Websites cannot send mail directly in any case: their mail goes through the queue with the hourly limit of the package."}}</p>
+  <form method="post" action="/settings/security/blocked" class="stack"><textarea name="blocked" rows="4" class="mono small" spellcheck="false" placeholder="198.51.100.0/24">{{.Data.Blocked}}</textarea><div><button class="secondary">{{.T "Save"}}</button></div></form>
+</section>
+<section class="panel">
   <h2>{{.T "Blocked addresses"}}</h2>
   {{if .Data.Blocks}}
   <div class="table-wrap"><table>

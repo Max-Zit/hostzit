@@ -3,6 +3,7 @@ package hosting
 import (
 	"errors"
 	"fmt"
+	"net/netip"
 	"regexp"
 	"strings"
 )
@@ -65,6 +66,8 @@ type Account struct {
 	Limits    Limits `json:"limits"`
 	// PHPVersions the account uses (one FPM master per version).
 	PHPVersions []string `json:"php_versions"`
+	// Sendmail replaces HostZit's own sendmail (EmailZit installs one).
+	Sendmail string `json:"sendmail,omitempty"`
 }
 
 // Validate checks the account.
@@ -119,6 +122,16 @@ type Site struct {
 	Redirects   []Redirect `json:"redirects"`
 	Suspended   bool       `json:"suspended"`
 	UploadMB    int        `json:"upload_mb"`
+	// IPAllow: only these networks may open the site (empty = everyone);
+	// IPDeny: these may not.
+	IPAllow []string `json:"ip_allow,omitempty"`
+	IPDeny  []string `json:"ip_deny,omitempty"`
+	// Hotlink: images only for pages of the site itself.
+	Hotlink bool `json:"hotlink,omitempty"`
+	// WAF: ModSecurity with the OWASP Core Rule Set.
+	WAF bool `json:"waf,omitempty"`
+	// Protected folders need a user name and password.
+	Protected []Protected `json:"protected,omitempty"`
 }
 
 // Names lists every host name of the site.
@@ -182,6 +195,9 @@ func (s Site) Validate() error {
 	if s.UploadMB < 1 || s.UploadMB > 10240 {
 		return errors.New("upload size: 1–10240 MB")
 	}
+	if err := s.validateAccess(); err != nil {
+		return err
+	}
 	if len(s.Redirects) > 100 {
 		return errors.New("at most 100 redirects per site")
 	}
@@ -197,4 +213,88 @@ func (s Site) Validate() error {
 		}
 	}
 	return nil
+}
+
+// Protected is a folder of a site behind a password (HTTP basic auth).
+type Protected struct {
+	Path  string   `json:"path"` // URL path, e.g. /private
+	Users []HTUser `json:"users"`
+}
+
+// HTUser is a user of a protected folder; Hash is bcrypt.
+type HTUser struct {
+	Name string `json:"name"`
+	Hash string `json:"hash"`
+}
+
+var htUserRE = regexp.MustCompile(`^[A-Za-z0-9._@-]{1,64}$`)
+var bcryptRE = regexp.MustCompile(`^\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}$`)
+
+// CleanNets checks a list of IP addresses or networks for allow/deny rules.
+func CleanNets(list []string) ([]string, error) {
+	var out []string
+	for _, x := range list {
+		x = strings.TrimSpace(x)
+		if x == "" {
+			continue
+		}
+		if p, err := netip.ParsePrefix(x); err == nil {
+			out = append(out, p.Masked().String())
+			continue
+		}
+		a, err := netip.ParseAddr(x)
+		if err != nil {
+			return nil, fmt.Errorf("%q is not an IP address or network", x)
+		}
+		out = append(out, a.String())
+	}
+	if len(out) > 200 {
+		return nil, errors.New("at most 200 addresses")
+	}
+	return out, nil
+}
+
+func (s Site) validateAccess() error {
+	for _, l := range [][]string{s.IPAllow, s.IPDeny} {
+		c, err := CleanNets(l)
+		if err != nil {
+			return err
+		}
+		if len(c) != len(l) {
+			return errors.New("invalid address list")
+		}
+		for i := range c {
+			if c[i] != l[i] {
+				return errors.New("invalid address " + l[i])
+			}
+		}
+	}
+	if len(s.Protected) > 20 {
+		return errors.New("at most 20 protected folders per site")
+	}
+	seen := map[string]bool{}
+	for _, p := range s.Protected {
+		if !redirectPathRE.MatchString(p.Path) || strings.Contains(p.Path, "..") || p.Path == "/" || strings.HasSuffix(p.Path, "/") || seen[p.Path] {
+			return fmt.Errorf("protected folder: %q must be a path such as /private", p.Path)
+		}
+		seen[p.Path] = true
+		if len(p.Users) == 0 || len(p.Users) > 50 {
+			return errors.New("a protected folder needs 1–50 users")
+		}
+		for _, u := range p.Users {
+			if !htUserRE.MatchString(u.Name) || !bcryptRE.MatchString(u.Hash) {
+				return errors.New("protected folder: invalid user")
+			}
+		}
+	}
+	return nil
+}
+
+// Htpasswd renders the password file of a protected folder.
+func Htpasswd(p Protected) string {
+	var b strings.Builder
+	for _, u := range p.Users {
+		b.WriteString(u.Name + ":" + u.Hash + "\n")
+	}
+	return b.String()
 }

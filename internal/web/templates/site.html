@@ -57,6 +57,30 @@
 </section>
 </form>
 
+<section class="panel" id="access">
+  <h2>{{template "icon" "shield"}}{{.T "Access and protection"}}</h2>
+  <form method="post" action="/sites/{{$s.ID}}/access" class="stack">
+    <label class="check"><input type="checkbox" name="waf" {{if $s.WAF}}checked{{end}}><span><b>{{.T "Web application firewall"}}</b> — {{.T "blocks known attacks (SQL injection, cross-site scripting, scanners) with the OWASP Core Rule Set, tuned for WordPress"}}</span></label>
+    <label class="check"><input type="checkbox" name="hotlink" {{if $s.Hotlink}}checked{{end}}><span>{{.T "Hotlink protection: other websites cannot embed your images and videos"}}</span></label>
+    <div class="cols">
+      <label>{{.T "Only these addresses may open the site"}} <small>{{.T "optional"}}</small><textarea name="ip_allow" rows="3" class="mono small" spellcheck="false" placeholder="203.0.113.0/24">{{join $s.IPAllow "\n"}}</textarea></label>
+      <label>{{.T "Blocked addresses"}} <small>{{.T "optional"}}</small><textarea name="ip_deny" rows="3" class="mono small" spellcheck="false" placeholder="198.51.100.7">{{join $s.IPDeny "\n"}}</textarea></label>
+    </div>
+    <label class="check"><input type="checkbox" name="lockout_ok"><span class="small">{{.T "I know my own address is not in the allowed list"}}</span></label>
+    <div><button class="secondary">{{.T "Save"}}</button></div>
+  </form>
+  <h3 class="mt">{{.T "Folders with a password"}}</h3>
+  {{if $s.Protected}}<div class="table-wrap"><table><tbody>{{range $i, $p := $s.Protected}}<tr><td class="mono">{{$p.Path}}/</td><td class="small muted">{{range $j, $u := $p.Users}}{{if $j}}, {{end}}{{$u.Name}}{{end}}</td>
+    <td class="actions"><form method="post" action="/sites/{{$s.ID}}/protect/{{$i}}/delete" data-confirm="{{$.T "Remove the password from %s?" $p.Path}}"><button class="ghost sm" aria-label="{{$.T "Delete"}}">{{template "icon" "trash"}}</button></form></td></tr>{{end}}</tbody></table></div>{{end}}
+  <form method="post" action="/sites/{{$s.ID}}/protect" class="row mt">
+    <input name="path" required placeholder="/private" class="mono" aria-label="{{.T "Folder"}}">
+    <input name="user" required pattern="[A-Za-z0-9._@\-]{1,64}" placeholder="{{.T "User"}}" aria-label="{{.T "User"}}" autocomplete="off">
+    <input type="password" name="password" required minlength="12" placeholder="{{.T "Password"}}" aria-label="{{.T "Password"}}" autocomplete="new-password">
+    <button class="secondary">{{template "icon" "lock"}}{{.T "Protect"}}</button>
+  </form>
+  <p class="small muted">{{.T "Visitors of the folder must enter the user name and password. Adding a user that exists changes its password."}}</p>
+</section>
+
 {{with .Data.Zone}}<p class="small muted">{{$.T "DNS of this domain:"}} <a href="/dns/{{.ID}}">{{.Name}}</a></p>{{end}}
 
 <section class="panel">

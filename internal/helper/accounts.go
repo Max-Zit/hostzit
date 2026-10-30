@@ -2,6 +2,7 @@ package helper
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -94,6 +95,21 @@ func (h *Helper) accountApply(ctx context.Context, a hosting.Account) (any, erro
 	}
 	if err := h.Sys.Mkdir(hosting.TmpDir(a.Name), 0o700, uid, uid); err != nil {
 		return nil, err
+	}
+	// mail spool (mounted as /.spool in the cage) and the limits the mailer reads
+	if err := h.Sys.Mkdir(SpoolRoot, 0o711, 0, 0); err != nil {
+		return nil, err
+	}
+	if err := h.Sys.Mkdir(SpoolRoot+"/"+a.Name, 0o700, uid, uid); err != nil {
+		return nil, err
+	}
+	if lb, err := json.Marshal(a); err == nil {
+		if err := h.Sys.WriteFile(accountsDir+"/"+a.Name+".json", lb, 0o600, 0, 0); err != nil {
+			return nil, err
+		}
+	}
+	if h.Sys.Exists("/usr/sbin/emailzit-sendmail") {
+		a.Sendmail = "/usr/sbin/emailzit-sendmail"
 	}
 	if err := h.buildCage(ctx, a, uid); err != nil {
 		return nil, fmt.Errorf("cage: %w", err)
@@ -362,7 +378,7 @@ func (h *Helper) accountDelete(ctx context.Context, a accountRef) (any, error) {
 	if _, ok := h.lookupID(ctx, "group", a.Name); ok {
 		_, _ = h.Sys.Run(ctx, nil, "groupdel", a.Name)
 	}
-	for _, p := range []string{hosting.CageDir(a.Name), hosting.TmpDir(a.Name), hosting.HomeDir(a.Name), hosting.NginxSitesDir + "/" + a.Name} {
+	for _, p := range []string{hosting.CageDir(a.Name), hosting.TmpDir(a.Name), hosting.HomeDir(a.Name), hosting.NginxSitesDir + "/" + a.Name, SpoolRoot + "/" + a.Name} {
 		if err := h.Sys.RemoveAll(p); err != nil {
 			return nil, err
 		}
