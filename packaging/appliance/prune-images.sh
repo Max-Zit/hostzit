@@ -1,0 +1,40 @@
+#!/bin/sh
+# Keeps the appliance images (ISO, OVA, QCOW2, VHDX zip) only in the newest
+# KEEP releases on GitHub (default 8) and deletes them from older releases;
+# the programs and installers of every release stay.
+# The documentation links to releases/latest/download, so nothing points at
+# the images of an old release. publish-images.sh runs it after an upload.
+#
+#   ./prune-images.sh            delete
+#   DRY_RUN=1 ./prune-images.sh  only list what would be deleted
+#   KEEP=10 ./prune-images.sh    keep the images of the newest 10 releases
+#
+# Needs the GitHub CLI (gh), logged in with rights to the repository.
+set -eu
+REPO=Max-Zit/hostzit
+KEEP=${KEEP:-8}
+IMAGES='hostzit-appliance.iso hostzit-appliance.ova hostzit-appliance.qcow2 hostzit-appliance-vhdx.zip'
+freed=0
+n=0
+# Newest first (by creation time, drafts excluded).
+gh api --paginate "repos/$REPO/releases?per_page=100" \
+    --jq '[.[] | select(.draft | not)] | sort_by(.created_at) | reverse | .[] | .tag_name' > /tmp/hz-releases.$$
+trap 'rm -f /tmp/hz-releases.$$' EXIT
+while read -r tag; do
+    n=$((n + 1))
+    [ "$n" -le "$KEEP" ] && continue
+    for name in $IMAGES; do
+        line=$(gh api "repos/$REPO/releases/tags/$tag" --jq ".assets[] | select(.name == \"$name\") | \"\(.id) \(.size)\"")
+        [ -n "$line" ] || continue
+        id=${line% *}
+        size=${line#* }
+        if [ -n "${DRY_RUN:-}" ]; then
+            echo "would delete $tag/$name ($((size / 1048576)) MB)"
+        else
+            gh api -X DELETE "repos/$REPO/releases/assets/$id" >/dev/null
+            echo "deleted $tag/$name ($((size / 1048576)) MB)"
+        fi
+        freed=$((freed + size / 1048576))
+    done
+done < /tmp/hz-releases.$$
+echo "images kept in the newest $KEEP releases; $freed MB ${DRY_RUN:+would be }freed"
