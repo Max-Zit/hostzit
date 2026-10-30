@@ -15,6 +15,15 @@
   <li><b>Obaveštenja</b>: SMTP server za obaveštenja i za mejl sa sajtova.</li>
 </ul>
 
+
+<h2 id="panelcert">Sertifikat panela</h2>
+<p>Kada je Let's Encrypt uključen u Podešavanja → Hosting, paneli dobijaju sertifikat za ime servera i host adrese korisničkog panela, čim ta imena pokazuju na server; obnavlja se 30 dana pre isteka. Do tada, i kada se panel otvori preko IP adrese, koristi sopstveni samopotpisan sertifikat.</p>
+
+<h2 id="php">PHP verzije</h2>
+<p>Podešavanja → PHP instalira dodatne PHP verzije (5.6 do 8.6) sa packages.sury.org, repozitorijuma održavaoca PHP-a u Debianu, sa uobičajenim ekstenzijama, i uklanja verzije koje nijedan sajt ne koristi. Svaki sajt bira svoju verziju; paketima koji navode PHP verzije treba dodati novu verziju.</p>
+
+<h2 id="remote">Udaljene rezervne kopije</h2>
+<p>Podešavanja → Udaljene rezervne kopije svake noći šalju svaki aktivan nalog (fajlovi, baze, podešavanja) na SFTP server ili u S3 bucket (Amazon, MinIO, Wasabi, Backblaze B2 …) i čuvaju najnovije kopije po nalogu. Za SFTP dodajte prikazani ključ u <code>~/.ssh/authorized_keys</code> na backup serveru ili unesite lozinku; ključ hosta servera se pamti pri prvom povezivanju. <b>Proveri vezu</b> upisuje i briše probni fajl. Za vraćanje otvorite <b>Udaljene rezervne kopije</b> na stranici korisnika, izaberite kopiju, pa je vratite u Uvozu.</p>
 <h2 id="updates">Ažuriranja</h2>
 <p>Izdanja potpisuje MaxZit. Server instalira izdanje samo ako se potpis i kontrolni zbir slažu; baza panela se prvo sačuva. Sajtovi rade i tokom ažuriranja.</p>
 

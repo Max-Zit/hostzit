@@ -15,6 +15,15 @@
   <li><b>Notifications</b>: SMTP server for notices and for mail from websites.</li>
 </ul>
 
+
+<h2 id="panelcert">Certificate of the panels</h2>
+<p>With Let's Encrypt switched on under Settings → Hosting, the panels get a certificate for the server name and the host of the customer panel address, as soon as these names point to the server; it is renewed 30 days before it expires. Until then, and when the panel is opened by IP address, it uses its own self-signed certificate.</p>
+
+<h2 id="php">PHP versions</h2>
+<p>Settings → PHP installs further PHP versions (5.6 to 8.6) from packages.sury.org, the repository of Debian's PHP maintainer, with the usual extensions, and removes versions no website uses. Each website chooses its version; packages that list PHP versions need a new version added.</p>
+
+<h2 id="remote">Remote backups</h2>
+<p>Settings → Remote backups uploads every active account (files, databases, settings) each night to an SFTP server or an S3 bucket (Amazon, MinIO, Wasabi, Backblaze B2 …) and keeps the newest copies per account. For SFTP add the shown key to <code>~/.ssh/authorized_keys</code> on the backup server, or enter a password; the server's host key is remembered at the first connection. <b>Test the connection</b> writes and deletes a test file. To restore, open <b>Remote backups</b> on the customer's page, choose a copy and then restore it under Import.</p>
 <h2 id="updates">Updates</h2>
 <p>Releases are signed by MaxZit. The server installs a release only if its signature and checksum match; the panel database is saved first. Websites keep running during an update.</p>
 
