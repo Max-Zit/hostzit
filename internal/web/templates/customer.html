@@ -11,7 +11,7 @@
   <dl class="kv">
     <dt>{{.T "Customer id"}}</dt><dd class="mono small">{{$c.UUID}}</dd>
     {{with $c.ExternalID}}<dt>{{$.T "External id"}}</dt><dd class="mono small">{{.}}</dd>{{end}}
-    <dt>{{.T "Linux user"}}</dt><dd class="mono">{{$c.Username}} ({{.T "uid"}} {{printf "%d" (i64 $c.Number)}})</dd>
+    <dt>{{.T "Linux user"}}</dt><dd class="mono">{{$c.Username}} ({{.T "uid"}} {{uid $c.Number}})</dd>
     <dt>{{.T "Created"}}</dt><dd>{{.Time $c.CreatedAt}}</dd>
     {{with $c.DeleteAfter}}<dt>{{$.T "Files deleted after"}}</dt><dd>{{$.Time .}}</dd>{{end}}
     {{with .Data.User}}<dt>{{$.T "Last sign-in"}}</dt><dd>{{$.Time .LastLoginAt}}</dd><dt>{{$.T "Two-factor sign-in"}}</dt><dd>{{if .TOTPEnabled}}{{$.T "on"}}{{else}}{{$.T "off"}}{{end}}</dd>{{end}}

@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/max-zit/hostzit/internal/hosting"
 	"github.com/max-zit/hostzit/internal/store"
 )
 
@@ -489,3 +490,7 @@ func spark(vals []int64) template.HTML {
 }
 
 func init() { funcs["spark"] = spark }
+
+func init() {
+	funcs["uid"] = func(n int) int { u, _ := hosting.UID(n); return u }
+}

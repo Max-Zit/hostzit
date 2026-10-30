@@ -316,7 +316,7 @@ func fakeRunner(root string) func(ctx context.Context, stdin []byte, name string
 }
 
 func startEmbeddedDB(dir string) (*embeddedpostgres.EmbeddedPostgres, string, error) {
-	const port = 54359
+	const port = 54377
 	pg := embeddedpostgres.NewDatabase(embeddedpostgres.DefaultConfig().Port(port).
 		DataPath(filepath.Join(dir, "pgdata")).RuntimePath(filepath.Join(dir, "pgrt")).
 		BinariesPath(filepath.Join(dir, "pgbin")).Database("hostzit").Logger(io.Discard))

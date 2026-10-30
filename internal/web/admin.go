@@ -550,6 +550,14 @@ func (s *Server) handleHostingSettingsSave(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	s.audit(r, "settings.hosting", "settings", "mode %s, server %s, %s, name servers %s, certificates %q", h.Mode, h.ServerName, h.IPv4, strings.Join(h.Nameservers, " "), h.ACME)
+	// zones that could not be published (no name servers yet) go out now
+	if zones, err := s.store.Zones(r.Context(), 0); err == nil {
+		for _, z := range zones {
+			if !z.Applied {
+				_ = s.applyZone(r.Context(), actor(r), z)
+			}
+		}
+	}
 	s.kickCerts()
 	s.redirect(w, r, "/settings/hosting", "Saved.")
 }
