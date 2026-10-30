@@ -30,6 +30,7 @@
   <label>{{.T "Name servers"}}<textarea name="nameservers" rows="3" spellcheck="false" class="mono" placeholder="ns1.example.com&#10;ns2.example.com">{{.Data.NS}}</textarea><small>{{.T "One per line. Customers enter these at their domain registrar. Both names need glue records (A/AAAA) at the registrar of their own domain."}}</small></label>
   <div class="cols">
     <label>{{.T "Hostmaster e-mail"}} <small>{{.T "optional"}}</small><input type="email" name="hostmaster" value="{{$h.Hostmaster}}" placeholder="hostmaster@example.com"></label>
+    <label>{{.T "Secondary name servers"}} <small>{{.T "optional"}}</small><input name="secondaries" value="{{join .Data.H.Secondaries " "}}" class="mono" spellcheck="false" placeholder="198.51.100.53"><small>{{.T "IP addresses of other name servers (for example ns2) that copy every zone from this server; they are notified of each change."}}</small></label>
     <label>{{.T "SPF record of new zones"}}<input name="spf" value="{{$h.SPF}}" spellcheck="false" class="mono"><small>{{.T "Empty: no SPF record."}}</small></label>
   </div>
 </section>

@@ -40,6 +40,8 @@ type HostingSettings struct {
 	PanelURL string `json:"panel_url"`
 	// SPF is the default SPF record of new zones ("" = none).
 	SPF string `json:"spf"`
+	// Secondaries are other name servers that copy the zones (AXFR + NOTIFY).
+	Secondaries []string `json:"secondaries"`
 }
 
 func defaultHosting() HostingSettings {
@@ -106,6 +108,11 @@ func (h *HostingSettings) Validate() error {
 		return errors.New("the customer panel address must start with https://")
 	}
 	h.PanelURL = strings.TrimRight(h.PanelURL, "/")
+	if l, err := hosting.CleanNets(h.Secondaries); err != nil {
+		return fmt.Errorf("secondary name servers: %w", err)
+	} else {
+		h.Secondaries = l
+	}
 	if strings.ContainsAny(h.SPF, "\r\n\"") || len(h.SPF) > 400 || h.SPF != "" && !strings.HasPrefix(h.SPF, "v=spf1") {
 		return errors.New("the SPF record must start with v=spf1")
 	}

@@ -171,7 +171,7 @@ func (h *Helper) dnsApply(ctx context.Context, a zoneArgs) (any, error) {
 	err = h.pdns(ctx, http.MethodGet, "/zones/"+zone+".", nil, &cur)
 	created := false
 	if errors.Is(err, errZoneMissing) {
-		z := pdnsZone{Name: zone + ".", Kind: "Native", SOAEdit: "INCEPTION-INCREMENT", RRSets: []pdnsRRSet{soa, nsSet}}
+		z := pdnsZone{Name: zone + ".", Kind: "Master", SOAEdit: "INCEPTION-INCREMENT", RRSets: []pdnsRRSet{soa, nsSet}}
 		z.RRSets[0].ChangeType, z.RRSets[1].ChangeType = "", ""
 		if err := h.pdns(ctx, http.MethodPost, "/zones", z, &cur); err != nil {
 			return nil, err
@@ -179,6 +179,9 @@ func (h *Helper) dnsApply(ctx context.Context, a zoneArgs) (any, error) {
 		created = true
 	} else if err != nil {
 		return nil, err
+	} else if cur.Kind != "Master" && cur.Kind != "Primary" {
+		// zones made before secondaries existed: primary zones send NOTIFY
+		_ = h.pdns(ctx, http.MethodPut, "/zones/"+zone+".", map[string]string{"kind": "Master"}, nil)
 	}
 	var patch []pdnsRRSet
 	for _, s := range cur.RRSets {
@@ -272,4 +275,35 @@ func (h *Helper) dnsDNSSEC(ctx context.Context, a dnssecArgs) (any, error) {
 		}
 	}
 	return map[string]any{"ds": ds}, nil
+}
+
+type secondariesArgs struct {
+	IPs []string `json:"ips"`
+}
+
+// dnsSecondaries lets other name servers copy the zones (AXFR) and tells
+// them about changes (NOTIFY).
+func (h *Helper) dnsSecondaries(ctx context.Context, a secondariesArgs) (any, error) {
+	ips, err := hosting.CleanNets(a.IPs)
+	if err != nil {
+		return nil, userErr(err.Error())
+	}
+	for _, ip := range ips {
+		if strings.Contains(ip, "/") {
+			return nil, userErr("enter single addresses of the secondary servers, not networks")
+		}
+	}
+	f := "/etc/powerdns/pdns.d/hostzit-secondary.conf"
+	if len(ips) == 0 {
+		_ = h.Sys.Remove(f)
+	} else {
+		conf := "# HostZit (generated, do not edit)\nprimary=yes\nallow-axfr-ips=" + strings.Join(ips, ",") + "\nalso-notify=" + strings.Join(ips, ",") + "\n"
+		if err := h.Sys.WriteFile(f, []byte(conf), 0o644, 0, 0); err != nil {
+			return nil, err
+		}
+	}
+	if err := h.systemctl(ctx, "restart", "pdns"); err != nil {
+		return nil, err
+	}
+	return map[string]int{"secondaries": len(ips)}, nil
 }

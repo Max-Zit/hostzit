@@ -37,3 +37,9 @@ func init() {
 		h.ops["update.install"] = op{handle(h.updateInstall), true}
 	})
 }
+
+func init() {
+	moreOps = append(moreOps, func(h *Helper) {
+		h.ops["dns.secondaries"] = op{handle(h.dnsSecondaries), true}
+	})
+}

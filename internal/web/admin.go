@@ -537,7 +537,8 @@ func (s *Server) handleHostingSettingsSave(w http.ResponseWriter, r *http.Reques
 	h := HostingSettings{Mode: r.FormValue("mode"), ServerName: strings.TrimSpace(r.FormValue("server_name")), IPv4: strings.TrimSpace(r.FormValue("ipv4")),
 		IPv6: strings.TrimSpace(r.FormValue("ipv6")), Nameservers: netacl.Split(r.FormValue("nameservers")), Hostmaster: strings.TrimSpace(r.FormValue("hostmaster")),
 		DefaultPHP: r.FormValue("default_php"), ACME: strings.TrimSpace(r.FormValue("acme")), ACMEEmail: strings.TrimSpace(r.FormValue("acme_email")),
-		GraceDays: formInt(r, "grace_days"), PanelURL: strings.TrimSpace(r.FormValue("panel_url")), SPF: strings.TrimSpace(r.FormValue("spf"))}
+		GraceDays: formInt(r, "grace_days"), PanelURL: strings.TrimSpace(r.FormValue("panel_url")), SPF: strings.TrimSpace(r.FormValue("spf")),
+		Secondaries: netacl.Split(r.FormValue("secondaries"))}
 	if h.ACME == "custom" {
 		h.ACME = strings.TrimSpace(r.FormValue("acme_url"))
 	}
@@ -550,6 +551,10 @@ func (s *Server) handleHostingSettingsSave(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	s.audit(r, "settings.hosting", "settings", "mode %s, server %s, %s, name servers %s, certificates %q", h.Mode, h.ServerName, h.IPv4, strings.Join(h.Nameservers, " "), h.ACME)
+	if err := s.call(r.Context(), actor(r), "dns.secondaries", map[string]any{"ips": h.Secondaries}, nil); err != nil {
+		s.redirectErr(w, r, "/settings/hosting", storeErr(err))
+		return
+	}
 	// zones that could not be published (no name servers yet) go out now
 	if zones, err := s.store.Zones(r.Context(), 0); err == nil {
 		for _, z := range zones {
