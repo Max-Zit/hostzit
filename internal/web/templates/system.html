@@ -1,0 +1,50 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+{{$d := .Data}}{{$n := $d.St.Network}}
+{{if not $d.Appliance}}
+<section class="panel">
+  <h2>{{template "icon" "cpu"}}{{.T "System"}}</h2>
+  <p class="muted">{{.T "On the HostZit appliance the network, host name and time zone are set here. This server was installed with the installer: its administrator sets them up in Debian."}}</p>
+  <dl class="kv"><dt>{{.T "Host name"}}</dt><dd class="mono">{{$n.Hostname}}</dd><dt>{{.T "Address"}}</dt><dd class="mono">{{$d.St.Current}}</dd><dt>{{.T "Time zone"}}</dt><dd>{{$d.St.TimeZone}}</dd></dl>
+</section>
+{{else}}
+<section class="panel">
+  <h2>{{template "icon" "network"}}{{.T "Network"}}</h2>
+  <p class="muted small">{{.T "Now:"}} <span class="mono">{{$d.St.Interface}} {{$d.St.Current}}</span>. {{.T "A static address whose gateway does not answer is not kept: the previous settings come back by themselves."}}</p>
+  <form method="post" action="/settings/system/network" class="stack" data-confirm="{{.T "Apply the network settings? With a new address the panel is reached at the new address."}}">
+    <label>{{.T "Host name"}}<input name="hostname" value="{{$n.Hostname}}" class="mono" spellcheck="false" placeholder="host1"><small>{{.T "Letters, digits and hyphens. The full server name is set under Hosting."}}</small></label>
+    <div class="row">
+      <label class="check"><input type="radio" name="mode" value="dhcp" {{if $n.DHCP}}checked{{end}}><span>{{.T "Automatic address (DHCP)"}}</span></label>
+      <label class="check"><input type="radio" name="mode" value="static" {{if not $n.DHCP}}checked{{end}}><span>{{.T "Static address"}}</span></label>
+    </div>
+    <div class="cols">
+      <label>{{.T "Address with network size"}}<input name="address" value="{{$n.Address}}" class="mono" spellcheck="false" placeholder="192.168.1.20/24"></label>
+      <label>{{.T "Gateway"}}<input name="gateway" value="{{$n.Gateway}}" class="mono" spellcheck="false" placeholder="192.168.1.1"></label>
+      <label>{{.T "DNS servers"}}<input name="dns" value="{{$d.DNS}}" class="mono" spellcheck="false" placeholder="1.1.1.1 9.9.9.9"><small>{{.T "One to three, separated by spaces."}}</small></label>
+    </div>
+    <div><button class="primary">{{.T "Apply"}}</button></div>
+  </form>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "clock"}}{{.T "Time zone"}}</h2>
+  <form method="post" action="/settings/system/timezone" class="row">
+    <select name="zone" aria-label="{{.T "Time zone"}}">{{range $d.Zones}}<option {{if eq . $d.St.TimeZone}}selected{{end}}>{{.}}</option>{{end}}</select>
+    <button class="primary">{{.T "Save"}}</button>
+  </form>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "power"}}{{.T "Restart and shut down"}}</h2>
+  <p class="muted small">{{.T "Websites, mail from websites and DNS stop while the server is down."}}</p>
+  <div class="row">
+    <form method="post" action="/settings/system/power" data-confirm="{{.T "Restart the server now?"}}"><input type="hidden" name="action" value="reboot"><button class="secondary">{{template "icon" "restart"}}{{.T "Restart"}}</button></form>
+    <form method="post" action="/settings/system/power" data-confirm="{{.T "Shut the server down now? It starts again only from the virtualization host or the power button."}}"><input type="hidden" name="action" value="poweroff"><button class="danger">{{template "icon" "power"}}{{.T "Shut down"}}</button></form>
+  </div>
+</section>
+{{end}}
+</div>
+</div>
+{{end}}

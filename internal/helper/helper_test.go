@@ -39,6 +39,10 @@ func (f *fakeRun) run(_ context.Context, stdin []byte, name string, args ...stri
 		}
 	}
 	switch name {
+	case "ip":
+		if strings.Contains(line, "route show default") {
+			return []byte(`[{"dst":"default","gateway":"192.168.1.1","dev":"eth0"}]`), nil
+		}
 	case "getent":
 		if v, ok := f.users[args[0]+":"+args[1]]; ok {
 			return []byte(v + "\n"), nil
@@ -426,5 +430,33 @@ func TestServePeerCheck(t *testing.T) {
 	}
 	if err := c.Call(context.Background(), "site.cache.purge", siteRef{Account: "Shop", ID: 9}, nil); err == nil {
 		t.Fatal("bad account accepted")
+	}
+}
+
+func TestApplianceNetwork(t *testing.T) {
+	h, fr, root, _ := newTest(t)
+	c := NetworkConfig{Address: "192.168.1.20/24", Gateway: "192.168.1.1", DNS: []string{"1.1.1.1"}, Hostname: "web1"}
+	if r := call(t, h, "system.network", c); r.OK {
+		t.Fatal("network changed on a server that is not the appliance")
+	}
+	_ = os.MkdirAll(filepath.Join(root, "var/lib/hostzit"), 0o755)
+	_ = os.WriteFile(filepath.Join(root, "var/lib/hostzit/.appliance"), nil, 0o644)
+	for _, bad := range []NetworkConfig{{Address: "192.168.1.20", Gateway: "192.168.1.1", DNS: []string{"1.1.1.1"}},
+		{Address: "192.168.1.20/24", Gateway: "10.0.0.1", DNS: []string{"1.1.1.1"}},
+		{Address: "192.168.1.20/24", Gateway: "192.168.1.1"},
+		{DHCP: true, Hostname: "web.example.com"}} {
+		if r := call(t, h, "system.network", bad); r.OK {
+			t.Fatalf("accepted %+v", bad)
+		}
+	}
+	if r := call(t, h, "system.network", c); !r.OK {
+		t.Fatalf("network: %+v", r)
+	}
+	b, _ := os.ReadFile(filepath.Join(root, "etc/systemd/network/50-hostzit.network"))
+	if !strings.Contains(string(b), "Address=192.168.1.20/24\nGateway=192.168.1.1\nDNS=1.1.1.1\n") || !fr.has("hostnamectl set-hostname web1") {
+		t.Fatalf("network file:\n%s", b)
+	}
+	if r := call(t, h, "system.power", powerArgs{Action: "rm -rf"}); r.OK {
+		t.Fatal("unknown power action accepted")
 	}
 }

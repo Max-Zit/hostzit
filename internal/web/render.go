@@ -87,10 +87,12 @@ type Page struct {
 	Error    string
 	Version  string
 	DevNo2FA bool
-	Asset    string
-	Path     string
-	Host     string // the console host as the browser sees it
-	Refresh  int    // seconds until the page reloads itself (0 = never)
+	// Appliance: the HostZit appliance (Settings → System is shown).
+	Appliance bool
+	Asset     string
+	Path      string
+	Host      string // the console host as the browser sees it
+	Refresh   int    // seconds until the page reloads itself (0 = never)
 	// Panel is "admin" or "customer".
 	Panel string
 	// Customer is the account of the customer panel.
@@ -281,6 +283,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, name
 	}
 	p.Version = s.Version
 	p.DevNo2FA = s.DevNo2FA
+	p.Appliance = isAppliance()
 	p.Asset = assetVersion
 	p.Path = r.URL.RequestURI()
 	p.Host = r.Host
