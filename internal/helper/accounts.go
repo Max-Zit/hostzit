@@ -198,7 +198,7 @@ func (h *Helper) buildCage(ctx context.Context, a hosting.Account, uid int) erro
 			return err
 		}
 	}
-	if err := h.Sys.Mkdir(root+"/run/php", 0o750, uid, h.WebGID); err != nil {
+	if err := h.Sys.Mkdir(root+"/.sock", 0o750, uid, h.WebGID); err != nil {
 		return err
 	}
 	for _, l := range hosting.SortedNames(hosting.CageSymlinks) {
@@ -257,11 +257,11 @@ func (h *Helper) cageMount(_ context.Context, account string) error {
 			return fmt.Errorf("%s is missing", m.Source)
 		}
 		t := root + m.Target
-		if err := h.Sys.Mkdir(t, 0o755, 0, 0); err != nil {
-			return err
-		}
 		if h.Sys.Mounted(t) {
 			continue
+		}
+		if err := h.Sys.Mkdir(t, 0o755, 0, 0); err != nil {
+			return err
 		}
 		if err := h.Sys.Mount(MountReq{Source: m.Source, Target: t, ReadOnly: m.ReadOnly}); err != nil {
 			return err

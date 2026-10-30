@@ -13,7 +13,7 @@ import (
 //	/home/<account>              the account's own home (nothing else in /home)
 //	/tmp, /var/tmp               the account's private temporary folder
 //	/etc/passwd, /etc/group      only root, the account and the web group
-//	/run/php                     the account's PHP sockets (nginx reaches them)
+//	/.sock                       the account's PHP sockets (nginx reaches them)
 //	/run/mysqld                  the database socket
 //
 // Host paths that list other accounts (/etc/nginx, /etc/hostzit, systemd

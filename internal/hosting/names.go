@@ -179,7 +179,7 @@ func TmpDir(account string) string { return "/var/lib/hostzit/tmp/" + account }
 
 // PHPSocket is the host path of an account's PHP-FPM socket for a version.
 func PHPSocket(account, version string) string {
-	return CageDir(account) + "/run/php/php" + strings.ReplaceAll(version, ".", "") + ".sock"
+	return CageDir(account) + "/.sock/php" + strings.ReplaceAll(version, ".", "") + ".sock"
 }
 
 var phpVersionRE = regexp.MustCompile(`^[5-9]\.[0-9]$`)

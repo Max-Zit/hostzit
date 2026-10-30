@@ -46,7 +46,7 @@ func FPMConf(a Account, version string) (string, error) {
 	w := func(format string, x ...any) { fmt.Fprintf(&b, format, x...) }
 	w("; HostZit PHP %s of account %s (generated, do not edit)\n[global]\nerror_log = %s/logs/php%s-fpm.log\ndaemonize = no\nprocess_control_timeout = 10s\n\n", version, a.Name, home, strings.ReplaceAll(version, ".", ""))
 	w("[%s]\n", a.Name)
-	w("listen = /run/php/php%s.sock\nlisten.mode = 0666\n", strings.ReplaceAll(version, ".", ""))
+	w("listen = /.sock/php%s.sock\nlisten.mode = 0666\n", strings.ReplaceAll(version, ".", ""))
 	w("pm = ondemand\npm.max_children = %d\npm.process_idle_timeout = 30s\npm.max_requests = 1000\n", l.PHPWorkers)
 	w("request_terminate_timeout = 300s\ncatch_workers_output = yes\ndecorate_workers_output = no\nclear_env = yes\n")
 	w("env[TMPDIR] = /tmp\nenv[HOME] = %s\nenv[PATH] = /usr/local/bin:/usr/bin:/bin\n", home)
@@ -88,6 +88,7 @@ Group=%[1]s
 Slice=%[4]s
 RootDirectory=%[5]s
 MountAPIVFS=yes
+BindPaths=-/run/mysqld -/run/emailzit/submit
 ProtectProc=invisible
 ProcSubset=pid
 PrivateDevices=yes

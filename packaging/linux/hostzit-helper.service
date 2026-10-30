@@ -1,0 +1,22 @@
+[Unit]
+Description=HostZit root helper (privileged operations of the panel)
+After=local-fs.target network.target
+Before=hostzit-server.service
+
+[Service]
+ExecStart=/usr/lib/hostzit/hostzit-helper
+Restart=on-failure
+RestartSec=2s
+RuntimeDirectory=hostzit
+RuntimeDirectoryMode=0750
+RuntimeDirectoryPreserve=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectClock=yes
+LockPersonality=yes
+RestrictRealtime=yes
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+
+[Install]
+WantedBy=multi-user.target

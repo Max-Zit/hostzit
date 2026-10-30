@@ -240,7 +240,7 @@ func cleanErr(err error, home string) error {
 func (h *Helper) cageArgs(account string) []string {
 	return []string{"--quiet", "--wait", "--pipe", "--collect", "--service-type=exec",
 		"-p", "User=" + account, "-p", "Group=" + account, "-p", "Slice=" + hosting.SliceName(account),
-		"-p", "RootDirectory=" + hosting.CageDir(account), "-p", "MountAPIVFS=yes", "-p", "ProtectProc=invisible", "-p", "ProcSubset=pid",
+		"-p", "RootDirectory=" + hosting.CageDir(account), "-p", "MountAPIVFS=yes", "-p", "BindPaths=-/run/mysqld", "-p", "ProtectProc=invisible", "-p", "ProcSubset=pid",
 		"-p", "PrivateDevices=yes", "-p", "NoNewPrivileges=yes", "-p", "RestrictSUIDSGID=yes", "-p", "CapabilityBoundingSet=",
 		"-p", "ProtectKernelTunables=yes", "-p", "ProtectKernelModules=yes", "-p", "ProtectControlGroups=yes", "-p", "LockPersonality=yes",
 		"-p", "RestrictNamespaces=yes", "-p", "UMask=0022", "-p", "WorkingDirectory=" + hosting.HomeDir(account),

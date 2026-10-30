@@ -118,7 +118,7 @@ func TestNginxSite(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, want := range []string{"server_name shop.example.com www.shop.example.com shop2.example.com;", "root /home/shop/sites/shop.example.com/public;",
-		"disable_symlinks if_not_owner", "fastcgi_pass unix:/var/lib/hostzit/cages/shop/run/php/php84.sock;", "/.well-known/acme-challenge/", "deny all;",
+		"disable_symlinks if_not_owner", "fastcgi_pass unix:/var/lib/hostzit/cages/shop/.sock/php84.sock;", "/.well-known/acme-challenge/", "deny all;",
 		"if ($host = www.shop.example.com)", "client_max_body_size 64m;"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in\n%s", want, out)
@@ -164,7 +164,7 @@ func TestFPM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"[shop]", "listen = /run/php/php84.sock", "pm.max_children = 8", "open_basedir] = /home/shop/:/tmp/", "disable_functions] = exec,", "memory_limit] = 256M"} {
+	for _, want := range []string{"[shop]", "listen = /.sock/php84.sock", "pm.max_children = 8", "open_basedir] = /home/shop/:/tmp/", "disable_functions] = exec,", "memory_limit] = 256M"} {
 		if !strings.Contains(c, want) {
 			t.Errorf("missing %q", want)
 		}

@@ -154,10 +154,8 @@ func siteBody(b *strings.Builder, s Site, root, sock string) {
 func NginxBase() string {
 	return `# HostZit (generated, do not edit)
 log_format hostzit '$remote_addr - [$time_iso8601] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_cache_status';
-server_tokens off;
 fastcgi_buffers 16 16k;
 fastcgi_buffer_size 32k;
-gzip on;
 gzip_vary on;
 gzip_proxied any;
 gzip_types text/plain text/css application/javascript application/json image/svg+xml application/xml text/xml;

@@ -1,0 +1,39 @@
+[Unit]
+Description=HostZit panels and API
+After=network-online.target postgresql.service hostzit-helper.service
+Wants=network-online.target
+
+[Service]
+User=hostzit
+Group=hostzit
+SupplementaryGroups=zit-acme
+EnvironmentFile=/etc/hostzit/server.env
+ExecStart=/usr/bin/hostzit-server --data-dir /var/lib/hostzit/panel
+Restart=on-failure
+RestartSec=3s
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ReadWritePaths=/var/lib/hostzit/panel /var/lib/zit-acme/challenges
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
