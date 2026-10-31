@@ -1,0 +1,34 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Applications"}}</h1>
+<p class="muted">{{.T "Run Node.js or Python applications next to your PHP websites. Each runs as your account, restarts by itself and listens on a socket whose address is in the variable PORT: in Node.js app.listen(process.env.PORT), in Python gunicorn --bind unix:$PORT app:app. Then choose which website it serves."}}</p>
+{{$d := .Data}}
+{{if $d.Apps}}
+<section class="panel">
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Application"}}</th><th>{{.T "Kind"}}</th><th class="hide-sm">{{.T "Folder"}}</th><th>{{.T "Websites"}}</th></tr></thead>
+    <tbody>{{range $d.Apps}}<tr>
+      <td><a href="/apps/{{.ID}}" class="mono">{{.Name}}</a>{{if not .Enabled}} <span class="badge"><i></i>{{$.T "stopped"}}</span>{{end}}</td>
+      <td>{{if eq .Kind "node"}}Node.js{{else}}Python{{end}}</td><td class="mono small hide-sm">~/{{.Root}}</td>
+      <td class="small">{{join (index $d.Sites .Name) ", "}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+</section>
+{{end}}
+{{if lt (len $d.Apps) $d.Max}}
+<section class="panel">
+  <h2>{{template "icon" "plus"}}{{.T "New application"}}</h2>
+  <form method="post" action="/apps" class="stack">
+    <div class="cols">
+      <label>{{.T "Name"}}<input name="name" required pattern="[a-z][a-z0-9-]{0,30}" class="mono" spellcheck="false" placeholder="api"></label>
+      <label>{{.T "Kind"}}<select name="kind"><option value="node">Node.js</option><option value="python">Python</option></select></label>
+      <label>{{.T "Folder"}}<input name="root" required class="mono" spellcheck="false" placeholder="apps/api"><small>{{.T "Inside your home; created when missing."}}</small></label>
+    </div>
+    <label>{{.T "Start command"}}<input name="command" required class="mono" spellcheck="false" placeholder="node server.js"><small>{{.T "Examples: node server.js · npm start · gunicorn --bind unix:$PORT app:app · python3 app.py"}}</small></label>
+    <label>{{.T "Environment variables"}} <small>{{.T "optional"}}</small><textarea name="env" rows="3" class="mono small" spellcheck="false" placeholder="DATABASE_URL=mysql://…"></textarea><small>{{.T "One KEY=value per line."}}</small></label>
+    <div><button class="primary">{{.T "Create"}}</button></div>
+  </form>
+</section>
+{{else if eq $d.Max 0}}<p class="muted">{{.T "Your package includes no applications."}}</p>
+{{else}}<p class="muted">{{.T "Your package allows %d applications." $d.Max}}</p>{{end}}
+{{end}}

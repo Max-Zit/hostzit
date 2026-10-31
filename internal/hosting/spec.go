@@ -18,6 +18,7 @@ type Limits struct {
 	IOWeight    int  `json:"io_weight"`     // 1–10000, systemd default 100
 	IOMBps      int  `json:"io_mbps"`       // disk read and write speed in MB/s each (0 = none)
 	RedisMB     int  `json:"redis_mb"`      // memory of the account's Redis (0 = no Redis)
+	Apps        int  `json:"apps"`          // Node.js and Python applications (0 = none)
 	Processes   int  `json:"processes"`     // TasksMax (0 = none)
 	PHPWorkers  int  `json:"php_workers"`   // pm.max_children per PHP version
 	PHPMemoryMB int  `json:"php_memory_mb"` // memory_limit of one PHP request
@@ -30,7 +31,7 @@ type Limits struct {
 // DedicatedLimits are used on a dedicated server: no sharing, so only
 // sensible PHP values remain.
 func DedicatedLimits() Limits {
-	return Limits{IOWeight: 100, RedisMB: 256, PHPWorkers: 32, PHPMemoryMB: 512, UploadMB: 256, AllowExec: true, SSH: true, MailPerHour: 1000}
+	return Limits{IOWeight: 100, RedisMB: 256, Apps: 20, PHPWorkers: 32, PHPMemoryMB: 512, UploadMB: 256, AllowExec: true, SSH: true, MailPerHour: 1000}
 }
 
 // Validate checks the ranges.
@@ -50,6 +51,8 @@ func (l Limits) Validate() error {
 		return errors.New("disk speed: 0–100000 MB/s")
 	case l.RedisMB < 0 || l.RedisMB > 65536:
 		return errors.New("Redis memory: 0–65536 MB")
+	case l.Apps < 0 || l.Apps > 100:
+		return errors.New("applications: 0–100")
 	case l.Processes != 0 && (l.Processes < 20 || l.Processes > 100000):
 		return errors.New("processes: 20–100000, or 0 for no limit")
 	case l.PHPWorkers < 1 || l.PHPWorkers > 512:
@@ -78,6 +81,8 @@ type Account struct {
 	PHP map[string]PHPOptions `json:"php,omitempty"`
 	// Redis: the customer switched the account's Redis on (needs RedisMB).
 	Redis bool `json:"redis,omitempty"`
+	// Apps are the account's Node.js and Python applications.
+	Apps []App `json:"apps,omitempty"`
 }
 
 // Validate checks the account.
@@ -103,6 +108,16 @@ func (a Account) Validate() error {
 		if !ValidPHPVersion(v) {
 			return fmt.Errorf("invalid PHP version %q", v)
 		}
+	}
+	seen := map[string]bool{}
+	for _, app := range a.Apps {
+		if err := app.Validate(); err != nil {
+			return fmt.Errorf("application %s: %w", app.Name, err)
+		}
+		if seen[app.Name] {
+			return fmt.Errorf("application %s twice", app.Name)
+		}
+		seen[app.Name] = true
 	}
 	return nil
 }
@@ -152,6 +167,9 @@ type Site struct {
 	WAFDetect bool `json:"waf_detect,omitempty"`
 	// WAFExclude are rule ids switched off for this site (false alarms).
 	WAFExclude []int `json:"waf_exclude,omitempty"`
+	// App sends the site's requests to an application of the account
+	// (static files are still served directly).
+	App string `json:"app,omitempty"`
 	// Protected folders need a user name and password.
 	Protected []Protected `json:"protected,omitempty"`
 }
@@ -219,6 +237,9 @@ func (s Site) Validate() error {
 	}
 	if err := s.validateAccess(); err != nil {
 		return err
+	}
+	if s.App != "" && !appNameRE.MatchString(s.App) {
+		return errors.New("invalid application name")
 	}
 	if len(s.WAFExclude) > 50 {
 		return errors.New("at most 50 excluded firewall rules")

@@ -204,6 +204,9 @@ func (h *Helper) accountApply(ctx context.Context, a hosting.Account) (any, erro
 	if err := h.applyRedis(ctx, a); err != nil {
 		return nil, fmt.Errorf("redis: %w", err)
 	}
+	if err := h.applyApps(ctx, a); err != nil {
+		return nil, fmt.Errorf("applications: %w", err)
+	}
 	quota := h.setQuota(ctx, a)
 	return map[string]any{"uid": uid, "created": newUser, "quota": quota}, nil
 }

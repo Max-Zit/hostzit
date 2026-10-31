@@ -411,7 +411,7 @@ type packageFormData struct {
 }
 
 func defaultPackage() *store.Package {
-	return &store.Package{MaxSites: 5, MaxDBs: 5, MaxZones: 5, Limits: hosting.Limits{DiskMB: 10240, Inodes: 200000, CPUPercent: 100, MemoryMB: 1024, IOWeight: 100, RedisMB: 128,
+	return &store.Package{MaxSites: 5, MaxDBs: 5, MaxZones: 5, Limits: hosting.Limits{DiskMB: 10240, Inodes: 200000, CPUPercent: 100, MemoryMB: 1024, IOWeight: 100, RedisMB: 128, Apps: 2,
 		Processes: 100, PHPWorkers: 8, PHPMemoryMB: 256, UploadMB: 64, MailPerHour: 200}}
 }
 
@@ -432,7 +432,7 @@ func (s *Server) handlePackageForm(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handlePackageSave(w http.ResponseWriter, r *http.Request) {
 	p := &store.Package{Slug: r.FormValue("slug"), Name: r.FormValue("name"), MaxSites: formInt(r, "max_sites"), MaxDBs: formInt(r, "max_dbs"), MaxZones: formInt(r, "max_zones"),
 		Limits: hosting.Limits{DiskMB: formInt(r, "disk_mb"), Inodes: formInt(r, "inodes"), CPUPercent: formInt(r, "cpu_percent"), MemoryMB: formInt(r, "memory_mb"),
-			IOWeight: formInt(r, "io_weight"), IOMBps: formInt(r, "io_mbps"), RedisMB: formInt(r, "redis_mb"), Processes: formInt(r, "processes"), PHPWorkers: formInt(r, "php_workers"), PHPMemoryMB: formInt(r, "php_memory_mb"),
+			IOWeight: formInt(r, "io_weight"), IOMBps: formInt(r, "io_mbps"), RedisMB: formInt(r, "redis_mb"), Apps: formInt(r, "apps"), Processes: formInt(r, "processes"), PHPWorkers: formInt(r, "php_workers"), PHPMemoryMB: formInt(r, "php_memory_mb"),
 			UploadMB: formInt(r, "upload_mb"), AllowExec: r.FormValue("allow_exec") != "", SSH: r.FormValue("ssh") != "", MailPerHour: formInt(r, "mail_per_hour")}}
 	if id, ok := pathID(r, "id"); ok {
 		p.ID = id

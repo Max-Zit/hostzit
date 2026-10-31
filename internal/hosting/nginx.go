@@ -140,6 +140,10 @@ func siteBody(b *strings.Builder, s Site, root, sock string) {
 	}
 	// Hidden files (.git, .env, .htaccess) are never served.
 	w("    location ~ /\\.(?!well-known/) {\n        deny all;\n    }\n")
+	if s.App != "" {
+		appLocations(b, s)
+		return
+	}
 	if s.WordPress {
 		w("    location ~* ^/wp-config\\.php|/(?:uploads|files)/.*\\.php$ {\n        deny all;\n    }\n")
 		if s.BlockXMLRPC {
@@ -228,6 +232,10 @@ func NginxBase() string {
 log_format hostzit '$remote_addr - [$time_iso8601] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_time $upstream_cache_status';
 limit_req_zone $binary_remote_addr zone=hz_login:10m rate=10r/m;
 limit_req_status 429;
+map $http_upgrade $hz_connection_upgrade {
+    default upgrade;
+    "" close;
+}
 fastcgi_buffers 16 16k;
 fastcgi_buffer_size 32k;
 gzip_vary on;
@@ -258,4 +266,24 @@ server {
     ssl_reject_handshake on;
 }
 `
+}
+
+// appLocations sends a site to its application: files that exist in the
+// site's folder are served directly, everything else is proxied to the
+// application's socket (WebSockets included).
+func appLocations(b *strings.Builder, s Site) {
+	w := func(format string, a ...any) { fmt.Fprintf(b, format, a...) }
+	proxy := func(in string) {
+		w("%sproxy_pass http://unix:%s:;\n", in, AppSocketHost(s.Account, s.App))
+		w("%sproxy_http_version 1.1;\n%sproxy_set_header Host $host;\n%sproxy_set_header X-Real-IP $remote_addr;\n", in, in, in)
+		w("%sproxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n%sproxy_set_header X-Forwarded-Proto $scheme;\n", in, in)
+		w("%sproxy_set_header Upgrade $http_upgrade;\n%sproxy_set_header Connection $hz_connection_upgrade;\n%sproxy_read_timeout 300s;\n", in, in, in)
+	}
+	for i, p := range s.Protected {
+		w("    location ^~ %s/ {\n        auth_basic \"Protected\";\n        auth_basic_user_file %s;\n        try_files $uri @hz_app;\n    }\n", p.Path, HtpasswdPath(s.ID, i))
+	}
+	w("    location / {\n        try_files $uri @hz_app;\n    }\n")
+	w("    location @hz_app {\n")
+	proxy("        ")
+	w("    }\n")
 }

@@ -1,0 +1,45 @@
+{{template "app" .}}
+{{define "content"}}
+{{$d := .Data}}{{$a := $d.A}}
+<div class="titlebar"><h1 class="mono">{{$a.Name}}</h1>
+  {{if $a.Enabled}}<form method="post" action="/apps/{{$a.ID}}/restart"><button class="secondary">{{template "icon" "restart"}}{{.T "Restart"}}</button></form>{{end}}</div>
+<section class="panel">
+  <h2>{{template "icon" "service"}}{{if eq $a.Kind "node"}}Node.js{{else}}Python{{end}}</h2>
+  <dl class="kv">
+    <dt>{{.T "State"}}</dt><dd>{{if not $a.Enabled}}<span class="badge"><i></i>{{.T "stopped"}}</span>{{else if eq $d.State.State "active"}}<span class="badge ok"><i></i>{{.T "running"}}</span> <span class="small muted">{{.T "since %s" $d.State.Since}}</span>{{else}}<span class="badge bad"><i></i>{{$d.State.State}}</span>{{end}}
+      {{if $d.State.Restarts}} <span class="small muted">{{.T "%d restarts" $d.State.Restarts}}</span>{{end}}</dd>
+    {{if $d.State.MemoryB}}<dt>{{.T "Memory"}}</dt><dd>{{bytes $d.State.MemoryB}}</dd>{{end}}
+    <dt>{{.T "Folder"}}</dt><dd class="mono">~/{{$a.Root}}</dd>
+    <dt>PORT</dt><dd class="mono">{{$d.Socket}}</dd>
+  </dl>
+  {{if $d.State.Log}}<details {{if ne $d.State.State "active"}}open{{end}}><summary>{{.T "Output of the application"}}</summary><pre class="log">{{$d.State.Log}}</pre></details>{{end}}
+</section>
+<section class="panel">
+  <h2>{{template "icon" "globe"}}{{.T "Websites"}}</h2>
+  <p class="muted small">{{.T "A website served by the application sends every request to it, except files that exist in the website's folder (images, CSS …)."}}</p>
+  <div class="table-wrap"><table><tbody>{{range $d.Sites}}<tr><td>{{.Domain}}</td>
+    <td>{{if eq .App $a.Name}}<span class="badge ok"><i></i>{{$.T "this application"}}</span>{{else if .App}}<span class="small muted">{{.App}}</span>{{else}}<span class="small muted">PHP</span>{{end}}</td>
+    <td class="actions"><form method="post" action="/apps/{{$a.ID}}/site"><input type="hidden" name="site" value="{{.ID}}">{{if eq .App $a.Name}}<input type="hidden" name="detach" value="1"><button class="ghost sm">{{$.T "Back to PHP"}}</button>{{else}}<button class="ghost sm">{{$.T "Serve with this application"}}</button>{{end}}</form></td></tr>{{end}}</tbody></table></div>
+</section>
+<section class="panel" id="run">
+  <h2>{{template "icon" "terminal"}}{{.T "Run a command"}}</h2>
+  <p class="muted small">{{.T "Install the application's packages or run a build in its folder (at most 15 minutes)."}}</p>
+  <form method="post" action="/apps/{{$a.ID}}/run" class="row">
+    <input name="command" class="mono" spellcheck="false" required list="appcmds" aria-label="{{.T "Command"}}" placeholder="{{if eq $a.Kind "node"}}npm ci{{else}}python3 -m venv .venv{{end}}">
+    <datalist id="appcmds">{{if eq $a.Kind "node"}}<option value="npm ci"><option value="npm install --omit=dev"><option value="npm run build">{{else}}<option value="python3 -m venv .venv"><option value=".venv/bin/pip install -r requirements.txt"><option value=".venv/bin/pip install gunicorn">{{end}}</datalist>
+    <button class="secondary">{{.T "Run"}}</button>
+  </form>
+  {{with $d.Run}}<p class="small mt">{{if .OK}}<span class="badge ok"><i></i>{{$.T "done"}}</span>{{else}}<span class="badge bad"><i></i>{{$.T "failed"}}</span>{{end}} <span class="mono">{{.Command}}</span> <span class="muted">{{$.Time .At}}</span></p><pre class="log">{{.Output}}</pre>{{end}}
+</section>
+<section class="panel">
+  <h2>{{template "icon" "settings"}}{{.T "Settings"}}</h2>
+  <form method="post" action="/apps/{{$a.ID}}" class="stack">
+    <label>{{.T "Folder"}}<input name="root" value="{{$a.Root}}" required class="mono" spellcheck="false"></label>
+    <label>{{.T "Start command"}}<input name="command" value="{{$a.Command}}" required class="mono" spellcheck="false"></label>
+    <label>{{.T "Environment variables"}}<textarea name="env" rows="4" class="mono small" spellcheck="false">{{$d.Env}}</textarea><small>{{.T "One KEY=value per line."}}</small></label>
+    <label class="check"><input type="checkbox" name="enabled" {{if $a.Enabled}}checked{{end}}><span>{{.T "Running"}}</span></label>
+    <div><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+  <form method="post" action="/apps/{{$a.ID}}/delete" class="mt" data-confirm="{{.T "Delete the application %s? Its files stay." $a.Name}}"><button class="ghost danger">{{template "icon" "trash"}}{{.T "Delete"}}</button></form>
+</section>
+{{end}}

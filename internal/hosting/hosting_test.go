@@ -356,3 +356,36 @@ func TestGitRepo(t *testing.T) {
 		t.Fatal(s)
 	}
 }
+
+func TestApps(t *testing.T) {
+	a := Account{Name: "shop", Number: 5, Limits: Limits{PHPWorkers: 4, PHPMemoryMB: 128, UploadMB: 32, Apps: 2},
+		Apps: []App{{Name: "api", Kind: "node", Root: "apps/api", Command: `node server.js --name "x"`, Env: map[string]string{"DB_PASS": `p$a"s%s`}}}}
+	if err := a.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	u, err := AppUnit(a, a.Apps[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`ExecStart=/bin/sh -c "exec node server.js --name \"x\""`, `Environment="DB_PASS=p$$a\"s%%s"`, "PORT=/.sock/app-api.sock", "WorkingDirectory=/home/shop/apps/api",
+		"SocketBindDeny=any", "RootDirectory=/var/lib/hostzit/cages/shop", "NODE_ENV=production"} {
+		if !strings.Contains(u, want) {
+			t.Errorf("missing %q in\n%s", want, u)
+		}
+	}
+	for _, bad := range []App{{Name: "Api", Kind: "node", Root: "a", Command: "x"}, {Name: "a", Kind: "ruby", Root: "a", Command: "x"}, {Name: "a", Kind: "node", Root: "../x", Command: "x"},
+		{Name: "a", Kind: "node", Root: "a", Command: "x\nrm"}, {Name: "a", Kind: "node", Root: "a", Command: "x", Env: map[string]string{"PATH": "/x"}}} {
+		if bad.Validate() == nil {
+			t.Errorf("accepted %+v", bad)
+		}
+	}
+	s := testSite()
+	s.App = "api"
+	out, err := NginxSite(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "proxy_pass http://unix:/var/lib/hostzit/cages/"+s.Account+"/.sock/app-api.sock:;") || strings.Contains(out, "fastcgi_pass") {
+		t.Fatal(out)
+	}
+}
