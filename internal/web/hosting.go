@@ -484,6 +484,7 @@ func (s *Server) Run(ctx context.Context) {
 			s.purgeTerminated(ctx)
 			if s.now().Hour() == 3 {
 				go s.autoUpdateWP(ctx)
+				go s.nightlyScans(ctx)
 				if _, err := s.consoleBackupNow(ctx); err != nil && err.Error() != "no passphrase set" {
 					s.log.Warn("nightly panel backup failed", "err", err)
 				}

@@ -301,6 +301,7 @@ type wpData struct {
 	Staging     *store.WPInstall // the staging copy of this site
 	Live        *store.WPInstall // the live site of this staging copy
 	RedisOn     bool             // the account's Redis runs
+	Verify      *WPVerify
 }
 
 func (s *Server) wpData(ctx context.Context, in *store.WPInstall) *wpData {
@@ -310,6 +311,10 @@ func (s *Server) wpData(ctx context.Context, in *store.WPInstall) *wpData {
 	}
 	d.Site, _ = s.store.SiteByID(ctx, in.SiteID)
 	d.Snapshots, _ = s.store.WPSnapshots(ctx, in.ID)
+	var v WPVerify
+	if s.store.GetSetting(ctx, wpVerifyKey(in.ID), &v) == nil && !v.At.IsZero() {
+		d.Verify = &v
+	}
 	d.Staging, _ = s.store.StagingOf(ctx, in.ID)
 	if in.StagingOf != nil {
 		d.Live, _ = s.store.WPInstallByID(ctx, *in.StagingOf)

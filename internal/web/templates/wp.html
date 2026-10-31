@@ -60,6 +60,19 @@
   </form>
 </section>
 <section class="panel">
+  <div class="titlebar"><h2>{{template "icon" "check"}}{{.T "File check"}}</h2><form method="post" action="/wordpress/{{$w.ID}}/verify"><button class="ghost sm">{{.T "Check now"}}</button></form></div>
+  <p class="muted small">{{.T "Compares WordPress and the plugins from wordpress.org with the official checksums: changed or extra files are often a sign of a break-in."}}</p>
+  {{with .Data.Verify}}
+    {{if .Problems}}<p class="err-text small">{{.Problems}}</p>{{end}}
+    {{if or .Core .Plugins}}
+      <p><span class="badge bad"><i></i>{{$.T "%d files differ" (add (len .Core) (len .Plugins))}}</span> <span class="small muted">{{$.Time .At}}</span></p>
+      <ul class="small mono">{{range .Core}}<li>{{.}}</li>{{end}}{{range .Plugins}}<li>{{.}}</li>{{end}}</ul>
+      <p class="small muted">{{$.T "Replace the WordPress files with fresh copies of the same version (wp-content and wp-config.php stay), reinstall changed plugins, then scan for malware under Security."}}</p>
+      {{if .Core}}<form method="post" action="/wordpress/{{$.Data.W.ID}}/reinstall" data-confirm="{{$.T "Replace the WordPress core files with fresh copies?"}}"><button class="secondary">{{$.T "Replace the WordPress files"}}</button></form>{{end}}
+    {{else if not .Problems}}<p><span class="badge ok"><i></i>{{$.T "all files match"}}</span> <span class="small muted">{{$.Time .At}}</span></p>{{end}}
+  {{else}}<p class="muted small">{{.T "Not checked yet."}}</p>{{end}}
+</section>
+<section class="panel">
   <h2>{{template "icon" "database"}}{{.T "Redis object cache"}}</h2>
   {{if .Data.RedisOn}}
   <p class="muted small">{{.T "Connects this site to your account's Redis: installs and activates the plugin Redis Object Cache and sets WP_REDIS_PATH in wp-config.php."}}</p>

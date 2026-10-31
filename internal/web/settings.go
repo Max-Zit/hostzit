@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/max-zit/hostzit/internal/helper"
 	"github.com/max-zit/hostzit/internal/netacl"
 	"github.com/max-zit/hostzit/internal/store"
 )
@@ -14,6 +15,8 @@ type securityData struct {
 	X       SecuritySettings
 	Blocks  []store.Block
 	Blocked string
+	Malware MalwareSettings
+	ClamAV  helper.MalwareStatus
 }
 
 func (s *Server) handleSecurity(w http.ResponseWriter, r *http.Request) {
@@ -26,7 +29,9 @@ func (s *Server) showSecurity(w http.ResponseWriter, r *http.Request, status int
 		s.serverError(w, r, err)
 		return
 	}
-	p := &Page{Title: "Sign-in and security", Nav: "settings", Data: &securityData{X: x, Blocks: blocks, Blocked: strings.Join(s.blockedList(r.Context()), "\n")}}
+	d := &securityData{X: x, Blocks: blocks, Blocked: strings.Join(s.blockedList(r.Context()), "\n"), Malware: s.malwareSettings(r.Context())}
+	_ = s.call(r.Context(), "system", "malware.status", struct{}{}, &d.ClamAV)
+	p := &Page{Title: "Sign-in and security", Nav: "settings", Data: d}
 	if errMsg != "" {
 		p.Error = translate(s.lang(r, userFrom(r)), errMsg)
 	}

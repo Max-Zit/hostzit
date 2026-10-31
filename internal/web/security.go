@@ -29,10 +29,11 @@ func init() {
 
 // ScanResult is the last malware scan of a customer.
 type ScanResult struct {
-	Running bool               `json:"running"`
-	At      time.Time          `json:"at"`
-	Found   []helper.Infection `json:"found"`
-	Error   string             `json:"error,omitempty"`
+	Running     bool               `json:"running"`
+	At          time.Time          `json:"at"`
+	Found       []helper.Infection `json:"found"`
+	Error       string             `json:"error,omitempty"`
+	Quarantined int                `json:"quarantined,omitempty"`
 }
 
 func scanKey(id int64) string { return "malware:" + strconv.FormatInt(id, 10) }
@@ -53,31 +54,15 @@ func (s *Server) startScan(by string, c *store.Customer) error {
 	}
 	_ = s.store.SetSetting(ctx, scanKey(c.ID), ScanResult{Running: true, At: s.now()})
 	_, err := s.runJob("malware.scan", &c.ID, c.Username, func(ctx context.Context) error {
-		var res struct {
-			Found []helper.Infection `json:"found"`
-		}
-		err := s.call(ctx, by, "malware.scan", map[string]string{"account": c.Username}, &res)
-		r := ScanResult{At: s.now(), Found: res.Found}
-		if err != nil {
-			r.Error = storeErr(err)
-		}
-		_ = s.store.SetSetting(ctx, scanKey(c.ID), r)
-		if len(res.Found) > 0 {
-			var b strings.Builder
-			for _, f := range res.Found {
-				b.WriteString("  " + f.Path + " — " + f.Signature + "\n")
-			}
-			s.notify(ctx, "malware:"+c.Username, c, "Malware found in "+c.Username, "The malware scan found these files in the hosting account "+c.Username+":\n\n"+b.String()+"\nRemove or replace them, change the passwords of the websites and update WordPress and its plugins.\n")
-		}
-		_ = s.store.Audit(ctx, by, "local", "malware.scan", "customer:"+c.Username, strconv.Itoa(len(res.Found))+" infected files")
-		return err
+		return s.scanCustomer(ctx, by, c)
 	})
 	return err
 }
 
 type securityPageData struct {
-	Scan  *ScanResult
-	Queue []helper.QueueItem
+	Scan       *ScanResult
+	Queue      []helper.QueueItem
+	Quarantine []QuarantineItem
 }
 
 func (s *Server) handleMySecurity(w http.ResponseWriter, r *http.Request) {
@@ -86,6 +71,7 @@ func (s *Server) handleMySecurity(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	d := &securityPageData{Scan: s.lastScan(r.Context(), c.ID)}
+	d.Quarantine = s.quarantineList(r.Context(), c)
 	_ = s.call(r.Context(), actor(r), "mail.queue", map[string]string{"account": c.Username}, &d.Queue)
 	s.render(w, r, http.StatusOK, "mysecurity", &Page{Title: "Security", Nav: "security", Customer: c, Data: d})
 }

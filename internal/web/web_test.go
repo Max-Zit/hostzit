@@ -665,3 +665,11 @@ func TestLocalAPISocket(t *testing.T) {
 		t.Fatalf("customers over the socket: %d", c)
 	}
 }
+
+func TestWPWarnings(t *testing.T) {
+	out := "\nsystemd-run: exit status 1: Warning: File doesn't verify against checksum: wp-includes/version.php\nWarning: File should not exist: private/index.html\nWarning: Plugin checksums could not be verified.\nError: WordPress installation doesn't verify against checksums."
+	got := wpWarnings(out)
+	if len(got) != 2 || got[0] != "File doesn't verify against checksum: wp-includes/version.php" {
+		t.Fatalf("%q", got)
+	}
+}

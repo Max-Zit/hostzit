@@ -32,6 +32,12 @@ func (s *Store) SetSetting(ctx context.Context, key string, v any) error {
 	return err
 }
 
+// DeleteSetting removes a setting.
+func (s *Store) DeleteSetting(ctx context.Context, key string) error {
+	_, err := s.db.Exec(ctx, `DELETE FROM settings WHERE key=$1`, key)
+	return err
+}
+
 // ---- sign-in blocks
 
 // Block is a blocked client address.

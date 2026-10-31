@@ -9,11 +9,20 @@
     {{else if .Error}}<p class="err-text">{{.Error}}</p>
     {{else if .Found}}
       <p><span class="badge bad"><i></i>{{$.T "%d infected files" (len .Found)}}</span> {{$.Time .At}}</p>
-      <div class="table-wrap"><table><tbody>{{range .Found}}<tr><td class="mono small ds"><a href="/files/edit?path={{.Path}}">{{.Path}}</a></td><td class="small">{{.Signature}}</td></tr>{{end}}</tbody></table></div>
+      <div class="table-wrap"><table><tbody>{{range .Found}}<tr><td class="mono small ds"><a href="/files/edit?path={{.Path}}">{{.Path}}</a></td><td class="small">{{.Signature}}</td><td class="actions"><form method="post" action="/security/quarantine"><input type="hidden" name="path" value="{{.Path}}"><button class="ghost sm">{{$.T "Quarantine"}}</button></form></td></tr>{{end}}</tbody></table></div>
       <p class="small muted">{{$.T "Delete or replace these files, change the passwords of your websites and update WordPress and its plugins."}}</p>
     {{else}}<p><span class="badge ok"><i></i>{{$.T "nothing found"}}</span> {{$.Time .At}}</p>{{end}}
+    {{if .Quarantined}}<p class="small">{{$.T "%d files were moved into the quarantine." .Quarantined}}</p>{{end}}
   {{else}}<p class="muted">{{.T "No scan yet."}}</p>{{end}}
 </section>
+{{if .Data.Quarantine}}<section class="panel">
+  <h2>{{template "icon" "lock"}}{{.T "Quarantine"}}</h2>
+  <p class="muted small">{{.T "Files in the quarantine are in ~/.quarantine without any permissions, outside every website. Restore a file only when you are sure it is clean."}}</p>
+  <div class="table-wrap"><table><thead><tr><th>{{.T "File"}}</th><th class="hide-sm">{{.T "Found"}}</th><th class="hide-sm">{{.T "Moved"}}</th><th></th></tr></thead><tbody>
+  {{range .Data.Quarantine}}<tr><td class="mono small ds">{{.Orig}}</td><td class="small hide-sm">{{.Signature}}</td><td class="small muted hide-sm">{{$.Time .At}}</td>
+    <td class="actions"><form method="post" action="/security/quarantine/{{.ID}}/restore" data-confirm="{{$.T "Put the file back? It may still be dangerous."}}"><button class="ghost sm">{{$.T "Restore"}}</button></form><form method="post" action="/security/quarantine/{{.ID}}/delete" data-confirm="{{$.T "Delete the file for good?"}}"><button class="ghost sm danger">{{template "icon" "trash"}}</button></form></td></tr>{{end}}
+  </tbody></table></div>
+</section>{{end}}
 <section class="panel">
   <h2>{{template "icon" "mail"}}{{.T "Mail from your websites"}}</h2>
   <p class="muted small">{{.T "Contact forms and WordPress send mail through the server's queue; your package allows a number of messages per hour. Messages above the limit wait for the next hour."}}</p>

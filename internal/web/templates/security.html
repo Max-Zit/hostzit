@@ -28,6 +28,23 @@
   <form method="post" action="/settings/security/blocked" class="stack"><textarea name="blocked" rows="4" class="mono small" spellcheck="false" placeholder="198.51.100.0/24">{{.Data.Blocked}}</textarea><div><button class="secondary">{{.T "Save"}}</button></div></form>
 </section>
 <section class="panel">
+  <h2>{{template "icon" "bug"}}{{.T "Malware scanning"}}</h2>
+  {{$m := .Data.ClamAV}}
+  {{if $m.Installed}}
+  <p class="small">{{if $m.Updater}}<span class="badge ok"><i></i>ClamAV</span>{{else}}<span class="badge warn"><i></i>{{.T "signature updates are not running"}}</span>{{end}}
+    {{if not $m.Signatures.IsZero}}<span class="muted">{{.T "Signatures from %s" (.Time $m.Signatures)}}</span>{{else}}<span class="muted">{{.T "The signatures are being downloaded."}}</span>{{end}}</p>
+  <form method="post" action="/settings/security/malware" class="stack">
+    <label class="check"><input type="checkbox" name="nightly" {{if .Data.Malware.Nightly}}checked{{end}}><span>{{.T "Scan every account each night (at the lowest priority)"}}</span></label>
+    <label class="check"><input type="checkbox" name="auto_quarantine" {{if .Data.Malware.AutoQuarantine}}checked{{end}}><span>{{.T "Move found files into the account's quarantine right away"}}</span></label>
+    <p class="small muted">{{.T "Customers see the result under Security, can scan again and restore or delete files in the quarantine. Notifications go to the administrators and, when switched on, to the customer."}}</p>
+    <div><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+  {{else}}
+  <p class="muted small">{{.T "ClamAV finds known malware such as web shells and infected plugins in the accounts' files. It needs about 1 GB of memory while a scan runs."}}</p>
+  <form method="post" action="/settings/security/clamav" data-confirm="{{.T "Install ClamAV now?"}}"><button class="primary">{{template "icon" "download"}}{{.T "Install ClamAV"}}</button></form>
+  {{end}}
+</section>
+<section class="panel">
   <h2>{{.T "Blocked addresses"}}</h2>
   {{if .Data.Blocks}}
   <div class="table-wrap"><table>
