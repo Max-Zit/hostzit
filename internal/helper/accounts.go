@@ -201,6 +201,9 @@ func (h *Helper) accountApply(ctx context.Context, a hosting.Account) (any, erro
 			return nil, err
 		}
 	}
+	if err := h.applyRedis(ctx, a); err != nil {
+		return nil, fmt.Errorf("redis: %w", err)
+	}
 	quota := h.setQuota(ctx, a)
 	return map[string]any{"uid": uid, "created": newUser, "quota": quota}, nil
 }
@@ -374,7 +377,7 @@ func (h *Helper) accountDelete(ctx context.Context, a accountRef) (any, error) {
 	units, _ := h.Sys.ReadDir(systemdDir)
 	for _, e := range units {
 		n := e.Name()
-		if strings.HasPrefix(n, "hz-php-"+a.Name+"-") || strings.HasPrefix(n, "hz-cron-"+a.Name+"-") {
+		if strings.HasPrefix(n, "hz-php-"+a.Name+"-") || strings.HasPrefix(n, "hz-cron-"+a.Name+"-") || n == hosting.RedisUnitName(a.Name) || strings.HasPrefix(n, "hz-app-"+a.Name+"-") {
 			_ = h.systemctl(ctx, "disable", "--now", n)
 			_ = h.Sys.Remove(systemdDir + n)
 		}

@@ -17,6 +17,7 @@ type Limits struct {
 	MemoryMB    int  `json:"memory_mb"`     // hard limit for all processes (0 = none)
 	IOWeight    int  `json:"io_weight"`     // 1–10000, systemd default 100
 	IOMBps      int  `json:"io_mbps"`       // disk read and write speed in MB/s each (0 = none)
+	RedisMB     int  `json:"redis_mb"`      // memory of the account's Redis (0 = no Redis)
 	Processes   int  `json:"processes"`     // TasksMax (0 = none)
 	PHPWorkers  int  `json:"php_workers"`   // pm.max_children per PHP version
 	PHPMemoryMB int  `json:"php_memory_mb"` // memory_limit of one PHP request
@@ -29,7 +30,7 @@ type Limits struct {
 // DedicatedLimits are used on a dedicated server: no sharing, so only
 // sensible PHP values remain.
 func DedicatedLimits() Limits {
-	return Limits{IOWeight: 100, PHPWorkers: 32, PHPMemoryMB: 512, UploadMB: 256, AllowExec: true, SSH: true, MailPerHour: 1000}
+	return Limits{IOWeight: 100, RedisMB: 256, PHPWorkers: 32, PHPMemoryMB: 512, UploadMB: 256, AllowExec: true, SSH: true, MailPerHour: 1000}
 }
 
 // Validate checks the ranges.
@@ -47,6 +48,8 @@ func (l Limits) Validate() error {
 		return errors.New("disk priority: 1–10000")
 	case l.IOMBps < 0 || l.IOMBps > 100000:
 		return errors.New("disk speed: 0–100000 MB/s")
+	case l.RedisMB < 0 || l.RedisMB > 65536:
+		return errors.New("Redis memory: 0–65536 MB")
 	case l.Processes != 0 && (l.Processes < 20 || l.Processes > 100000):
 		return errors.New("processes: 20–100000, or 0 for no limit")
 	case l.PHPWorkers < 1 || l.PHPWorkers > 512:
@@ -73,6 +76,8 @@ type Account struct {
 	Sendmail string `json:"sendmail,omitempty"`
 	// PHP are the account's own PHP options per version.
 	PHP map[string]PHPOptions `json:"php,omitempty"`
+	// Redis: the customer switched the account's Redis on (needs RedisMB).
+	Redis bool `json:"redis,omitempty"`
 }
 
 // Validate checks the account.

@@ -3,6 +3,27 @@
 <h1>PHP</h1>
 <p class="muted">{{.T "Choose the extensions and php.ini values of your websites per PHP version (the PHP version itself is chosen per website). Empty fields keep the server's values; memory and upload size can be at most what your package allows."}}</p>
 {{$d := .Data}}
+{{with $d.Redis}}{{if .MB}}
+<section class="panel">
+  <h2>{{template "icon" "database"}}{{$.T "Redis object cache"}}</h2>
+  <p class="muted small">{{$.T "Your own Redis keeps results of database queries in memory, so WordPress and other applications answer faster. Only your account reaches it, through a socket; memory: %d MB. Connect a WordPress site under WordPress → the site." .MB}}</p>
+  {{if .On}}
+  <dl class="kv">
+    <dt>{{$.T "State"}}</dt><dd>{{if .Info.Active}}<span class="badge ok"><i></i>{{$.T "running"}}</span>{{else}}<span class="badge warn"><i></i>{{$.T "not running"}}</span>{{end}}</dd>
+    <dt>{{$.T "Socket"}}</dt><dd class="mono">{{.Info.Socket}}</dd>
+    <dt>{{$.T "Memory"}}</dt><dd>{{bytes .Info.Memory}}{{template "meter" (pct5 .Info.Memory (mul (i64 .MB) 1048576))}}</dd>
+    <dt>{{$.T "Keys"}}</dt><dd>{{.Info.Keys}}</dd>
+    <dt>{{$.T "Hits / misses"}}</dt><dd>{{.Info.Hits}} / {{.Info.Misses}}</dd>
+  </dl>
+  <div class="row">
+    <form method="post" action="/redis/flush" data-confirm="{{$.T "Empty the Redis cache?"}}"><button class="secondary">{{template "icon" "refresh"}}{{$.T "Empty the cache"}}</button></form>
+    <form method="post" action="/redis" data-confirm="{{$.T "Switch Redis off? Connected websites lose their object cache."}}"><input type="hidden" name="on" value="0"><button class="ghost">{{$.T "Switch off"}}</button></form>
+  </div>
+  {{else}}
+  <form method="post" action="/redis"><input type="hidden" name="on" value="1"><button class="primary">{{$.T "Switch Redis on"}}</button></form>
+  {{end}}
+</section>
+{{end}}{{end}}
 {{range $d.Versions}}{{$v := .}}
 <section class="panel">
   <h2>{{template "icon" "service"}}PHP {{$v.Version}}</h2>

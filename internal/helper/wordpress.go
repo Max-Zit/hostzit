@@ -15,7 +15,7 @@ import (
 
 var wpCommands = map[string]bool{
 	"core": true, "plugin": true, "theme": true, "option": true, "config": true, "user": true, "search-replace": true, "db": true,
-	"maintenance-mode": true, "cache": true, "rewrite": true, "language": true, "cron": true, "transient": true, "site": true, "post": true,
+	"maintenance-mode": true, "cache": true, "redis": true, "rewrite": true, "language": true, "cron": true, "transient": true, "site": true, "post": true,
 }
 
 var wpBlocked = []string{"--exec", "--require", "eval", "eval-file", "shell", "package", "--ssh", "--http", "server", "--path"}

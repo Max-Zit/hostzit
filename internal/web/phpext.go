@@ -140,6 +140,7 @@ type myPHPData struct {
 	Versions []myPHPVersion
 	Keys     []hosting.INIKey
 	Limits   hosting.Limits
+	Redis    *redisData
 }
 
 func (s *Server) handleMyPHP(w http.ResponseWriter, r *http.Request) {
@@ -153,6 +154,7 @@ func (s *Server) handleMyPHP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	d := &myPHPData{Keys: hosting.INIKeys, Limits: a.Limits}
+	d.Redis = s.redisState(r.Context(), actor(r), c, a.Limits)
 	saved := s.phpOptions(r.Context(), c)
 	for _, v := range a.PHPVersions {
 		mv := myPHPVersion{Version: v, Off: saved[v].Disabled, INI: saved[v].INI}

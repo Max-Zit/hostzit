@@ -60,6 +60,16 @@
   </form>
 </section>
 <section class="panel">
+  <h2>{{template "icon" "database"}}{{.T "Redis object cache"}}</h2>
+  {{if .Data.RedisOn}}
+  <p class="muted small">{{.T "Connects this site to your account's Redis: installs and activates the plugin Redis Object Cache and sets WP_REDIS_PATH in wp-config.php."}}</p>
+  <div class="row">
+    <form method="post" action="/wordpress/{{$w.ID}}/redis"><input type="hidden" name="on" value="1"><button class="secondary">{{.T "Connect to Redis"}}</button></form>
+    <form method="post" action="/wordpress/{{$w.ID}}/redis"><input type="hidden" name="on" value="0"><button class="ghost">{{.T "Disconnect"}}</button></form>
+  </div>
+  {{else}}<p class="muted small">{{.T "Switch your account's Redis on under PHP first (if your package includes it)."}}</p>{{end}}
+</section>
+<section class="panel">
   <div class="titlebar"><h2>{{template "icon" "disk"}}{{.T "Snapshots"}}</h2><form method="post" action="/wordpress/{{$w.ID}}/snapshot"><button class="ghost sm">{{template "icon" "plus"}}{{.T "Make a snapshot"}}</button></form></div>
   <p class="small muted">{{.T "A snapshot holds the files and the database. It is made automatically before every update and stored in ~/backups."}}</p>
   {{if .Data.Snapshots}}

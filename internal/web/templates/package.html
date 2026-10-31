@@ -36,6 +36,7 @@
     <label>{{.T "PHP workers per version"}}<input type="number" name="php_workers" value="{{$l.PHPWorkers}}" min="1" max="512" required><small>{{.T "Requests handled at the same time."}}</small></label>
     <label>{{.T "Memory per request (MB)"}}<input type="number" name="php_memory_mb" value="{{$l.PHPMemoryMB}}" min="32" max="8192" required></label>
     <label>{{.T "Largest upload (MB)"}}<input type="number" name="upload_mb" value="{{$l.UploadMB}}" min="1" max="10240" required></label>
+    <label>{{.T "Redis memory (MB)"}}<input type="number" name="redis_mb" value="{{$l.RedisMB}}" min="0" max="65536" required><small>{{.T "0 = no Redis for the account."}}</small></label>
     <label>{{.T "Mails per hour from websites"}}<input type="number" name="mail_per_hour" value="{{$l.MailPerHour}}" min="0" max="100000" required></label>
   </div>
   <label class="check"><input type="checkbox" name="allow_exec" {{if $l.AllowExec}}checked{{end}}><span>{{.T "PHP may start programs (exec, shell_exec, proc_open …). Off is safer; some backup plugins need it."}}</span></label>

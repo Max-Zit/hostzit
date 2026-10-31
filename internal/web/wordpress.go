@@ -300,10 +300,14 @@ type wpData struct {
 	NewPassword string
 	Staging     *store.WPInstall // the staging copy of this site
 	Live        *store.WPInstall // the live site of this staging copy
+	RedisOn     bool             // the account's Redis runs
 }
 
 func (s *Server) wpData(ctx context.Context, in *store.WPInstall) *wpData {
 	d := &wpData{W: in}
+	if c, err := s.store.CustomerByID(ctx, in.CustomerID); err == nil {
+		d.RedisOn = s.redisOn(ctx, c)
+	}
 	d.Site, _ = s.store.SiteByID(ctx, in.SiteID)
 	d.Snapshots, _ = s.store.WPSnapshots(ctx, in.ID)
 	d.Staging, _ = s.store.StagingOf(ctx, in.ID)
