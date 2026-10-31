@@ -4,7 +4,9 @@
 <h2 id="packages">Paketi</h2>
 <ul>
   <li><b>Prostor na disku</b> i <b>broj fajlova</b> važe kroz disk kvote.</li>
-  <li><b>CPU</b> (100 % = jedno jezgro), <b>memorija</b>, <b>procesi</b> i <b>prioritet diska</b> važe za sve što nalog pokreće: PHP, cron, SSH i alate.</li>
+  <li><b>CPU</b> (100 % = jedno jezgro), <b>memorija</b>, <b>procesi</b>, <b>prioritet diska</b> i <b>brzina diska</b> (MB/s posebno za čitanje i pisanje) važe za sve što nalog pokreće: PHP, cron, SSH, aplikacije i alate.</li>
+  <li><b>Redis memorija</b>: korisnik može da uključi sopstveni Redis keš objekata ove veličine (0 = bez Redis-a).</li>
+  <li><b>Node.js i Python aplikacije</b>: koliko aplikacija korisnik sme da pokrene (0 = nijednu).</li>
   <li><b>PHP radnici</b> ograničavaju koliko zahteva PHP obrađuje istovremeno; <b>memorija po zahtevu</b> i <b>najveći upload</b> idu u podešavanja PHP-a.</li>
   <li><b>Mejlova na sat</b> ograničava mejl sa sajtova.</li>
   <li><b>SSH</b> daje pristup ljusci; bez njega korisnik ima samo SFTP.</li>
@@ -20,8 +22,15 @@
   <li><b>Podesi ponovo</b> ponovo upisuje sistemsku konfiguraciju naloga (posle obnove ili ručne izmene).</li>
 </ul>
 
-<h2 id="import">Uvoz iz cPanel-a</h2>
+<h2 id="resources">Potrošnja resursa</h2>
+<p><b>Potrošnja resursa</b> prikazuje svaki nalog sa CPU-om, memorijom, brzinom diska i procesima u poslednjih 10 minuta, prosečnim i najvećim CPU-om za poslednji dan i <b>dostignutim granicama</b>: intervalima od 10 minuta u kojima je CPU granica usporila nalog (četvrtinu vremena ili više) ili je granica memorije prekinula procese. Sortira se po svakoj koloni. Korisnici vide svoje pod <b>Potrošnja → Dostignuti limiti</b>; nalog koji je zadržavan sat ili više u danu dobija obaveštenje.</p>
+
+<h2 id="import">Uvoz</h2>
 <p>Kopirajte pune cPanel backup-e (<code>cpmove-KORISNIK.tar.gz</code>) u <code>/var/lib/hostzit/import</code> i pokrenite uvoz u <b>Uvozu</b>. HostZit pravi nalog i prebacuje sajtove (glavni, addon, sub i parked domeni), baze sa korisnicima i lozinkama, DNS zone (sa novom adresom servera) i cron poslove. Zadržite isto ime naloga da podešavanja baza u sajtovima ostanu ispravna. Ostatak starog home foldera je u <code>~/cpanel-home</code>.</p>
+<p>HostZit arhive (rezervne kopije korisnika, vraćene udaljene kopije, nalozi sa drugog HostZit servera) vraćaju se na isti način: nalog se vraća sa sajtovima, DNS zonama, bazama sa korisnicima i lozinkama, cron poslovima, PHP podešavanjima, Redis-om, aplikacijama i Git repozitorijumima. Ostavite ime naloga prazno da ostane ime iz arhive.</p>
+
+<h2 id="transfer">Premeštanje na drugi server</h2>
+<p>Na stranici korisnika <b>Premesti na drugi server</b> šalje nalog na drugi HostZit server (kao WHM Transfer Tool). Na odredišnom serveru napravite API token (Moj nalog → API tokeni) sa pravima <b>customers:read</b> i <b>customers:write</b>; unesite adresu admin panela odredišta (<code>https://host:8442</code>) i token i kliknite <b>Proveri cilj</b>. HostZit prikazuje verziju odredišta i SHA-256 otisak njegovog sertifikata: ako odredište koristi sopstveni (self-signed) sertifikat, uporedite ga sa <code>openssl x509 -in /var/lib/hostzit/panel/tls/panel.crt -noout -fingerprint -sha256</code> na odredištu. Premeštanje pakuje nalog i šalje ga odredištu, koje ga pravi sa istim imenom, lozinkom panela i lozinkama baza; rezultat je pod <b>Poslovi</b>. Po želji se nalog ovde posle toga suspenduje. Sajtovi rade na starom serveru dok domeni ne pokažu na novi (promenite DNS zapise ili name servere); adrese Git webhook-ova se menjaju, a korisnik ponovo podešava prijavu u dva koraka.</p>
 
 <h2 id="approval">Odobrenje u četiri oka</h2>
 <p>Kada je uključeno <b>odobrenje u četiri oka</b> (Podešavanja → Prijava i bezbednost), brisanje ili gašenje korisnika i brisanje paketa čekaju u <b>Odobrenjima</b> dok ih drugi administrator ne odobri.</p>

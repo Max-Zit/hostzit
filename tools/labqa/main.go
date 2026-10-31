@@ -274,7 +274,7 @@ func main() {
 			// the answer goes into a file (it may hold a secret)
 			_, body, _, err := a.do("POST", args[1], form)
 			must(err)
-			must(os.WriteFile(out, []byte(body), 0o600))
+			must(os.WriteFile(out, []byte(body), 0o600)) // #nosec G703 -- lab tool: the file the operator names
 		} else {
 			_, err := a.post(args[1], form)
 			must(err)

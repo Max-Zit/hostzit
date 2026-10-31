@@ -19,11 +19,28 @@
 
 <h2 id="access">Access and protection</h2>
 <ul>
-  <li><b>Web application firewall</b> (ModSecurity with the OWASP Core Rule Set, tuned for WordPress) blocks SQL injection, cross-site scripting and scanners.</li>
+  <li><b>Web application firewall</b> (ModSecurity with the OWASP Core Rule Set, tuned for WordPress) blocks SQL injection, cross-site scripting and scanners. <b>Only log</b> notes what it would block without blocking (to test first). <b>Firewall: latest requests</b> lists blocked requests with the rules that matched; <b>Rule … off</b> switches a rule off for this website when a legitimate request was blocked. The administrator installs the firewall once under Settings → Sign-in and security.</li>
   <li><b>Only these addresses</b> / <b>Blocked addresses</b>: IP rules for the whole website.</li>
   <li><b>Hotlink protection</b>: other websites cannot embed your images and videos.</li>
   <li><b>Folders with a password</b>: visitors of a folder must enter a user name and password.</li>
 </ul>
+
+<h2 id="stats">Visitor statistics</h2>
+<p><b>Visitors</b> on the website's page counts the web server's logs of the last month with GoAccess: visitors and requests per day, data sent, the most visited pages, where visitors come from, pages not found, browsers and operating systems. Visitors are counted once a day by address and browser; addresses are not shown. The report is kept for an hour; <b>Update</b> counts again.</p>
+
+<h2 id="redis">Redis object cache</h2>
+<p>When the package includes Redis memory, <b>PHP → Redis object cache</b> starts an own Redis for the account, reachable only by the account through the socket <code>/.sock/redis.sock</code> (no network port). <b>WordPress → the site → Connect to Redis</b> installs and sets up the plugin Redis Object Cache; the panel shows memory, keys and hits, <b>Empty the cache</b> clears it.</p>
+
+<h2 id="git">Git deployment</h2>
+<p>Under <b>Git</b> a repository in <code>~/repos/NAME.git</code> is deployed into a folder of a website: the chosen branch is checked out there, then an executable file <code>.hostzit-deploy</code> from the repository runs in that folder (composer install, npm run build …; up to 10 minutes). Deploy in one of two ways:</p>
+<ul>
+  <li><b>Push over SSH</b> (packages with SSH): <code>git remote add hosting ssh://USER@SERVER/home/USER/repos/NAME.git</code>, then <code>git push hosting main</code>; the output of the deployment comes back with the push.</li>
+  <li><b>Clone from</b> an https:// address (GitHub, GitLab, Gitea …; for a private repository with a read-only token in the address): <b>Pull and deploy</b> in the panel, or the <b>webhook</b> address entered in the repository's settings deploys on every push.</li>
+</ul>
+<p>The output of the last deployment and the latest commits are on the repository's page. Files that are not in the repository stay in the folder.</p>
+
+<h2 id="apps">Node.js and Python applications</h2>
+<p>Under <b>Applications</b> a Node.js or Python program runs permanently as the account (restarted when it stops, within the package's limits). It listens on a socket whose address is in the variable <code>PORT</code> — Node.js: <code>app.listen(process.env.PORT)</code>; Python: <code>gunicorn --bind unix:$PORT app:app</code>. Network ports cannot be opened. Enter the folder, the start command and environment variables; <b>Run a command</b> installs packages (<code>npm ci</code>, <code>python3 -m venv .venv</code>, <code>.venv/bin/pip install -r requirements.txt</code>). <b>Serve with this application</b> sends a website to it: files that exist in the website's folder are still served directly, everything else (WebSockets too) goes to the application. The page shows the state, restarts and the application's output.</p>
 
 <h2 id="logs">Logs</h2>
 <p><b>Logs</b> shows the last visits and errors of the website; PHP errors are in <code>~/logs/php-error.log</code>.</p>

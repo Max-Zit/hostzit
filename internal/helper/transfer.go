@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -98,11 +97,12 @@ func TransferClient(fingerprint string, timeout time.Duration) *http.Client {
 	cfg := &tls.Config{MinVersion: tls.VersionTLS12}
 	if fp := strings.ToLower(strings.ReplaceAll(fingerprint, ":", "")); fp != "" {
 		cfg.InsecureSkipVerify = true // #nosec G402 -- replaced by the fingerprint check below
-		cfg.VerifyPeerCertificate = func(raw [][]byte, _ [][]*x509.Certificate) error {
-			if len(raw) == 0 {
+		// VerifyConnection also runs for resumed sessions
+		cfg.VerifyConnection = func(cs tls.ConnectionState) error {
+			if len(cs.PeerCertificates) == 0 {
 				return errors.New("no certificate")
 			}
-			sum := sha256.Sum256(raw[0])
+			sum := sha256.Sum256(cs.PeerCertificates[0].Raw)
 			if hex.EncodeToString(sum[:]) != fp {
 				return errors.New("the target's certificate does not match the confirmed fingerprint")
 			}

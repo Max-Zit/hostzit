@@ -28,6 +28,8 @@ POST   /api/v1/customers/{id}/sso       → {"url": "…"} jednokratni link za p
 POST   /api/v1/customers/{id}/export    → posao: rezervna kopija naloga u ~/backups
 GET    /api/v1/customers/{id}/backups
 GET    /api/v1/jobs/{id}
+PUT    /api/v1/transfers/{name}         telo: HostZit arhiva (hostzit-….tar.gz)
+POST   /api/v1/transfers/{name}/import  {"username","package"} → {"job_id"}
 GET    /api/v1/server/status</pre>
 
 <h2 id="local">Lokalni socket za EmailZit</h2>

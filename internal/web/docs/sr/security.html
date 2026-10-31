@@ -22,4 +22,5 @@
 </ul>
 
 <h2 id="scan">Skeniranje malvera</h2>
-<p>Kada je ClamAV instaliran, korisnici pokreću skeniranje u <b>Bezbednosti</b>, a administratori sa stranice korisnika. Pronađeni fajlovi se prikazuju i javljaju e-mailom; ništa se ne briše samo.</p>
+<p>Administratori instaliraju ClamAV pod Podešavanja → Prijava i bezbednost (tokom skeniranja treba oko 1 GB memorije) i mogu da skeniraju svaki nalog svake noći i da pronađene fajlove odmah premeste u karantin naloga. Korisnici skeniraju u <b>Bezbednosti</b>, administratori sa stranice korisnika. Pronađeni fajlovi se prikazuju i javljaju e-mailom; <b>Karantin</b> premešta fajl u <code>~/.quarantine</code> bez ikakvih dozvola, van svih sajtova, odakle može da se vrati ili obriše. Ništa se ne briše samo.</p>
+<p>Za WordPress, <b>WordPress → sajt → Provera fajlova</b> poredi WordPress i njegove plugine sa wordpress.org sa zvaničnim kontrolnim zbirovima; izmenjeni ili višak fajlovi su često znak provale. <b>Zameni WordPress fajlove</b> preuzima sveže kopije iste verzije (wp-content i wp-config.php ostaju).</p>

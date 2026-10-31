@@ -50,7 +50,7 @@ func (l Limits) Validate() error {
 	case l.IOMBps < 0 || l.IOMBps > 100000:
 		return errors.New("disk speed: 0–100000 MB/s")
 	case l.RedisMB < 0 || l.RedisMB > 65536:
-		return errors.New("Redis memory: 0–65536 MB")
+		return errors.New("memory of Redis: 0–65536 MB")
 	case l.Apps < 0 || l.Apps > 100:
 		return errors.New("applications: 0–100")
 	case l.Processes != 0 && (l.Processes < 20 || l.Processes > 100000):

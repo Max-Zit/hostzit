@@ -117,22 +117,19 @@ func (h *Helper) gitDeploy(ctx context.Context, a gitArgs) (any, error) {
 
 // redactURL hides a password or token in an https address.
 func redactURL(s string) string {
-	for {
-		i := strings.Index(s, "https://")
-		if i < 0 {
-			return s
-		}
-		rest := s[i+8:]
-		end := strings.IndexAny(rest, " \n\t'\"/")
-		if end < 0 {
-			end = len(rest)
-		}
-		at := strings.LastIndex(rest[:end], "@")
-		if at < 0 {
-			return s[:i+8] + redactURL(rest)
-		}
+	i := strings.Index(s, "https://")
+	if i < 0 {
+		return s
+	}
+	rest := s[i+8:]
+	end := strings.IndexAny(rest, " \n\t'\"/")
+	if end < 0 {
+		end = len(rest)
+	}
+	if at := strings.LastIndex(rest[:end], "@"); at >= 0 {
 		return s[:i+8] + "…@" + redactURL(rest[at+1:])
 	}
+	return s[:i+8] + redactURL(rest)
 }
 
 // GitCommit is a commit of the deployed branch.

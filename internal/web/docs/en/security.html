@@ -22,4 +22,5 @@
 </ul>
 
 <h2 id="scan">Malware scans</h2>
-<p>With ClamAV installed, customers start a scan under <b>Security</b> and administrators from the customer page. Found files are listed and reported by e-mail; nothing is deleted automatically.</p>
+<p>Administrators install ClamAV under Settings → Sign-in and security (it needs about 1 GB of memory while scanning) and may scan every account each night and move found files into the account's quarantine right away. Customers scan under <b>Security</b>, administrators from the customer page. Found files are listed and reported by e-mail; <b>Quarantine</b> moves a file into <code>~/.quarantine</code> without any permissions, outside every website, where it can be restored or deleted. Nothing is deleted automatically.</p>
+<p>For WordPress, <b>WordPress → the site → File check</b> compares WordPress and its plugins from wordpress.org with the official checksums; changed or extra files are often a sign of a break-in. <b>Replace the WordPress files</b> downloads fresh copies of the same version (wp-content and wp-config.php stay).</p>

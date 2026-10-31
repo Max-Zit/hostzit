@@ -4,7 +4,9 @@
 <h2 id="packages">Packages</h2>
 <ul>
   <li><b>Disk space</b> and <b>files</b> are enforced by disk quotas.</li>
-  <li><b>CPU</b> (100 % = one core), <b>memory</b>, <b>processes</b> and <b>disk priority</b> apply to everything the account runs: PHP, cron jobs, SSH and tools.</li>
+  <li><b>CPU</b> (100 % = one core), <b>memory</b>, <b>processes</b>, <b>disk priority</b> and <b>disk speed</b> (MB/s for reading and writing each) apply to everything the account runs: PHP, cron jobs, SSH, applications and tools.</li>
+  <li><b>Redis memory</b>: the customer may switch on an own Redis object cache of this size (0 = none).</li>
+  <li><b>Node.js and Python applications</b>: how many applications the customer may run (0 = none).</li>
   <li><b>PHP workers</b> limit how many requests PHP handles at the same time; <b>memory per request</b> and <b>largest upload</b> go into PHP's settings.</li>
   <li><b>Mails per hour</b> limits mail from the websites.</li>
   <li><b>SSH</b> gives shell access; without it the customer has SFTP only.</li>
@@ -20,8 +22,15 @@
   <li><b>Set up again</b> writes the account's system configuration again (after a restore or a manual change).</li>
 </ul>
 
-<h2 id="import">cPanel import</h2>
+<h2 id="resources">Resource usage</h2>
+<p><b>Resource usage</b> lists every account with its CPU, memory, disk speed and processes of the last 10 minutes, the average and peak CPU of the last day and its <b>limit hits</b>: 10-minute intervals in which the CPU limit slowed the account down (by a quarter of the time or more) or the memory limit ended processes. Sort by any column. Customers see their own hits under <b>Usage → Limits reached</b>; an account held back for an hour or more in a day gets a notification.</p>
+
+<h2 id="import">Import</h2>
 <p>Copy full cPanel backups (<code>cpmove-USER.tar.gz</code>) to <code>/var/lib/hostzit/import</code> and start the import under <b>Import</b>. HostZit creates the account and moves the websites (main, addon, sub and parked domains), databases with their users and passwords, DNS zones (with the new server address) and cron jobs. Keep the same account name so the websites' database settings stay valid. The rest of the old home folder is in <code>~/cpanel-home</code>.</p>
+<p>HostZit archives (the customers' own backups, remote backups fetched back, accounts of another HostZit server) are restored the same way: the account comes back with its websites, DNS zones, databases with their users and passwords, cron jobs, PHP settings, Redis, applications and Git repositories. Leave the account name empty to keep the archive's name.</p>
+
+<h2 id="transfer">Move to another server</h2>
+<p>On the customer's page, <b>Move to another server</b> sends the account to another HostZit server (like WHM's Transfer Tool). On the target, create an API token (My account → API tokens) with <b>customers:read</b> and <b>customers:write</b>; enter the target's admin panel address (<code>https://host:8442</code>) and the token and click <b>Check the target</b>. HostZit shows the target's version and the SHA-256 fingerprint of its certificate: when the target uses its own (self-signed) certificate, compare it with <code>openssl x509 -in /var/lib/hostzit/panel/tls/panel.crt -noout -fingerprint -sha256</code> on the target. The move packs the account and streams it to the target, which creates it with the same name, panel password and database passwords; the result is under <b>Jobs</b>. When asked, the account is suspended here afterwards. The websites keep running on the old server until the domains point to the new one (change the DNS records or the name servers); Git webhook addresses change, and the customer sets up two-factor sign-in again.</p>
 
 <h2 id="approval">Four-eyes approval</h2>
 <p>With <b>four-eyes approval</b> on (Settings → Sign-in and security), deleting or terminating a customer and deleting a package wait under <b>Approvals</b> until a second administrator approves them.</p>

@@ -19,11 +19,28 @@
 
 <h2 id="access">Pristup i zaštita</h2>
 <ul>
-  <li><b>Web aplikacioni firewall</b> (ModSecurity sa OWASP Core Rule Set-om, podešen za WordPress) blokira SQL injection, cross-site scripting i skenere.</li>
+  <li><b>Web aplikacioni firewall</b> (ModSecurity sa OWASP Core Rule Set-om, podešen za WordPress) blokira SQL injection, cross-site scripting i skenere. <b>Samo loguj</b> zapisuje šta bi blokirao, bez blokiranja (za probu). <b>Firewall: najnoviji zahtevi</b> prikazuje blokirane zahteve sa pravilima koja su okinula; <b>Pravilo … isključeno</b> isključuje pravilo za ovaj sajt kada je blokiran ispravan zahtev. Administrator instalira firewall jednom pod Podešavanja → Prijava i bezbednost.</li>
   <li><b>Samo ove adrese</b> / <b>Blokirane adrese</b>: IP pravila za ceo sajt.</li>
   <li><b>Zaštita od hotlinkovanja</b>: drugi sajtovi ne mogu da ugrađuju vaše slike i video.</li>
   <li><b>Folderi pod lozinkom</b>: posetioci foldera moraju da unesu korisničko ime i lozinku.</li>
 </ul>
+
+<h2 id="stats">Statistika posetilaca</h2>
+<p><b>Posetioci</b> na stranici sajta broje logove web servera za poslednji mesec pomoću GoAccess-a: posetioce i zahteve po danu, poslate podatke, najposećenije stranice, odakle posetioci dolaze, nepostojeće stranice, pregledače i operativne sisteme. Posetilac se broji jednom dnevno po adresi i pregledaču; adrese se ne prikazuju. Izveštaj se čuva sat vremena; <b>Ažuriraj</b> broji ponovo.</p>
+
+<h2 id="redis">Redis keš objekata</h2>
+<p>Kada paket uključuje Redis memoriju, <b>PHP → Redis keš objekata</b> pokreće sopstveni Redis naloga, dostupan samo tom nalogu preko socketa <code>/.sock/redis.sock</code> (bez mrežnog porta). <b>WordPress → sajt → Poveži sa Redis-om</b> instalira i podešava plugin Redis Object Cache; panel prikazuje memoriju, ključeve i pogotke, a <b>Isprazni keš</b> ga briše.</p>
+
+<h2 id="git">Git deploy</h2>
+<p>Pod <b>Git</b> se repozitorijum u <code>~/repos/IME.git</code> postavlja u folder sajta: izabrana grana se tamo checkout-uje, a zatim se u tom folderu pokreće izvršni fajl <code>.hostzit-deploy</code> iz repozitorijuma (composer install, npm run build …; najviše 10 minuta). Postavlja se na jedan od dva načina:</p>
+<ul>
+  <li><b>Push preko SSH-a</b> (paketi sa SSH-om): <code>git remote add hosting ssh://NALOG@SERVER/home/NALOG/repos/IME.git</code>, pa <code>git push hosting main</code>; izlaz postavljanja stiže uz push.</li>
+  <li><b>Kloniranje</b> sa https:// adrese (GitHub, GitLab, Gitea …; za privatni repozitorijum sa tokenom samo za čitanje u adresi): <b>Povuci i postavi</b> u panelu, ili <b>webhook</b> adresa uneta u podešavanja repozitorijuma postavlja posle svakog push-a.</li>
+</ul>
+<p>Izlaz poslednjeg postavljanja i poslednji commit-ovi su na stranici repozitorijuma. Fajlovi koji nisu u repozitorijumu ostaju u folderu.</p>
+
+<h2 id="apps">Node.js i Python aplikacije</h2>
+<p>Pod <b>Aplikacije</b> Node.js ili Python program radi stalno kao nalog (ponovo se pokreće kada stane, u granicama paketa). Sluša na socketu čija je adresa u promenljivoj <code>PORT</code> — Node.js: <code>app.listen(process.env.PORT)</code>; Python: <code>gunicorn --bind unix:$PORT app:app</code>. Mrežni portovi ne mogu da se otvore. Unesite folder, komandu za pokretanje i promenljive okruženja; <b>Pokreni komandu</b> instalira pakete (<code>npm ci</code>, <code>python3 -m venv .venv</code>, <code>.venv/bin/pip install -r requirements.txt</code>). <b>Opslužuj ovom aplikacijom</b> šalje sajt aplikaciji: fajlovi koji postoje u folderu sajta i dalje se služe direktno, sve ostalo (i WebSockets) ide aplikaciji. Stranica prikazuje stanje, ponovna pokretanja i izlaz aplikacije.</p>
 
 <h2 id="logs">Logovi</h2>
 <p><b>Logovi</b> prikazuju poslednje posete i greške sajta; PHP greške su u <code>~/logs/php-error.log</code>.</p>
