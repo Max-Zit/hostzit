@@ -10,3 +10,4 @@ credentials.txt
 node_modules/
 NOTES.md
 NOTES.md
+/packaging/appliance/vmdkstream
