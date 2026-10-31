@@ -479,6 +479,7 @@ func (s *Server) Run(ctx context.Context) {
 			s.checkNotices(ctx)
 		case <-hourly.C:
 			go s.remoteBackupRound(ctx, false)
+			go s.checkServer(ctx)
 			_ = s.store.PurgeSessions(ctx)
 			_ = s.store.PruneUsage(ctx)
 			s.purgeTerminated(ctx)
@@ -487,6 +488,7 @@ func (s *Server) Run(ctx context.Context) {
 				go s.nightlyScans(ctx)
 				if _, err := s.consoleBackupNow(ctx); err != nil && err.Error() != "no passphrase set" {
 					s.log.Warn("nightly panel backup failed", "err", err)
+					s.notify(ctx, "panel-backup", nil, "The panel backup failed", "The nightly backup of the HostZit panel failed: "+err.Error()+"\n")
 				}
 			}
 		}

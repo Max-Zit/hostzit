@@ -25,7 +25,11 @@
   </div>
   <label>{{.T "Administrators"}}<textarea name="admins" rows="3" spellcheck="false" placeholder="admin@example.com">{{.Data.Admins}}</textarea><small>{{.T "One address per line."}}</small></label>
   <label class="check"><input type="checkbox" name="web_relay" {{if $m.WebRelay}}checked{{end}}><span>{{.T "Mail from websites (contact forms, WordPress) also goes through this server, with the hourly limit of each package"}}</span></label>
-  <label class="check"><input type="checkbox" name="customer" {{if $m.Customer}}checked{{end}}><span>{{.T "Also tell customers about their own account (disk space, certificates)"}}</span></label>
+  <label class="check"><input type="checkbox" name="customer" {{if $m.Customer}}checked{{end}}><span>{{.T "Also tell customers about their own account (disk space, certificates, malware, limits, WordPress updates)"}}</span></label>
+  <h3 class="mt">{{.T "What to tell"}}</h3>
+  <div class="checkgrid">
+  {{range .Data.Kinds}}<label class="check"><input type="checkbox" name="notice_{{.Key}}" {{if .On}}checked{{end}}><span>{{$.T .Label}}</span></label>{{end}}
+  </div>
   <div><button class="primary">{{.T "Save"}}</button></div>
 </section>
 </form>

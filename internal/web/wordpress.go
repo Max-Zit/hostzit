@@ -713,6 +713,7 @@ func (s *Server) autoUpdateWP(ctx context.Context) {
 		msg := "automatic update done"
 		if err != nil {
 			msg = "automatic update: " + err.Error()
+			s.notify(ctx, "wp:"+in.Domain, c, "WordPress update of "+in.Domain+" failed", "The automatic update of WordPress on "+in.Domain+" failed:\n"+err.Error()+"\n\nA snapshot was made before the update; see WordPress in the panel.\n")
 		}
 		_ = s.store.Audit(ctx, "system", "local", "wp.autoupdate", "site:"+in.Domain, msg)
 	}

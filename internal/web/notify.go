@@ -9,10 +9,12 @@ import (
 	"net"
 	"net/http"
 	"net/smtp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/max-zit/hostzit/internal/helper"
 	"github.com/max-zit/hostzit/internal/netacl"
 	"github.com/max-zit/hostzit/internal/store"
 )
@@ -35,6 +37,8 @@ type MailSettings struct {
 	Customer bool     `json:"customer"` // also tell customers about their own account
 	// WebRelay: mail from websites also goes through this server.
 	WebRelay bool `json:"web_relay"`
+	// Off are the kinds of notices nobody wants (see noticeKinds).
+	Off []string `json:"off,omitempty"`
 }
 
 // Validate checks the settings.
@@ -135,6 +139,9 @@ func (s *Server) sendMail(ctx context.Context, to []string, subject, body string
 // notify sends a notice once per day per key.
 func (s *Server) notify(ctx context.Context, key string, c *store.Customer, subject, body string) {
 	m := s.mailSettings(ctx)
+	if slices.Contains(m.Off, noticeKind(key)) {
+		return
+	}
 	if m.Host == "" || !s.store.NoticeDue(ctx, key, 24*time.Hour) {
 		return
 	}
@@ -153,6 +160,7 @@ func (s *Server) checkNotices(ctx context.Context) {
 	if err != nil {
 		return
 	}
+	s.checkLimits(ctx, list)
 	for _, c := range list {
 		p, err := s.store.PackageByID(ctx, c.PackageID)
 		if err != nil || p.Limits.DiskMB == 0 {
@@ -190,22 +198,28 @@ type mailData struct {
 	M      MailSettings
 	Admins string
 	HasPW  bool
+	Kinds  []noticeChoice
 }
 
 func (s *Server) handleMailSettings(w http.ResponseWriter, r *http.Request) {
 	m := s.mailSettings(r.Context())
-	s.render(w, r, http.StatusOK, "mail", &Page{Title: "Notifications", Nav: "settings", Data: &mailData{M: m, Admins: strings.Join(m.Admins, "\n"), HasPW: m.Password != ""}})
+	s.render(w, r, http.StatusOK, "mail", &Page{Title: "Notifications", Nav: "settings", Data: &mailData{M: m, Admins: strings.Join(m.Admins, "\n"), HasPW: m.Password != "", Kinds: noticeChoices(m)}})
 }
 
 func (s *Server) handleMailSettingsSave(w http.ResponseWriter, r *http.Request) {
 	old := s.mailSettings(r.Context())
 	m := MailSettings{Host: strings.TrimSpace(r.FormValue("host")), Port: formInt(r, "port"), Security: r.FormValue("security"), User: strings.TrimSpace(r.FormValue("user")),
 		From: strings.TrimSpace(r.FormValue("from")), Admins: netacl.Split(r.FormValue("admins")), Customer: r.FormValue("customer") != "", WebRelay: r.FormValue("web_relay") != "", Password: old.Password}
+	for _, k := range noticeKinds {
+		if r.FormValue("notice_"+k) == "" {
+			m.Off = append(m.Off, k)
+		}
+	}
 	if pw := r.FormValue("password"); pw != "" {
 		m.Password = s.store.SealSecret("mail.password", pw)
 	}
 	if err := m.Validate(); err != nil {
-		p := &Page{Title: "Notifications", Nav: "settings", Data: &mailData{M: m, Admins: strings.Join(m.Admins, "\n"), HasPW: m.Password != ""}}
+		p := &Page{Title: "Notifications", Nav: "settings", Data: &mailData{M: m, Admins: strings.Join(m.Admins, "\n"), HasPW: m.Password != "", Kinds: noticeChoices(m)}}
 		p.Error = translate(s.lang(r, userFrom(r)), err.Error())
 		s.render(w, r, http.StatusBadRequest, "mail", p)
 		return
@@ -249,4 +263,105 @@ func (s *Server) applyRelay(ctx context.Context, by string) error {
 		relay = map[string]any{"host": m.Host, "port": m.Port, "security": m.Security, "user": m.User, "password": pw, "domain": dom}
 	}
 	return s.call(ctx, by, "mail.relay", map[string]any{"relay": relay}, nil)
+}
+
+// noticeKinds can be switched off one by one in the settings.
+var noticeKinds = []string{"disk", "cert", "malware", "limits", "backup", "wordpress", "server", "updates", "approval"}
+
+// noticeKind maps a notice key ("disk:shop1", "remote-backup" …) to its kind.
+func noticeKind(key string) string {
+	k, _, _ := strings.Cut(key, ":")
+	switch k {
+	case "certexp":
+		return "cert"
+	case "remote-backup", "panel-backup":
+		return "backup"
+	case "wp":
+		return "wordpress"
+	case "service", "serverdisk", "reboot":
+		return "server"
+	case "security-updates":
+		return "updates"
+	}
+	return k
+}
+
+// checkLimits tells customers (and the administrators) whose account was
+// held back by its package limits for an hour or more in the last day.
+func (s *Server) checkLimits(ctx context.Context, list []*store.Customer) {
+	all, err := s.store.UsageAll(ctx, s.now().Add(-24*time.Hour))
+	if err != nil {
+		return
+	}
+	for _, c := range list {
+		hits := 0
+		for _, r := range store.Rates(all[c.ID]) {
+			if r.LimitHit() {
+				hits++
+			}
+		}
+		if hits >= 6 {
+			s.notify(ctx, "limits:"+c.Username, c, "Hosting account "+c.Username+" reaches its limits",
+				fmt.Sprintf("In the last 24 hours the package limits held the hosting account %s back for about %d minutes: the CPU limit slowed it down or the memory limit ended processes.\n\nThe panel shows when under Usage → Limits reached. Often a plugin, a crawler or an attack is the cause; if it happens every day, a bigger package helps.\n", c.Username, hits*10))
+		}
+	}
+}
+
+// checkServer looks at the server itself (hourly): services, disks, a
+// pending restart and waiting security updates.
+func (s *Server) checkServer(ctx context.Context) {
+	if in, err := s.serverInfo(ctx); err == nil {
+		for _, name := range []string{"nginx", "mariadb", "postgresql", "pdns", "ssh"} {
+			st, ok := in.Services[name]
+			if !ok || st == "active" || st == "activating" || st == "reloading" {
+				continue
+			}
+			if v, known := in.Programs[name]; known && v == "" {
+				continue // not installed
+			}
+			s.notify(ctx, "service:"+name, nil, "Service "+name+" is not running", "The service "+name+" on this HostZit server is "+st+".\nSee Server in the admin panel; websites, mail or DNS may be affected.\n")
+		}
+		for _, d := range in.Disks {
+			if d.SizeMB > 0 && d.UsedMB*100 >= d.SizeMB*90 {
+				s.notify(ctx, "serverdisk:"+d.Mount, nil, "Disk "+d.Mount+" of the server is almost full",
+					fmt.Sprintf("The file system %s uses %d of %d MB (%d %%).\n", d.Mount, d.UsedMB, d.SizeMB, d.UsedMB*100/d.SizeMB))
+			}
+		}
+	}
+	var st helper.OSStatus
+	if err := s.call(ctx, "system", "os.status", map[string]bool{"refresh": false}, &st); err != nil {
+		return
+	}
+	if st.RebootRequired {
+		s.notify(ctx, "reboot", nil, "The server needs a restart", "Updated system parts (e.g. the kernel) are used only after a restart of the server: "+strings.Join(st.RebootPackages, " ")+"\nRestart it at a quiet time.\n")
+	}
+	sec := 0
+	for _, p := range st.Packages {
+		if p.Security {
+			sec++
+		}
+	}
+	if sec > 0 && !st.Auto && !st.Running {
+		s.notify(ctx, "security-updates", nil, fmt.Sprintf("%d security updates wait", sec),
+			fmt.Sprintf("%d security updates of the operating system wait on this HostZit server. Install them under Settings → System, or switch the nightly security updates on there.\n", sec))
+	}
+}
+
+type noticeChoice struct {
+	Key, Label string
+	On         bool
+}
+
+var noticeLabels = map[string]string{
+	"disk": "Disk space of an account almost full", "cert": "Certificates not issued or not renewed", "malware": "Malware found",
+	"limits": "Accounts held back by their limits", "backup": "Failed backups (remote and panel)", "wordpress": "Failed automatic WordPress updates",
+	"server": "Services down, server disk almost full, restart needed", "updates": "Waiting security updates", "approval": "Approvals needed (four-eyes)",
+}
+
+func noticeChoices(m MailSettings) []noticeChoice {
+	out := make([]noticeChoice, 0, len(noticeKinds))
+	for _, k := range noticeKinds {
+		out = append(out, noticeChoice{Key: k, Label: noticeLabels[k], On: !slices.Contains(m.Off, k)})
+	}
+	return out
 }

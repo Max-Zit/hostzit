@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -681,5 +682,14 @@ func TestParseRuleIDs(t *testing.T) {
 	}
 	if _, err := parseRuleIDs("942100; rm"); err == nil {
 		t.Fatal("bad id accepted")
+	}
+}
+
+func TestNoticeKind(t *testing.T) {
+	for key, want := range map[string]string{"disk:shop1": "disk", "certexp:a.test": "cert", "remote-backup": "backup", "panel-backup": "backup", "wp:a.test": "wordpress",
+		"service:nginx": "server", "reboot": "server", "security-updates": "updates", "approval:3": "approval", "limits:shop1": "limits", "malware:shop1": "malware"} {
+		if got := noticeKind(key); got != want || !slices.Contains(noticeKinds, got) {
+			t.Errorf("%s: %s", key, got)
+		}
 	}
 }
