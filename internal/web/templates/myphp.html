@@ -1,0 +1,27 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>PHP</h1>
+<p class="muted">{{.T "Choose the extensions and php.ini values of your websites per PHP version (the PHP version itself is chosen per website). Empty fields keep the server's values; memory and upload size can be at most what your package allows."}}</p>
+{{$d := .Data}}
+{{range $d.Versions}}{{$v := .}}
+<section class="panel">
+  <h2>{{template "icon" "service"}}PHP {{$v.Version}}</h2>
+  <form method="post" action="/php/{{$v.Version}}" class="stack">
+    <h3>{{$.T "Extensions"}}</h3>
+    <div class="checkgrid">
+    {{range $v.Modules}}<label class="check"><input type="checkbox" name="ext" value="{{.}}" {{if not (inStrings $v.Off .)}}checked{{end}}><span class="mono">{{.}}</span></label>{{end}}
+    </div>
+    <h3>php.ini</h3>
+    <div class="cols">
+    {{range $d.Keys}}{{$cur := index $v.INI .Name}}
+      <label><span class="mono">{{.Name}}</span>
+      {{if eq .Kind "bool"}}<select name="ini_{{.Name}}"><option value="" {{if not $cur}}selected{{end}}>{{$.T "Server default"}}</option><option value="on" {{if eq $cur "on"}}selected{{end}}>On</option><option value="off" {{if eq $cur "off"}}selected{{end}}>Off</option></select>
+      {{else}}<input name="ini_{{.Name}}" value="{{$cur}}" class="mono" spellcheck="false" placeholder="{{if eq .Name "memory_limit"}}{{$d.Limits.PHPMemoryMB}}M{{else if eq .Kind "size"}}{{$d.Limits.UploadMB}}M{{else if eq .Kind "text"}}Europe/Belgrade{{else}}{{.Min}}–{{.Max}}{{end}}">{{end}}
+      </label>
+    {{end}}
+    </div>
+    <div><button class="primary">{{$.T "Save"}}</button></div>
+  </form>
+</section>
+{{else}}<p class="muted">{{.T "No websites yet."}}</p>{{end}}
+{{end}}

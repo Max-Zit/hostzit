@@ -115,6 +115,11 @@ func run() error {
 			return h.CageMount(ctx, args[1])
 		}
 		return h.CageUnmount(ctx, args[1])
+	case "os-upgrade":
+		return helper.RunOSUpgrade(ctx)
+	case "php-restart-stale":
+		helper.RestartStalePHP(ctx, nil)
+		return nil
 	case "serve":
 	default:
 		return fmt.Errorf("unknown command %q", cmd)

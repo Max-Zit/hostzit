@@ -10,7 +10,7 @@
   <div class="table-wrap"><table>
     <thead><tr><th>PHP</th><th class="num">{{.T "Websites"}}</th><th></th></tr></thead>
     <tbody>{{range .Data.Installed}}<tr>
-      <td><b>{{.Version}}</b>{{if .Default}} <span class="badge ok"><i></i>{{$.T "Default PHP"}}</span>{{end}}</td>
+      <td><b><a href="/settings/php/{{.Version}}">{{.Version}}</a></b>{{if .Default}} <span class="badge ok"><i></i>{{$.T "Default PHP"}}</span>{{end}}</td>
       <td class="num">{{.Sites}}</td>
       <td class="actions">{{if and (not .Default) (eq .Sites 0)}}<form method="post" action="/settings/php/remove" data-confirm="{{$.T "Remove PHP %s from the server?" .Version}}"><input type="hidden" name="version" value="{{.Version}}"><button class="ghost sm danger" aria-label="{{$.T "Delete"}}">{{template "icon" "trash"}}</button></form>{{end}}</td>
     </tr>{{end}}</tbody>

@@ -911,3 +911,6 @@ body.graph-full { overflow: hidden; }
 /* database manager: long values stay on one line, cut at a width */
 .dbgrid td { max-width: 28ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dbgrid td:hover { white-space: normal; overflow-wrap: anywhere; }
+
+/* PHP extensions: checkboxes in columns */
+.checkgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 14px; }

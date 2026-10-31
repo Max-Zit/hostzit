@@ -1,0 +1,23 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+{{$d := .Data}}
+<section class="panel">
+  <h2>{{template "icon" "service"}}{{.T "Extensions of PHP %s" $d.Version}}</h2>
+  <p class="muted small">{{.T "Checked extensions are installed on the server and available to every account; each account can switch them off for itself in its panel (PHP). Changes install or remove the Debian packages and restart the PHP processes of the accounts."}}</p>
+  <form method="post" action="/settings/php/{{$d.Version}}" class="stack" data-confirm="{{.T "Install and remove the changed extensions now?"}}">
+    <div class="checkgrid">
+    {{range $d.Ext.Available}}{{$x := .}}{{$on := inStrings $d.Ext.Installed $x}}{{$prot := inStrings $d.Protected $x}}
+      <label class="check"><input type="checkbox" name="ext" value="{{$x}}" {{if $on}}checked{{end}} {{if $prot}}disabled{{end}}><span class="mono">{{$x}}</span></label>{{if $prot}}<input type="hidden" name="ext" value="{{$x}}">{{end}}
+    {{end}}
+    </div>
+    <p class="small muted">{{.T "Loaded now:"}} <span class="mono">{{join $d.Ext.Loaded " "}}</span></p>
+    <div><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+</section>
+</div>
+</div>
+{{end}}

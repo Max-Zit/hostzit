@@ -68,6 +68,8 @@ type Account struct {
 	PHPVersions []string `json:"php_versions"`
 	// Sendmail replaces HostZit's own sendmail (EmailZit installs one).
 	Sendmail string `json:"sendmail,omitempty"`
+	// PHP are the account's own PHP options per version.
+	PHP map[string]PHPOptions `json:"php,omitempty"`
 }
 
 // Validate checks the account.
@@ -80,6 +82,14 @@ func (a Account) Validate() error {
 	}
 	if err := a.Limits.Validate(); err != nil {
 		return err
+	}
+	for v, o := range a.PHP {
+		if !ValidPHPVersion(v) {
+			return fmt.Errorf("invalid PHP version %q", v)
+		}
+		if err := o.Validate(a.Limits); err != nil {
+			return fmt.Errorf("PHP %s: %w", v, err)
+		}
 	}
 	for _, v := range a.PHPVersions {
 		if !ValidPHPVersion(v) {

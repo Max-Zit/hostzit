@@ -50,6 +50,7 @@ var writablePrefixes = []string{
 	"/usr/share/hostzit/", "/var/lib/zit-acme/", "/etc/nftables.d/hostzit.nft", "/etc/hostzit/",
 	"/etc/mysql/mariadb.conf.d/90-hostzit.cnf", "/etc/powerdns/pdns.d/hostzit.conf", "/etc/powerdns/pdns.d/hostzit-secondary.conf", "/etc/php/", "/var/spool/hostzit/",
 	"/etc/systemd/network/50-hostzit.network", "/etc/apt/sources.list.d/hostzit-php-sury.list",
+	"/etc/apt/apt.conf.d/52hostzit-auto-upgrades", "/etc/apt/apt.conf.d/53hostzit-php-restart",
 }
 
 func allowedWrite(p string) bool {

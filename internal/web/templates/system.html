@@ -45,6 +45,29 @@
   </div>
 </section>
 {{end}}
+<section class="panel" {{if and $d.OS $d.OS.Running}}data-autorefresh{{end}}>
+  <h2>{{template "icon" "package"}}{{.T "System updates"}}</h2>
+  {{if $d.OSError}}<p class="warn-text">{{$d.OSError}}</p>
+  {{else}}{{$o := $d.OS}}
+  {{if $o.RebootRequired}}<p class="warn-text">{{template "icon" "alert"}}{{.T "A restart of the server is needed so the updated system (e.g. the kernel) is used."}}{{if $o.RebootPackages}} <span class="mono small">{{join $o.RebootPackages " "}}</span>{{end}}{{if not $d.Appliance}} {{.T "Restart it in Debian at a quiet time."}}{{end}}</p>{{end}}
+  {{if $o.Running}}<p>{{.T "The updates are being installed now. This page reloads by itself."}}</p>
+  {{else if $o.Packages}}<p>{{.T "%d updates wait, %d of them security updates." (len $o.Packages) (osSecurity $o.Packages)}}</p>
+    <div class="tablewrap"><table><thead><tr><th>{{.T "Package"}}</th><th>{{.T "Installed"}}</th><th>{{.T "New"}}</th><th></th></tr></thead><tbody>
+    {{range $o.Packages}}<tr><td class="mono">{{.Name}}</td><td class="mono small">{{.From}}</td><td class="mono small">{{.To}}</td><td>{{if .Security}}<span class="badge warn"><i></i>{{$.T "Security"}}</span>{{end}}</td></tr>{{end}}
+    </tbody></table></div>
+  {{else}}<p class="muted">{{.T "The system is up to date."}}</p>{{end}}
+  <div class="row">
+    <form method="get" action="/settings/system"><input type="hidden" name="check" value="1"><button class="secondary">{{template "icon" "refresh"}}{{.T "Check now"}}</button></form>
+    {{if and $o.Packages (not $o.Running)}}<form method="post" action="/settings/system/os-upgrade" data-confirm="{{.T "Install all updates now? Services restart briefly; the PHP of the accounts is restarted when it was updated."}}"><button class="primary">{{template "icon" "download"}}{{.T "Install now"}}</button></form>{{end}}
+  </div>
+  <form method="post" action="/settings/system/os-auto" class="stack">
+    <input type="hidden" name="on" value="{{if $o.Auto}}0{{else}}1{{end}}">
+    <p class="small muted">{{if $o.Auto}}{{.T "Nightly security updates are on (Debian security and the PHP versions from packages.sury.org); the server is not restarted by itself."}}{{else}}{{.T "Nightly security updates are off."}}{{end}}</p>
+    <div><button class="secondary">{{if $o.Auto}}{{.T "Switch nightly updates off"}}{{else}}{{.T "Switch nightly updates on"}}{{end}}</button></div>
+  </form>
+  {{if $o.LastLog}}<details><summary>{{.T "Last installation"}} {{$.Time $o.LastRun}}</summary><pre class="log">{{$o.LastLog}}</pre></details>{{end}}
+  {{end}}
+</section>
 </div>
 </div>
 {{end}}

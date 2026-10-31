@@ -65,7 +65,20 @@ func FPMConf(a Account, version string) (string, error) {
 		w("php_admin_value[disable_functions] = %s\n", disabledFunctions)
 	}
 	w("php_admin_value[opcache.memory_consumption] = 128\nphp_admin_flag[opcache.validate_timestamps] = on\nphp_admin_value[opcache.revalidate_freq] = 2\n")
-	return b.String(), nil
+	// The account's own php.ini values replace the defaults: PHP-FPM keeps
+	// the first value of a key given twice.
+	o := a.PHP[version]
+	var out strings.Builder
+	for _, line := range strings.SplitAfter(b.String(), "\n") {
+		if _, rest, ok := strings.Cut(line, "["); ok && strings.HasPrefix(line, "php_") {
+			if k, _, ok := strings.Cut(rest, "]"); ok && o.INI[k] != "" {
+				continue
+			}
+		}
+		out.WriteString(line)
+	}
+	out.WriteString(o.iniLines())
+	return out.String(), nil
 }
 
 // FPMUnit renders the systemd unit of an account's PHP version. The master
@@ -111,6 +124,7 @@ SystemCallArchitectures=native
 CapabilityBoundingSet=
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 UMask=0022
+Environment=PHP_INI_SCAN_DIR=%[7]s
 ExecStart=/usr/sbin/php-fpm%[2]s --nodaemonize --fpm-config %[6]s
 ExecReload=/bin/kill -USR2 $MAINPID
 Restart=on-failure
@@ -118,7 +132,7 @@ RestartSec=5s
 
 [Install]
 WantedBy=multi-user.target
-`, a.Name, version, CageUnitName(a.Name), SliceName(a.Name), CageDir(a.Name), FPMConfPath(version)), nil
+`, a.Name, version, CageUnitName(a.Name), SliceName(a.Name), CageDir(a.Name), FPMConfPath(version), PHPScanDir(version)), nil
 }
 
 // SliceUnit renders the cgroup limits of an account.

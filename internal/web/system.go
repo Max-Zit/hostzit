@@ -37,6 +37,8 @@ type systemData struct {
 	DNS       string
 	Zones     []string
 	Appliance bool
+	OS        *helper.OSStatus
+	OSError   string
 }
 
 // timeZones lists the zone names of the system's time zone database.
@@ -68,6 +70,7 @@ func timeZones() []string {
 
 func (s *Server) handleSystem(w http.ResponseWriter, r *http.Request) {
 	d := &systemData{Appliance: isAppliance()}
+	d.OS, d.OSError = s.osStatus(r, r.URL.Query().Get("check") == "1")
 	if err := s.call(r.Context(), "system", "system.state", struct{}{}, &d.St); err != nil {
 		s.render(w, r, http.StatusOK, "system", &Page{Title: "System", Nav: "settings", Data: d, Error: storeErr(err)})
 		return

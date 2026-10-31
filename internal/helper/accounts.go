@@ -160,6 +160,9 @@ func (h *Helper) accountApply(ctx context.Context, a hosting.Account) (any, erro
 		if err := h.Sys.WriteFile(hosting.CageDir(a.Name)+hosting.FPMConfPath(v), []byte(conf), 0o644, 0, 0); err != nil {
 			return nil, err
 		}
+		if err := h.phpScanDir(a, v); err != nil {
+			return nil, err
+		}
 	}
 	for _, name := range hosting.SortedNames(files) {
 		if err := h.Sys.WriteFile(name, []byte(files[name]), 0o644, 0, 0); err != nil {

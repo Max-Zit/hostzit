@@ -59,6 +59,12 @@ func (h *Helper) setup(ctx context.Context, _ struct{}) (any, error) {
 	if err := h.Sys.WriteFile(hosting.SuspendedPage+"/index.html", []byte(suspendedHTML), 0o644, 0, 0); err != nil {
 		return nil, err
 	}
+	// restart PHP of the accounts after package updates (apt hook)
+	if h.Sys.Exists("/etc/apt/apt.conf.d") {
+		if err := h.Sys.WriteFile(phpRestartHook, []byte(phpRestartHookConf), 0o644, 0, 0); err != nil {
+			return nil, err
+		}
+	}
 	_ = h.Sys.Remove("/etc/nginx/sites-enabled/default") // its default_server would clash
 	// ModSecurity + OWASP CRS, when the packages are installed: sites switch it on one by one.
 	if h.Sys.Exists("/usr/share/modsecurity-crs/rules") && h.Sys.Exists("/etc/modsecurity/crs/crs-setup.conf") {

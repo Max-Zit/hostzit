@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/max-zit/hostzit/internal/helper"
+
 	"github.com/max-zit/hostzit/internal/hosting"
 	"github.com/max-zit/hostzit/internal/store"
 )
@@ -228,6 +230,15 @@ var funcs = template.FuncMap{
 		return "?"
 	},
 	"join": strings.Join,
+	"osSecurity": func(p []helper.OSPackage) int {
+		n := 0
+		for _, x := range p {
+			if x.Security {
+				n++
+			}
+		}
+		return n
+	},
 	"fval": func(p *float64) string {
 		if p == nil {
 			return ""

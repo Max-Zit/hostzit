@@ -304,3 +304,36 @@ func TestNginxSecurity(t *testing.T) {
 		t.Fatal("base without the login limit")
 	}
 }
+
+func TestPHPOptions(t *testing.T) {
+	l := Limits{PHPMemoryMB: 256, UploadMB: 64, PHPWorkers: 4, DiskMB: 100}
+	if _, err := CleanINI("memory_limit", "512M", l); err == nil {
+		t.Fatal("memory above the package accepted")
+	}
+	if _, err := CleanINI("disable_functions", "", l); err == nil {
+		t.Fatal("a key outside the allow-list accepted")
+	}
+	if v, err := CleanINI("display_errors", "1", l); err != nil || v != "on" {
+		t.Fatalf("bool: %q %v", v, err)
+	}
+	if v, err := CleanINI("upload_max_filesize", "32", l); err != nil || v != "32M" {
+		t.Fatalf("size: %q %v", v, err)
+	}
+	a := Account{Name: "shop", Number: 5, PHPVersions: []string{"8.4"}, Limits: l,
+		PHP: map[string]PHPOptions{"8.4": {Disabled: []string{"imagick"}, INI: map[string]string{"memory_limit": "128M", "display_errors": "on"}}}}
+	conf, err := FPMConf(a, "8.4")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasSuffix(conf, "php_flag[display_errors] = on\nphp_admin_value[memory_limit] = 128M\n") || strings.Count(conf, "[memory_limit]") != 1 {
+		t.Fatalf("pool:\n%s", conf)
+	}
+	unit, _ := FPMUnit(a, "8.4")
+	if !strings.Contains(unit, "Environment=PHP_INI_SCAN_DIR=/.hz/php84.d\n") {
+		t.Fatal("no scan dir in the unit")
+	}
+	a.PHP["8.4"] = PHPOptions{Disabled: []string{"../x"}}
+	if err := a.Validate(); err == nil {
+		t.Fatal("bad extension name accepted")
+	}
+}

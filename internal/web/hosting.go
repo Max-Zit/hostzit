@@ -177,7 +177,8 @@ func (s *Server) accountFor(ctx context.Context, c *store.Customer) (hosting.Acc
 	if hs.Mode == "dedicated" {
 		lim = hosting.DedicatedLimits()
 	}
-	return hosting.Account{Name: c.Username, Number: c.Number, Suspended: c.Status != store.StatusActive, Limits: lim, PHPVersions: versions}, p, nil
+	return hosting.Account{Name: c.Username, Number: c.Number, Suspended: c.Status != store.StatusActive, Limits: lim, PHPVersions: versions,
+		PHP: s.phpOptionsFor(ctx, c, versions, lim)}, p, nil
 }
 
 // applyCustomer brings the system account in line with the database.
