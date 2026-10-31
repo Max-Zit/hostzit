@@ -441,7 +441,8 @@ func (s *Server) aclCheck(l *netacl.List, next http.Handler) http.Handler {
 // be same-origin).
 func (s *Server) csrf(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions {
+		if r.Method == http.MethodGet || r.Method == http.MethodHead || r.Method == http.MethodOptions || strings.HasPrefix(r.URL.Path, "/hooks/git/") {
+			// webhooks carry their own secret and use no session
 			next.ServeHTTP(w, r)
 			return
 		}

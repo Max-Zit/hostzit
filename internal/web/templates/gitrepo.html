@@ -1,0 +1,40 @@
+{{template "app" .}}
+{{define "content"}}
+{{$d := .Data}}{{$g := $d.G}}
+<div class="titlebar"><h1 class="mono">{{$g.Name}}</h1>
+  <form method="post" action="/git/{{$g.ID}}/deploy"><button class="primary" {{if $d.Running}}disabled{{end}}>{{template "icon" "refresh"}}{{if $g.Remote}}{{.T "Pull and deploy"}}{{else}}{{.T "Deploy again"}}{{end}}</button></form></div>
+<section class="panel" {{if $d.Running}}data-autorefresh{{end}}>
+  <h2>{{template "icon" "route"}}{{.T "Deployment"}}</h2>
+  <dl class="kv">
+    <dt>{{.T "Branch"}}</dt><dd class="mono">{{$g.Branch}}</dd>
+    <dt>{{.T "Folder"}}</dt><dd class="mono">~/{{$g.Target}}</dd>
+    {{if $d.PushURL}}<dt>{{.T "Push to"}}</dt><dd class="mono small ds">{{$d.PushURL}}</dd>{{end}}
+    {{if $d.HookURL}}<dt>{{.T "Webhook"}}</dt><dd class="mono small ds">{{$d.HookURL}}</dd>{{end}}
+    <dt>{{.T "Last deployment"}}</dt><dd>{{if $d.Running}}<span class="badge warn"><i></i>{{.T "running"}}</span>{{else if $g.DeployedAt}}{{if $g.DeployOK}}<span class="badge ok"><i></i>{{.T "done"}}</span>{{else}}<span class="badge bad"><i></i>{{.T "failed"}}</span>{{end}} {{.Time $g.DeployedAt}}{{else}}<span class="muted">—</span>{{end}}</dd>
+  </dl>
+  {{if $d.PushURL}}<p class="small muted">{{.T "Add the remote once: git remote add hosting %s — then git push hosting %s deploys." $d.PushURL $g.Branch}}</p>{{end}}
+  {{if $d.HookURL}}<p class="small muted">{{.T "Enter the webhook address in the repository's settings (push events, any content type): every push pulls and deploys. Keep the address secret."}}</p>{{end}}
+  {{if $d.Info.Log}}<details {{if not $g.DeployOK}}open{{end}}><summary>{{.T "Output"}}</summary><pre class="log">{{$d.Info.Log}}</pre></details>{{end}}
+</section>
+{{if $d.Info.Commits}}
+<section class="panel">
+  <h2>{{template "icon" "clock"}}{{.T "Latest commits"}}</h2>
+  <div class="table-wrap"><table><tbody>{{range $d.Info.Commits}}<tr><td class="mono small">{{.Hash}}</td><td>{{.Subject}}</td><td class="small muted hide-sm">{{.Author}}</td><td class="small muted">{{.Date}}</td></tr>{{end}}</tbody></table></div>
+</section>
+{{end}}
+<section class="panel">
+  <h2>{{template "icon" "settings"}}{{.T "Settings"}}</h2>
+  <form method="post" action="/git/{{$g.ID}}" class="stack">
+    <div class="cols">
+      <label>{{.T "Branch"}}<input name="branch" value="{{$g.Branch}}" required class="mono" spellcheck="false"></label>
+      <label>{{.T "Deploy into"}}<input name="target" value="{{$g.Target}}" required class="mono" spellcheck="false"></label>
+    </div>
+    <label>{{.T "Clone from"}} <small>{{.T "optional"}}</small><input name="remote" value="{{maskremote $g.Remote}}" class="mono" spellcheck="false" placeholder="https://github.com/me/shop.git"></label>
+    <div><button class="secondary">{{.T "Save"}}</button></div>
+  </form>
+  <form method="post" action="/git/{{$g.ID}}/delete" class="row mt" data-confirm="{{.T "Delete the repository %s?" $g.Name}}">
+    <label class="check"><input type="checkbox" name="files"><span class="small">{{.T "Also delete ~/repos/%s.git (the website's files stay)" $g.Name}}</span></label>
+    <button class="ghost danger">{{template "icon" "trash"}}{{.T "Delete"}}</button>
+  </form>
+</section>
+{{end}}

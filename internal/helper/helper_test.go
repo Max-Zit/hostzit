@@ -505,3 +505,9 @@ func TestParseAudit(t *testing.T) {
 		t.Fatalf("%+v", ev)
 	}
 }
+
+func TestRedactURL(t *testing.T) {
+	if got := redactURL("fatal: unable to access 'https://u:secret@github.com/me/x.git/': 403"); strings.Contains(got, "secret") || !strings.Contains(got, "https://…@github.com/me/x.git") {
+		t.Fatal(got)
+	}
+}

@@ -25,6 +25,7 @@ overrides:
       - libnginx-mod-http-modsecurity
       - modsecurity-crs
       - fail2ban
+      - git
 contents:
   - src: ./LICENSE
     dst: /usr/share/doc/hostzit/copyright

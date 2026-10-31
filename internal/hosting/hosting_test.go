@@ -337,3 +337,22 @@ func TestPHPOptions(t *testing.T) {
 		t.Fatal("bad extension name accepted")
 	}
 }
+
+func TestGitRepo(t *testing.T) {
+	ok := GitRepo{Name: "shop", Branch: "main", Target: "sites/shop.test/public", Remote: "https://u:tok@github.com/me/shop.git"}
+	if err := ok.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	for _, bad := range []GitRepo{
+		{Name: "Shop", Branch: "main", Target: "sites/a"}, {Name: "a", Branch: "-x", Target: "sites/a"}, {Name: "a", Branch: "a..b", Target: "sites/a"},
+		{Name: "a", Branch: "main", Target: "backups"}, {Name: "a", Branch: "main", Target: "sites/a b"}, {Name: "a", Branch: "main", Target: "sites/$(x)"},
+		{Name: "a", Branch: "main", Target: "sites/a", Remote: "ext::sh -c x"}, {Name: "a", Branch: "main", Target: "sites/a", Remote: "file:///etc"},
+	} {
+		if bad.Validate() == nil {
+			t.Errorf("accepted %+v", bad)
+		}
+	}
+	if s := GitDeployScript("shop", ok); !strings.Contains(s, "checkout -f main") || !strings.Contains(s, "work=/home/shop/sites/shop.test/public") {
+		t.Fatal(s)
+	}
+}
