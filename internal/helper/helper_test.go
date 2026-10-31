@@ -493,3 +493,15 @@ func TestDBQuery(t *testing.T) {
 		t.Fatalf("temporary user not made and dropped: %v", fr.calls)
 	}
 }
+
+func TestParseAudit(t *testing.T) {
+	log := "---a1---A--\n[31/Oct/2026:22:24:00 +0000] 1793.9 192.0.2.9 50838 127.0.0.1 80\n---a1---B--\nGET /?id=1%27 HTTP/1.1\nHost: shop.test:443\n\n---a1---H--\n" +
+		`ModSecurity: Warning. detected SQLi using libinjection. [file "x"] [id "942100"] [msg "SQL Injection Attack Detected via libinjection"] [unique_id "1793.9"]` + "\n" +
+		`ModSecurity: Access denied with code 403 (phase 2). [id "949110"] [msg "Inbound Anomaly Score Exceeded"]` + "\n\n---a1---Z--\n" +
+		"---b2---A--\n[31/Oct/2026:22:25:00 +0000] 1794.1 192.0.2.8 1 127.0.0.1 80\n---b2---B--\nGET / HTTP/1.1\nHost: other.test\n\n---b2---H--\n" +
+		`ModSecurity: Access denied with code 403 (phase 2). [id "949110"] [msg "x"]` + "\n---b2---Z--\n"
+	ev := parseAudit(log, []string{"shop.test"}, 10)
+	if len(ev) != 1 || !ev[0].Blocked || ev[0].Client != "192.0.2.9" || len(ev[0].Rules) != 1 || ev[0].Rules[0].ID != 942100 || ev[0].Request != "GET /?id=1%27 HTTP/1.1" {
+		t.Fatalf("%+v", ev)
+	}
+}

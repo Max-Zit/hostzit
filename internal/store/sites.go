@@ -37,6 +37,8 @@ type Site struct {
 	IPDeny       []string
 	Hotlink      bool
 	WAF          bool
+	WAFDetect    bool
+	WAFExclude   []int
 	Protected    []hosting.Protected
 	CertStatus   string // "", "ok", "pending", "failed", "uploaded"
 	CertError    string
@@ -57,11 +59,11 @@ func (s *Site) Spec(suspended bool, maxUpload int) hosting.Site {
 	return hosting.Site{ID: s.ID, Account: s.Account, Domain: s.Domain, Aliases: s.Aliases, DocRoot: s.DocRoot, PHPVersion: s.PHPVersion, WWW: s.WWW,
 		Canonical: s.Canonical, TLS: s.CertStatus == "ok" || s.CertStatus == "uploaded", ForceHTTPS: s.ForceHTTPS, HSTS: s.HSTS, Cache: s.Cache,
 		CacheMinutes: s.CacheMinutes, WordPress: s.WordPress, BlockXMLRPC: s.BlockXMLRPC, Redirects: s.Redirects, Suspended: suspended, UploadMB: up,
-		IPAllow: s.IPAllow, IPDeny: s.IPDeny, Hotlink: s.Hotlink, WAF: s.WAF, Protected: s.Protected}
+		IPAllow: s.IPAllow, IPDeny: s.IPDeny, Hotlink: s.Hotlink, WAF: s.WAF, WAFDetect: s.WAFDetect, WAFExclude: s.WAFExclude, Protected: s.Protected}
 }
 
 const siteCols = `s.id, s.customer_id, c.username, s.domain, s.aliases, s.doc_root, s.php_version, s.www, s.canonical, s.force_https, s.hsts, s.cache, s.cache_minutes,
-	s.wordpress, s.block_xmlrpc, s.redirects, s.upload_mb, s.auto_tls, s.cert_status, s.cert_error, s.cert_not_after, s.cert_names, s.cert_tried_at, s.applied, s.apply_error, s.created_at, s.ip_allow, s.ip_deny, s.hotlink, s.waf, s.protected`
+	s.wordpress, s.block_xmlrpc, s.redirects, s.upload_mb, s.auto_tls, s.cert_status, s.cert_error, s.cert_not_after, s.cert_names, s.cert_tried_at, s.applied, s.apply_error, s.created_at, s.ip_allow, s.ip_deny, s.hotlink, s.waf, s.protected, s.waf_detect, s.waf_exclude`
 
 const siteFrom = ` FROM sites s JOIN customers c ON c.id=s.customer_id`
 
@@ -69,7 +71,7 @@ func scanSite(row pgx.Row) (*Site, error) {
 	s := &Site{}
 	var red, prot []byte
 	err := row.Scan(&s.ID, &s.CustomerID, &s.Account, &s.Domain, &s.Aliases, &s.DocRoot, &s.PHPVersion, &s.WWW, &s.Canonical, &s.ForceHTTPS, &s.HSTS, &s.Cache, &s.CacheMinutes,
-		&s.WordPress, &s.BlockXMLRPC, &red, &s.UploadMB, &s.AutoTLS, &s.CertStatus, &s.CertError, &s.CertNotAfter, &s.CertNames, &s.CertTriedAt, &s.Applied, &s.ApplyError, &s.CreatedAt, &s.IPAllow, &s.IPDeny, &s.Hotlink, &s.WAF, &prot)
+		&s.WordPress, &s.BlockXMLRPC, &red, &s.UploadMB, &s.AutoTLS, &s.CertStatus, &s.CertError, &s.CertNotAfter, &s.CertNames, &s.CertTriedAt, &s.Applied, &s.ApplyError, &s.CreatedAt, &s.IPAllow, &s.IPDeny, &s.Hotlink, &s.WAF, &prot, &s.WAFDetect, &s.WAFExclude)
 	if err != nil {
 		return nil, err
 	}
@@ -151,6 +153,9 @@ func (s *Store) SaveSite(ctx context.Context, x *Site) error {
 	if x.IPDeny == nil {
 		x.IPDeny = []string{}
 	}
+	if x.WAFExclude == nil {
+		x.WAFExclude = []int{}
+	}
 	prot, _ := json.Marshal(x.Protected)
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
@@ -163,9 +168,9 @@ func (s *Store) SaveSite(ctx context.Context, x *Site) error {
 			x.CustomerID, x.Domain, x.Aliases, x.DocRoot, x.PHPVersion, x.WWW, x.Canonical, x.ForceHTTPS, x.HSTS, x.Cache, x.CacheMinutes, x.WordPress, x.BlockXMLRPC, red, x.UploadMB, x.AutoTLS).Scan(&x.ID, &x.CreatedAt)
 	} else {
 		_, err = tx.Exec(ctx, `UPDATE sites SET aliases=$2, doc_root=$3, php_version=$4, www=$5, canonical=$6, force_https=$7, hsts=$8, cache=$9, cache_minutes=$10, wordpress=$11,
-			block_xmlrpc=$12, redirects=$13, upload_mb=$14, auto_tls=$15, ip_allow=$16, ip_deny=$17, hotlink=$18, waf=$19, protected=$20, applied=false WHERE id=$1`,
+			block_xmlrpc=$12, redirects=$13, upload_mb=$14, auto_tls=$15, ip_allow=$16, ip_deny=$17, hotlink=$18, waf=$19, protected=$20, waf_detect=$21, waf_exclude=$22, applied=false WHERE id=$1`,
 			x.ID, x.Aliases, x.DocRoot, x.PHPVersion, x.WWW, x.Canonical, x.ForceHTTPS, x.HSTS, x.Cache, x.CacheMinutes, x.WordPress, x.BlockXMLRPC, red, x.UploadMB, x.AutoTLS,
-			x.IPAllow, x.IPDeny, x.Hotlink, x.WAF, prot)
+			x.IPAllow, x.IPDeny, x.Hotlink, x.WAF, prot, x.WAFDetect, x.WAFExclude)
 	}
 	if isUnique(err) {
 		return fmt.Errorf("%s is already used on this server", x.Domain)

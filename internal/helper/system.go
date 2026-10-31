@@ -68,11 +68,12 @@ func (h *Helper) setup(ctx context.Context, _ struct{}) (any, error) {
 	_ = h.Sys.Remove("/etc/nginx/sites-enabled/default") // its default_server would clash
 	// ModSecurity + OWASP CRS, when the packages are installed: sites switch it on one by one.
 	if h.Sys.Exists("/usr/share/modsecurity-crs/rules") && h.Sys.Exists("/etc/modsecurity/crs/crs-setup.conf") {
-		if err := h.Sys.WriteFile(hosting.ModSecConf, []byte(modsecConf), 0o644, 0, 0); err != nil {
+		if err := h.writeModSec(); err != nil {
 			return nil, err
 		}
 	} else {
 		_ = h.Sys.Remove(hosting.ModSecConf)
+		_ = h.Sys.Remove(hosting.ModSecDetectConf)
 	}
 	if h.Sys.Exists("/usr/sbin/nginx") {
 		if err := h.nginxApply(ctx, map[string][]byte{"/etc/nginx/conf.d/hostzit.conf": []byte(hosting.NginxBase())}, nil); err != nil {
@@ -106,6 +107,7 @@ type Info struct {
 	MemAvailMB  int64             `json:"mem_avail_mb"`
 	Disks       []Disk            `json:"disks"`
 	Services    map[string]string `json:"services"` // unit → active state
+	WAF         bool              `json:"waf"`      // ModSecurity with the OWASP rules is ready
 }
 
 // Disk is the usage of a mounted file system.
@@ -119,6 +121,7 @@ var verRE = regexp.MustCompile(`[0-9]+\.[0-9]+(\.[0-9]+)?`)
 
 func (h *Helper) info(ctx context.Context, _ struct{}) (any, error) {
 	in := Info{Programs: map[string]string{}, Services: map[string]string{}}
+	in.WAF = h.Sys.Exists(hosting.ModSecConf)
 	ents, _ := h.Sys.ReadDir("/usr/sbin")
 	for _, e := range ents {
 		if v, ok := strings.CutPrefix(e.Name(), "php-fpm"); ok && hosting.ValidPHPVersion(v) {

@@ -44,6 +44,9 @@ contents:
     dst: /usr/lib/systemd/system/hostzit-helper.service
   - src: ./packaging/linux/hostzit-firewall.service
     dst: /usr/lib/systemd/system/hostzit-firewall.service
+  - src: ./packaging/linux/hostzit.logrotate
+    dst: /etc/logrotate.d/hostzit
+    type: config
   - src: ./packaging/install.sh
     dst: /usr/share/hostzit/install.sh
     file_info:

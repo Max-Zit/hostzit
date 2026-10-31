@@ -17,6 +17,7 @@ type securityData struct {
 	Blocked string
 	Malware MalwareSettings
 	ClamAV  helper.MalwareStatus
+	WAF     bool
 }
 
 func (s *Server) handleSecurity(w http.ResponseWriter, r *http.Request) {
@@ -31,6 +32,9 @@ func (s *Server) showSecurity(w http.ResponseWriter, r *http.Request, status int
 	}
 	d := &securityData{X: x, Blocks: blocks, Blocked: strings.Join(s.blockedList(r.Context()), "\n"), Malware: s.malwareSettings(r.Context())}
 	_ = s.call(r.Context(), "system", "malware.status", struct{}{}, &d.ClamAV)
+	if in, err := s.serverInfo(r.Context()); err == nil {
+		d.WAF = in.WAF
+	}
 	p := &Page{Title: "Sign-in and security", Nav: "settings", Data: d}
 	if errMsg != "" {
 		p.Error = translate(s.lang(r, userFrom(r)), errMsg)

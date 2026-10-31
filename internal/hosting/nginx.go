@@ -17,6 +17,7 @@ const (
 	SuspendedPage    = "/usr/share/hostzit/suspended"   // index.html
 	NginxAuthDir     = "/etc/nginx/zit.d/hostzit/auth"  // <site id>-<n>.htpasswd
 	ModSecConf       = "/etc/nginx/zit.d/hostzit/modsec.conf"
+	ModSecDetectConf = "/etc/nginx/zit.d/hostzit/modsec-detect.conf" // the same rules, only logging
 )
 
 // SiteConfPath is the nginx file of a site.
@@ -116,7 +117,18 @@ func siteBody(b *strings.Builder, s Site, root, sock string) {
 	}
 	if s.WAF {
 		// ModSecurity with the OWASP Core Rule Set (WordPress exclusions on).
-		w("    modsecurity on;\n    modsecurity_rules_file %s;\n", ModSecConf)
+		conf := ModSecConf
+		if s.WAFDetect {
+			conf = ModSecDetectConf
+		}
+		w("    modsecurity on;\n    modsecurity_rules_file %s;\n", conf)
+		if len(s.WAFExclude) > 0 {
+			ids := make([]string, len(s.WAFExclude))
+			for i, id := range s.WAFExclude {
+				ids[i] = strconv.Itoa(id)
+			}
+			w("    modsecurity_rules 'SecRuleRemoveById %s';\n", strings.Join(ids, " "))
+		}
 	}
 	w("    client_max_body_size %dm;\n", s.UploadMB)
 	// Never follow a symlink to a file of another owner: one account cannot

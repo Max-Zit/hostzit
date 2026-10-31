@@ -28,6 +28,12 @@
   <form method="post" action="/settings/security/blocked" class="stack"><textarea name="blocked" rows="4" class="mono small" spellcheck="false" placeholder="198.51.100.0/24">{{.Data.Blocked}}</textarea><div><button class="secondary">{{.T "Save"}}</button></div></form>
 </section>
 <section class="panel">
+  <h2>{{template "icon" "shield"}}{{.T "Web application firewall"}}</h2>
+  {{if .Data.WAF}}<p class="small"><span class="badge ok"><i></i>ModSecurity + OWASP CRS</span> <span class="muted">{{.T "Customers switch it on per website (Websites → the site → Access and protection), may let it only log, and switch off single rules that block their site by mistake."}}</span></p>
+  {{else}}<p class="muted small">{{.T "ModSecurity with the OWASP Core Rule Set blocks known attacks such as SQL injection, cross-site scripting and vulnerability scanners before they reach PHP."}}</p>
+  <form method="post" action="/settings/security/waf" data-confirm="{{.T "Install ModSecurity now?"}}"><button class="primary">{{template "icon" "download"}}{{.T "Install the firewall"}}</button></form>{{end}}
+</section>
+<section class="panel">
   <h2>{{template "icon" "bug"}}{{.T "Malware scanning"}}</h2>
   {{$m := .Data.ClamAV}}
   {{if $m.Installed}}

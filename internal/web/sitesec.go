@@ -19,6 +19,7 @@ import (
 func init() {
 	customerExtra = append(customerExtra, func(s *Server, mux *http.ServeMux, c func(string, http.HandlerFunc)) {
 		c("POST /sites/{id}/access", s.handleSiteAccess)
+		c("POST /sites/{id}/waf-rule", s.handleWAFRuleOff)
 		c("POST /sites/{id}/protect", s.handleSiteProtect)
 		c("POST /sites/{id}/protect/{n}/delete", s.handleSiteUnprotect)
 	})
@@ -59,6 +60,11 @@ func (s *Server) handleSiteAccess(w http.ResponseWriter, r *http.Request) {
 	}
 	x.IPAllow, x.IPDeny = allow, deny
 	x.Hotlink, x.WAF = r.FormValue("hotlink") != "", r.FormValue("waf") != ""
+	x.WAFDetect = r.FormValue("waf_detect") != ""
+	if x.WAFExclude, err = parseRuleIDs(r.FormValue("waf_exclude")); err != nil {
+		s.redirectErr(w, r, back, err.Error())
+		return
+	}
 	if err := s.store.SaveSite(r.Context(), x); err != nil {
 		s.redirectErr(w, r, back, storeErr(err))
 		return
@@ -67,7 +73,7 @@ func (s *Server) handleSiteAccess(w http.ResponseWriter, r *http.Request) {
 		s.redirectErr(w, r, back, storeErr(err))
 		return
 	}
-	s.audit(r, "site.access", "site:"+x.Domain, "allow %v, deny %v, hotlink %v, firewall %v", allow, deny, x.Hotlink, x.WAF)
+	s.audit(r, "site.access", "site:"+x.Domain, "allow %v, deny %v, hotlink %v, firewall %v (only log %v, rules off %v)", allow, deny, x.Hotlink, x.WAF, x.WAFDetect, x.WAFExclude)
 	s.redirect(w, r, back, "Saved.")
 }
 

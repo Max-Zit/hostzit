@@ -1,0 +1,14 @@
+# HostZit: logs of the websites and of the web application firewall
+/var/log/hostzit/sites/*/access.log /var/log/hostzit/sites/*/error.log /var/log/hostzit/modsec_audit.log {
+	daily
+	rotate 14
+	maxsize 200M
+	missingok
+	notifempty
+	compress
+	delaycompress
+	sharedscripts
+	postrotate
+		[ ! -s /run/nginx.pid ] || kill -USR1 "$(cat /run/nginx.pid)"
+	endscript
+}

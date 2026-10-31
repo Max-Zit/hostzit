@@ -148,6 +148,10 @@ type Site struct {
 	Hotlink bool `json:"hotlink,omitempty"`
 	// WAF: ModSecurity with the OWASP Core Rule Set.
 	WAF bool `json:"waf,omitempty"`
+	// WAFDetect only logs what the firewall would block.
+	WAFDetect bool `json:"waf_detect,omitempty"`
+	// WAFExclude are rule ids switched off for this site (false alarms).
+	WAFExclude []int `json:"waf_exclude,omitempty"`
 	// Protected folders need a user name and password.
 	Protected []Protected `json:"protected,omitempty"`
 }
@@ -215,6 +219,14 @@ func (s Site) Validate() error {
 	}
 	if err := s.validateAccess(); err != nil {
 		return err
+	}
+	if len(s.WAFExclude) > 50 {
+		return errors.New("at most 50 excluded firewall rules")
+	}
+	for _, id := range s.WAFExclude {
+		if id < 1 || id > 99999999 {
+			return fmt.Errorf("invalid firewall rule %d", id)
+		}
 	}
 	if len(s.Redirects) > 100 {
 		return errors.New("at most 100 redirects per site")

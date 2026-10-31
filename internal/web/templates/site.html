@@ -61,6 +61,10 @@
   <h2>{{template "icon" "shield"}}{{.T "Access and protection"}}</h2>
   <form method="post" action="/sites/{{$s.ID}}/access" class="stack">
     <label class="check"><input type="checkbox" name="waf" {{if $s.WAF}}checked{{end}}><span><b>{{.T "Web application firewall"}}</b> — {{.T "blocks known attacks (SQL injection, cross-site scripting, scanners) with the OWASP Core Rule Set, tuned for WordPress"}}</span></label>
+    <div class="cols">
+      <label class="check"><input type="checkbox" name="waf_detect" {{if $s.WAFDetect}}checked{{end}}><span>{{.T "Only log, do not block (to test the firewall first)"}}</span></label>
+      <label>{{.T "Rules switched off"}} <small>{{.T "optional"}}</small><input name="waf_exclude" value="{{.Data.Exclude}}" class="mono" spellcheck="false" placeholder="942100 941160"><small>{{.T "Numbers of rules that block your site by mistake, separated by spaces."}}</small></label>
+    </div>
     <label class="check"><input type="checkbox" name="hotlink" {{if $s.Hotlink}}checked{{end}}><span>{{.T "Hotlink protection: other websites cannot embed your images and videos"}}</span></label>
     <div class="cols">
       <label>{{.T "Only these addresses may open the site"}} <small>{{.T "optional"}}</small><textarea name="ip_allow" rows="3" class="mono small" spellcheck="false" placeholder="203.0.113.0/24">{{join $s.IPAllow "\n"}}</textarea></label>
@@ -69,6 +73,21 @@
     <label class="check"><input type="checkbox" name="lockout_ok"><span class="small">{{.T "I know my own address is not in the allowed list"}}</span></label>
     <div><button class="secondary">{{.T "Save"}}</button></div>
   </form>
+  {{if $s.WAF}}
+  <h3 class="mt">{{.T "Firewall: latest requests"}}</h3>
+  {{if .Data.WAF}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Time"}}</th><th>{{.T "Request"}}</th><th>{{.T "Rules"}}</th><th></th></tr></thead>
+    <tbody>{{range .Data.WAF}}<tr>
+      <td class="small muted">{{.Time}}<br><span class="mono">{{.Client}}</span></td>
+      <td class="small mono ds">{{.Request}}</td>
+      <td class="small">{{if .Blocked}}<span class="badge bad"><i></i>{{$.T "blocked"}}</span>{{else}}<span class="badge warn"><i></i>{{$.T "logged"}}</span>{{end}}
+        {{range .Rules}}<div><span class="mono">{{.ID}}</span> {{.Msg}}</div>{{end}}</td>
+      <td class="actions">{{range .Rules}}<form method="post" action="/sites/{{$s.ID}}/waf-rule" data-confirm="{{$.T "Switch rule %d off for this website? Do it only when the request was legitimate." .ID}}"><input type="hidden" name="rule" value="{{.ID}}"><button class="ghost sm">{{$.T "Rule %d off" .ID}}</button></form>{{end}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<p class="muted small">{{.T "Nothing blocked recently."}}</p>{{end}}
+  {{end}}
   <h3 class="mt">{{.T "Folders with a password"}}</h3>
   {{if $s.Protected}}<div class="table-wrap"><table><tbody>{{range $i, $p := $s.Protected}}<tr><td class="mono">{{$p.Path}}/</td><td class="small muted">{{range $j, $u := $p.Users}}{{if $j}}, {{end}}{{$u.Name}}{{end}}</td>
     <td class="actions"><form method="post" action="/sites/{{$s.ID}}/protect/{{$i}}/delete" data-confirm="{{$.T "Remove the password from %s?" $p.Path}}"><button class="ghost sm" aria-label="{{$.T "Delete"}}">{{template "icon" "trash"}}</button></form></td></tr>{{end}}</tbody></table></div>{{end}}

@@ -673,3 +673,13 @@ func TestWPWarnings(t *testing.T) {
 		t.Fatalf("%q", got)
 	}
 }
+
+func TestParseRuleIDs(t *testing.T) {
+	ids, err := parseRuleIDs("942100, 941100 942100")
+	if err != nil || len(ids) != 2 || ids[0] != 941100 {
+		t.Fatal(ids, err)
+	}
+	if _, err := parseRuleIDs("942100; rm"); err == nil {
+		t.Fatal("bad id accepted")
+	}
+}

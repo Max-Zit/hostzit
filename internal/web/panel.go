@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/max-zit/hostzit/internal/auth"
+	"github.com/max-zit/hostzit/internal/helper"
 	"github.com/max-zit/hostzit/internal/hosting"
 	"github.com/max-zit/hostzit/internal/store"
 )
@@ -190,6 +191,8 @@ type siteData struct {
 	Redirect string
 	MaxUp    int
 	Zone     *store.Zone
+	WAF      []helper.WAFEvent
+	Exclude  string
 }
 
 func (s *Server) showSite(w http.ResponseWriter, r *http.Request, status int, c *store.Customer, x *store.Site, errMsg string) {
@@ -204,6 +207,18 @@ func (s *Server) showSite(w http.ResponseWriter, r *http.Request, status int, c 
 	}
 	d.Redirect = strings.Join(lines, "\n")
 	d.Zone, _ = s.store.ZoneFor(r.Context(), x.Domain)
+	if x.WAF {
+		names := append([]string{x.Domain}, x.Aliases...)
+		if x.WWW {
+			names = append(names, "www."+x.Domain)
+		}
+		_ = s.call(r.Context(), actor(r), "waf.events", map[string]any{"account": c.Username, "id": x.ID, "names": names, "max": 20}, &d.WAF)
+	}
+	ids := make([]string, len(x.WAFExclude))
+	for i, id := range x.WAFExclude {
+		ids[i] = strconv.Itoa(id)
+	}
+	d.Exclude = strings.Join(ids, " ")
 	pg := &Page{Title: x.Domain, Nav: "sites", Customer: c, Crumb: "Websites", CrumbURL: "/sites", Data: d}
 	if errMsg != "" {
 		pg.Error = translate(s.lang(r, userFrom(r)), errMsg)
