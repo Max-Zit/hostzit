@@ -28,7 +28,7 @@ curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.s
 
 The installer sets up nginx, PHP-FPM, MariaDB, PowerDNS, PostgreSQL and the HostZit services, checks the signature of the release and prints the address of the admin panel with the one-time setup token.
 
-HostZit is made by [MaxZit](https://maxzit.com), like [BackupZit](https://github.com/Max-Zit/backupzit), [ControlZit](https://github.com/Max-Zit/controlzit), [WatchZit](https://github.com/Max-Zit/watchzit) and [PassZit](https://github.com/Max-Zit/passzit).
+HostZit is made by [MaxZit](https://maxzit.com), like [BackupZit](https://github.com/Max-Zit/backupzit), [RMMZit](https://github.com/Max-Zit/rmmzit), [WatchZit](https://github.com/Max-Zit/watchzit) and [PassZit](https://github.com/Max-Zit/passzit).
 
 ## License
 
