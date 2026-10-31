@@ -519,6 +519,8 @@ type helperUsage struct {
 	Tasks    int64 `json:"tasks"`
 	IOReadB  int64 `json:"io_read_b"`
 	IOWriteB int64 `json:"io_write_b"`
+	OOM      int64 `json:"mem_oom"`
+	Throttle int64 `json:"throttled_usec"`
 }
 
 func (s *Server) collectUsage(ctx context.Context) {
@@ -543,7 +545,7 @@ func (s *Server) collectUsage(ctx context.Context) {
 				dbb += b
 			}
 		}
-		_ = s.store.AddUsage(ctx, c.ID, store.UsageSample{At: now, DiskKB: u.DiskKB, Inodes: u.Inodes, DBB: dbb, MemoryB: u.MemoryB, CPUUsec: u.CPUUsec, IOB: u.IOReadB + u.IOWriteB, Tasks: int(u.Tasks)})
+		_ = s.store.AddUsage(ctx, c.ID, store.UsageSample{At: now, DiskKB: u.DiskKB, Inodes: u.Inodes, DBB: dbb, MemoryB: u.MemoryB, CPUUsec: u.CPUUsec, IOB: u.IOReadB + u.IOWriteB, Tasks: int(u.Tasks), ThrottledUsec: u.Throttle, OOM: u.OOM})
 	}
 }
 

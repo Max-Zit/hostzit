@@ -478,6 +478,14 @@ func init() {
 		v := min(100, used*100/limit)
 		return int((v + 2) / 5 * 5)
 	}
+	funcs["pctf"] = func(used float64, limit int) int {
+		if limit <= 0 {
+			return 0
+		}
+		v := min(100, int(used*100/float64(limit)))
+		return (v + 2) / 5 * 5
+	}
+	funcs["mulf"] = func(a, b float64) float64 { return a * b }
 }
 
 func init() {

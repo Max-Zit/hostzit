@@ -489,6 +489,9 @@ type usageData struct {
 	DBs     []*store.Database
 	Disk    []int64 // for the sparkline (KB)
 	Mem     []int64
+	CPU     []int64 // percent
+	Now     *store.UsageRate
+	Hits    []store.UsageRate // newest first
 }
 
 func (s *Server) handleUsage(w http.ResponseWriter, r *http.Request) {
@@ -505,6 +508,14 @@ func (s *Server) handleUsage(w http.ResponseWriter, r *http.Request) {
 		d.Disk = append(d.Disk, u.DiskKB)
 		d.Mem = append(d.Mem, u.MemoryB>>20)
 	}
+	rates := store.Rates(d.Samples)
+	for i := range rates {
+		d.CPU = append(d.CPU, int64(rates[i].CPUPercent+0.5))
+	}
+	if n := len(rates); n > 0 {
+		d.Now = &rates[n-1]
+	}
+	d.Hits = limitHits(rates, 50)
 	s.render(w, r, http.StatusOK, "usage", &Page{Title: "Usage", Nav: "usage", Customer: c, Data: d})
 }
 
@@ -569,4 +580,15 @@ func (s *Server) handleAccount2FAOff(w http.ResponseWriter, r *http.Request) {
 	}
 	s.audit(r, "2fa.disable", "user:"+u.Username, "two-factor sign-in switched off")
 	s.redirect(w, r, "/login", "Two-factor sign-in was switched off. Sign in again.")
+}
+
+// limitHits are the newest intervals in which a limit held an account back.
+func limitHits(rates []store.UsageRate, max int) []store.UsageRate {
+	var out []store.UsageRate
+	for i := len(rates) - 1; i >= 0 && len(out) < max; i-- {
+		if rates[i].LimitHit() {
+			out = append(out, rates[i])
+		}
+	}
+	return out
 }

@@ -164,6 +164,10 @@ func cgroupLines(l Limits) string {
 	if l.IOWeight > 0 {
 		fmt.Fprintf(&b, "IOWeight=%d\n", l.IOWeight)
 	}
+	if l.IOMBps > 0 {
+		// systemd finds the block device of the homes itself.
+		fmt.Fprintf(&b, "IOReadBandwidthMax=/home %[1]dM\nIOWriteBandwidthMax=/home %[1]dM\n", l.IOMBps)
+	}
 	if l.Processes > 0 {
 		fmt.Fprintf(&b, "TasksMax=%d\n", l.Processes)
 	}

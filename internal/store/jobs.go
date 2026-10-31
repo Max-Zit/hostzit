@@ -140,18 +140,21 @@ type UsageSample struct {
 	CPUUsec int64
 	IOB     int64
 	Tasks   int
+	// counters since the slice started
+	ThrottledUsec int64
+	OOM           int64
 }
 
 // AddUsage stores a sample.
 func (s *Store) AddUsage(ctx context.Context, customerID int64, u UsageSample) error {
-	_, err := s.db.Exec(ctx, `INSERT INTO usage_samples(customer_id, at, disk_kb, inodes, db_b, memory_b, cpu_usec, io_b, tasks) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING`,
-		customerID, u.At, u.DiskKB, u.Inodes, u.DBB, u.MemoryB, u.CPUUsec, u.IOB, u.Tasks)
+	_, err := s.db.Exec(ctx, `INSERT INTO usage_samples(customer_id, at, disk_kb, inodes, db_b, memory_b, cpu_usec, io_b, tasks, throttled_usec, oom) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT DO NOTHING`,
+		customerID, u.At, u.DiskKB, u.Inodes, u.DBB, u.MemoryB, u.CPUUsec, u.IOB, u.Tasks, u.ThrottledUsec, u.OOM)
 	return err
 }
 
 // Usage returns a customer's samples since a time.
 func (s *Store) Usage(ctx context.Context, customerID int64, since time.Time) ([]UsageSample, error) {
-	rows, err := s.db.Query(ctx, `SELECT at, disk_kb, inodes, db_b, memory_b, cpu_usec, io_b, tasks FROM usage_samples WHERE customer_id=$1 AND at>=$2 ORDER BY at`, customerID, since)
+	rows, err := s.db.Query(ctx, `SELECT at, disk_kb, inodes, db_b, memory_b, cpu_usec, io_b, tasks, throttled_usec, oom FROM usage_samples WHERE customer_id=$1 AND at>=$2 ORDER BY at`, customerID, since)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +162,7 @@ func (s *Store) Usage(ctx context.Context, customerID int64, since time.Time) ([
 	var out []UsageSample
 	for rows.Next() {
 		var u UsageSample
-		if err := rows.Scan(&u.At, &u.DiskKB, &u.Inodes, &u.DBB, &u.MemoryB, &u.CPUUsec, &u.IOB, &u.Tasks); err != nil {
+		if err := rows.Scan(&u.At, &u.DiskKB, &u.Inodes, &u.DBB, &u.MemoryB, &u.CPUUsec, &u.IOB, &u.Tasks, &u.ThrottledUsec, &u.OOM); err != nil {
 			return nil, err
 		}
 		out = append(out, u)
@@ -170,8 +173,8 @@ func (s *Store) Usage(ctx context.Context, customerID int64, since time.Time) ([
 // LastUsage returns the newest sample.
 func (s *Store) LastUsage(ctx context.Context, customerID int64) (*UsageSample, error) {
 	var u UsageSample
-	err := s.db.QueryRow(ctx, `SELECT at, disk_kb, inodes, db_b, memory_b, cpu_usec, io_b, tasks FROM usage_samples WHERE customer_id=$1 ORDER BY at DESC LIMIT 1`, customerID).
-		Scan(&u.At, &u.DiskKB, &u.Inodes, &u.DBB, &u.MemoryB, &u.CPUUsec, &u.IOB, &u.Tasks)
+	err := s.db.QueryRow(ctx, `SELECT at, disk_kb, inodes, db_b, memory_b, cpu_usec, io_b, tasks, throttled_usec, oom FROM usage_samples WHERE customer_id=$1 ORDER BY at DESC LIMIT 1`, customerID).
+		Scan(&u.At, &u.DiskKB, &u.Inodes, &u.DBB, &u.MemoryB, &u.CPUUsec, &u.IOB, &u.Tasks, &u.ThrottledUsec, &u.OOM)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -182,4 +185,56 @@ func (s *Store) LastUsage(ctx context.Context, customerID int64) (*UsageSample, 
 func (s *Store) PruneUsage(ctx context.Context) error {
 	_, err := s.db.Exec(ctx, `DELETE FROM usage_samples WHERE at < $1`, s.now().Add(-90*24*time.Hour))
 	return err
+}
+
+// UsageAll returns the samples of every customer since a time.
+func (s *Store) UsageAll(ctx context.Context, since time.Time) (map[int64][]UsageSample, error) {
+	rows, err := s.db.Query(ctx, `SELECT customer_id, at, disk_kb, inodes, db_b, memory_b, cpu_usec, io_b, tasks, throttled_usec, oom FROM usage_samples WHERE at>=$1 ORDER BY customer_id, at`, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[int64][]UsageSample{}
+	for rows.Next() {
+		var id int64
+		var u UsageSample
+		if err := rows.Scan(&id, &u.At, &u.DiskKB, &u.Inodes, &u.DBB, &u.MemoryB, &u.CPUUsec, &u.IOB, &u.Tasks, &u.ThrottledUsec, &u.OOM); err != nil {
+			return nil, err
+		}
+		out[id] = append(out[id], u)
+	}
+	return out, rows.Err()
+}
+
+// UsageRate is what an account used between two samples.
+type UsageRate struct {
+	At         time.Time
+	CPUPercent float64 // 100 = one core
+	IOMBps     float64
+	Throttled  float64 // share of the time the CPU limit held the account back, 0–1
+	OOM        int64   // processes ended by the memory limit
+	MemoryB    int64
+	Tasks      int
+}
+
+// LimitHit reports a sample where a limit held the account back.
+func (r UsageRate) LimitHit() bool { return r.OOM > 0 || r.Throttled >= 0.25 }
+
+// Rates turns counters into rates (a restarted control group starts again
+// from zero; that interval is skipped).
+func Rates(samples []UsageSample) []UsageRate {
+	var out []UsageRate
+	for i := 1; i < len(samples); i++ {
+		a, b := samples[i-1], samples[i]
+		sec := b.At.Sub(a.At).Seconds()
+		if sec <= 0 || b.CPUUsec < a.CPUUsec || b.IOB < a.IOB || b.ThrottledUsec < a.ThrottledUsec || b.OOM < a.OOM {
+			continue
+		}
+		out = append(out, UsageRate{At: b.At, MemoryB: b.MemoryB, Tasks: b.Tasks,
+			CPUPercent: float64(b.CPUUsec-a.CPUUsec) / sec / 1e4,
+			IOMBps:     float64(b.IOB-a.IOB) / sec / 1e6,
+			Throttled:  float64(b.ThrottledUsec-a.ThrottledUsec) / sec / 1e6,
+			OOM:        b.OOM - a.OOM})
+	}
+	return out
 }

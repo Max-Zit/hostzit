@@ -16,6 +16,7 @@ type Limits struct {
 	CPUPercent  int  `json:"cpu_percent"`   // 100 = one core (0 = none)
 	MemoryMB    int  `json:"memory_mb"`     // hard limit for all processes (0 = none)
 	IOWeight    int  `json:"io_weight"`     // 1–10000, systemd default 100
+	IOMBps      int  `json:"io_mbps"`       // disk read and write speed in MB/s each (0 = none)
 	Processes   int  `json:"processes"`     // TasksMax (0 = none)
 	PHPWorkers  int  `json:"php_workers"`   // pm.max_children per PHP version
 	PHPMemoryMB int  `json:"php_memory_mb"` // memory_limit of one PHP request
@@ -44,6 +45,8 @@ func (l Limits) Validate() error {
 		return errors.New("memory: 128 MB–1 TB, or 0 for no limit")
 	case l.IOWeight != 0 && (l.IOWeight < 1 || l.IOWeight > 10000):
 		return errors.New("disk priority: 1–10000")
+	case l.IOMBps < 0 || l.IOMBps > 100000:
+		return errors.New("disk speed: 0–100000 MB/s")
 	case l.Processes != 0 && (l.Processes < 20 || l.Processes > 100000):
 		return errors.New("processes: 20–100000, or 0 for no limit")
 	case l.PHPWorkers < 1 || l.PHPWorkers > 512:

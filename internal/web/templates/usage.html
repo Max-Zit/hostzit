@@ -17,6 +17,8 @@
   <dl class="kv">
     <dt>{{$.T "Memory"}}</dt><dd>{{bytes .MemoryB}}{{if $p.Limits.MemoryMB}} / {{mb $p.Limits.MemoryMB}}{{template "meter" (pct5 .MemoryB (mul (i64 $p.Limits.MemoryMB) 1048576))}}{{end}}</dd>
     <dt>{{$.T "Processes"}}</dt><dd>{{.Tasks}}{{if $p.Limits.Processes}} / {{$p.Limits.Processes}}{{end}}</dd>
+    {{with $.Data.Now}}<dt>CPU</dt><dd>{{printf "%.0f" .CPUPercent}} %{{if $p.Limits.CPUPercent}} / {{$p.Limits.CPUPercent}} %{{template "meter" (pctf .CPUPercent $p.Limits.CPUPercent)}}{{end}}</dd>
+    <dt>{{$.T "Disk speed"}}</dt><dd>{{printf "%.1f" .IOMBps}} MB/s{{if $p.Limits.IOMBps}} / {{$p.Limits.IOMBps}} MB/s{{end}}</dd>{{end}}
     <dt>{{$.T "Measured"}}</dt><dd class="muted">{{$.Ago .At}}</dd>
   </dl>
 </section>
@@ -29,9 +31,16 @@
 </section>
 {{end}}
 <section class="panel">
+  <h2>{{template "icon" "alert"}}{{.T "Limits reached"}}</h2>
+  {{if .Data.Hits}}<p class="small muted">{{.T "In these 10-minute intervals the package's limits held the account back: the CPU limit slowed it down, or the memory limit ended processes. Often it is a plugin, a crawler or an attack; if it happens every day, a bigger package helps."}}</p>
+  <div class="table-wrap scroll-y"><table><thead><tr><th>{{.T "Time"}}</th><th class="num">CPU</th><th class="num">{{.T "Slowed down"}}</th><th class="num">{{.T "Processes ended"}}</th><th class="num hide-sm">{{.T "Memory"}}</th></tr></thead>
+  <tbody>{{range .Data.Hits}}<tr><td class="muted small">{{$.Time .At}}</td><td class="num">{{printf "%.0f" .CPUPercent}} %</td><td class="num">{{printf "%.0f" (mulf .Throttled 100)}} %</td><td class="num">{{.OOM}}</td><td class="num hide-sm">{{bytes .MemoryB}}</td></tr>{{end}}</tbody></table></div>
+  {{else}}<p class="muted">{{.T "No limit was reached in the last 7 days."}}</p>{{end}}
+</section>
+<section class="panel">
   <h2>{{template "icon" "clock"}}{{.T "Last 7 days"}}</h2>
   {{if .Data.Samples}}
-  <div class="cards2"><div><p class="small muted">{{.T "Disk"}}</p>{{spark .Data.Disk}}</div><div><p class="small muted">{{.T "Memory (MB)"}}</p>{{spark .Data.Mem}}</div></div>
+  <div class="cards2"><div><p class="small muted">{{.T "Disk"}}</p>{{spark .Data.Disk}}</div><div><p class="small muted">{{.T "Memory (MB)"}}</p>{{spark .Data.Mem}}</div><div><p class="small muted">{{.T "CPU (%)"}}</p>{{spark .Data.CPU}}</div></div>
   <div class="table-wrap scroll-y"><table>
     <thead><tr><th>{{.T "Time"}}</th><th class="num">{{.T "Disk"}}</th><th class="num">{{.T "Memory"}}</th><th class="num hide-sm">{{.T "Processes"}}</th></tr></thead>
     <tbody>{{range .Data.Samples}}<tr><td class="muted small">{{$.Time .At}}</td><td class="num">{{kb .DiskKB}}</td><td class="num">{{bytes .MemoryB}}</td><td class="num hide-sm">{{.Tasks}}</td></tr>{{end}}</tbody>

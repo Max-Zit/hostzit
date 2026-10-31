@@ -47,6 +47,7 @@
     <a href="/packages" class="{{if eq .Nav "packages"}}on{{end}}">{{template "icon" "package"}}{{.T "Packages"}}</a>
     <a href="/sites" class="{{if eq .Nav "sites"}}on{{end}}">{{template "icon" "globe"}}{{.T "Websites"}}</a>
     <a href="/dns" class="{{if eq .Nav "dns"}}on{{end}}">{{template "icon" "network"}}{{.T "DNS zones"}}</a>
+    <a href="/resources" class="{{if eq .Nav "resources"}}on{{end}}">{{template "icon" "cpu"}}{{.T "Resource usage"}}</a>
     <a href="/server" class="{{if eq .Nav "server"}}on{{end}}">{{template "icon" "rack"}}{{.T "Server"}}</a>
     <a href="/jobs" class="{{if eq .Nav "jobs"}}on{{end}}">{{template "icon" "clock"}}{{.T "Jobs"}}</a>
     {{if .User.IsAdmin}}<a href="/import" class="{{if eq .Nav "import"}}on{{end}}">{{template "icon" "upload"}}{{.T "Import"}}</a>{{end}}

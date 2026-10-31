@@ -27,6 +27,7 @@
     <label>{{.T "Memory (MB)"}}<input type="number" name="memory_mb" value="{{$l.MemoryMB}}" min="0" required></label>
     <label>{{.T "Processes"}}<input type="number" name="processes" value="{{$l.Processes}}" min="0" required></label>
     <label>{{.T "Disk priority"}}<input type="number" name="io_weight" value="{{$l.IOWeight}}" min="1" max="10000" required><small>{{.T "100 = normal."}}</small></label>
+    <label>{{.T "Disk speed (MB/s)"}}<input type="number" name="io_mbps" value="{{$l.IOMBps}}" min="0" max="100000" required><small>{{.T "Reading and writing each."}}</small></label>
   </div>
 </section>
 <section class="panel">
