@@ -47,6 +47,9 @@ func uiTexts(t *testing.T) map[string]bool {
 	out["the password must be between 12 and 256 characters"] = true
 	out["The name is already used."] = true
 	out["Not found."] = true
+	for _, l := range []string{"Pages", "Coming from", "Not found (404)", "Browsers", "Operating systems", "Answers"} {
+		out[l] = true
+	}
 	for _, l := range noticeLabels {
 		out[l] = true
 	}

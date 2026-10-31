@@ -511,3 +511,19 @@ func TestRedactURL(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestParseGoAccess(t *testing.T) {
+	js := `{"general":{"start_date":"30/Oct/2026","end_date":"31/Oct/2026","total_requests":370,"unique_visitors":3,"bandwidth":22571028},
+"visitors":{"data":[{"hits":{"count":7},"visitors":{"count":1},"bytes":{"count":210301},"data":"20261031"},{"hits":{"count":363},"visitors":{"count":2},"bytes":{"count":22360727},"data":"20261030"}]},
+"requests":{"data":[{"hits":{"count":300},"visitors":{"count":1},"bytes":{"count":20928600},"data":"/"}]},
+"not_found":{"data":[{"hits":{"count":4},"visitors":{"count":1},"bytes":{"count":10},"data":"/x"}]},
+"browsers":{"data":[{"hits":{"count":5},"visitors":{"count":1},"data":"Crawlers"}]},
+"status_codes":{"data":[{"hits":{"count":360},"data":"2xx Success"},{"hits":{"count":0},"data":"5xx"}]}}`
+	st, err := parseGoAccess([]byte(js))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Requests != 370 || len(st.Days) != 2 || st.Days[0].Name != "2026-10-30" || st.NotFound != 4 || st.Crawlers != 5 || len(st.Status) != 1 || st.Pages[0].Name != "/" {
+		t.Fatalf("%+v", st)
+	}
+}

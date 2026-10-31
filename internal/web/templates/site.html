@@ -4,6 +4,7 @@
 <div class="pagehead"><h1>{{$s.Domain}}</h1>
   <div class="row"><a class="btn secondary" href="https://{{$s.Domain}}/" target="_blank" rel="noopener">{{template "icon" "globe"}}{{.T "Open"}}</a>
   <a class="btn ghost" href="/files?path={{$s.DocRoot}}">{{template "icon" "folder"}}{{.T "Files"}}</a>
+  <a class="btn ghost" href="/sites/{{$s.ID}}/stats">{{template "icon" "online"}}{{.T "Visitors"}}</a>
   <a class="btn ghost" href="/sites/{{$s.ID}}/logs">{{template "icon" "file"}}{{.T "Logs"}}</a></div></div>
 {{if $s.ApplyError}}<div class="flash err" role="alert">{{template "icon" "alert"}}<span>{{$s.ApplyError}}</span></div>{{end}}
 

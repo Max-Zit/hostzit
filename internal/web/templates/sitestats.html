@@ -1,0 +1,40 @@
+{{template "app" .}}
+{{define "content"}}
+{{$d := .Data}}{{$st := $d.St}}
+<div class="titlebar"><h1>{{.T "Visitors of %s" $d.S.Domain}}</h1>
+  <form method="post" action="/sites/{{$d.S.ID}}/stats"><button class="secondary" {{if $d.Busy}}disabled{{end}}>{{template "icon" "refresh"}}{{.T "Update"}}</button></form></div>
+<p class="muted small">{{.T "Counted from the web server's logs of the last month (GoAccess). Visitors are counted once a day by address and browser; crawlers are included."}} {{if not $d.At.IsZero}}{{.T "As of %s." (.Time $d.At)}}{{end}}</p>
+{{if $st.Requests}}
+<div class="cards2">
+<section class="panel">
+  <h2>{{template "icon" "online"}}{{$st.From}} – {{$st.To}}</h2>
+  <dl class="kv">
+    <dt>{{.T "Visitors"}}</dt><dd>{{$st.Visitors}}</dd>
+    <dt>{{.T "Requests"}}</dt><dd>{{$st.Requests}}</dd>
+    <dt>{{.T "Data sent"}}</dt><dd>{{bytes $st.Bytes}}</dd>
+    <dt>{{.T "Not found (404)"}}</dt><dd>{{$st.NotFound}}</dd>
+    <dt>{{.T "Crawlers"}}</dt><dd>{{$st.Crawlers}}</dd>
+  </dl>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "clock"}}{{.T "Visitors per day"}}</h2>
+  {{if gt (len $d.Visits) 1}}{{spark $d.Visits}}{{end}}
+  <div class="table-wrap scroll-y"><table><thead><tr><th>{{.T "Day"}}</th><th class="num">{{.T "Visitors"}}</th><th class="num">{{.T "Requests"}}</th><th class="num hide-sm">{{.T "Data sent"}}</th></tr></thead>
+  <tbody>{{range $st.Days}}<tr><td class="small">{{.Name}}</td><td class="num">{{.Visitors}}</td><td class="num">{{.Hits}}</td><td class="num hide-sm">{{bytes .Bytes}}</td></tr>{{end}}</tbody></table></div>
+</section>
+</div>
+{{template "statlist" (statctx . "Pages" $st.Pages true)}}
+<div class="cards2">
+{{template "statlist" (statctx . "Coming from" $st.Referrers false)}}
+{{template "statlist" (statctx . "Not found (404)" $st.Missing false)}}
+{{template "statlist" (statctx . "Browsers" $st.Browsers false)}}
+{{template "statlist" (statctx . "Operating systems" $st.Systems false)}}
+</div>
+{{template "statlist" (statctx . "Answers" $st.Status false)}}
+{{else}}<section class="panel"><p class="muted">{{if $d.Busy}}{{.T "The statistics are being counted; reload the page in a minute."}}{{else}}{{.T "No visits in the logs yet."}}{{end}}</p></section>{{end}}
+{{end}}
+
+{{define "statlist"}}{{if .Items}}<section class="panel">
+  <h2>{{.P.T .Title}}</h2>
+  <div class="table-wrap"><table><tbody>{{range .Items}}<tr><td class="small {{if $.Mono}}mono{{end}} ds">{{.Name}}</td><td class="num">{{.Hits}}</td>{{if $.Mono}}<td class="num small muted hide-sm">{{bytes .Bytes}}</td>{{end}}</tr>{{end}}</tbody></table></div>
+</section>{{end}}{{end}}
