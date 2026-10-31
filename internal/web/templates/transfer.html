@@ -1,0 +1,22 @@
+{{template "app" .}}
+{{define "content"}}
+{{$d := .Data}}
+<h1>{{.T "Move %s to another server" $d.C.Username}}</h1>
+<section class="panel">
+  <h2>{{template "icon" "route"}}{{.T "Target"}}</h2>
+  <dl class="kv">
+    <dt>{{.T "Server"}}</dt><dd class="mono">{{$d.URL}}</dd>
+    <dt>{{.T "Version"}}</dt><dd>HostZit {{$d.Version}}</dd>
+    <dt>{{.T "Certificate"}}</dt><dd>{{if $d.Trusted}}<span class="badge ok"><i></i>{{.T "trusted"}}</span>{{else}}<span class="badge warn"><i></i>{{.T "its own (self-signed)"}}</span>{{end}}<div class="mono small ds">SHA-256 {{$d.Fingerprint}}</div></dd>
+  </dl>
+  {{if not $d.Trusted}}<p class="small muted">{{.T "Compare the fingerprint with the target's certificate before you go on (on the target: openssl x509 -in /var/lib/hostzit/panel/tls/panel.crt -noout -fingerprint -sha256)."}}</p>{{end}}
+  <p class="small muted">{{.T "The account is packed with its files, databases, websites, DNS zones, cron jobs, applications and settings, sent to the target and created there with the same name and passwords. The websites keep running here until you change the DNS or the name servers."}}</p>
+  <form method="post" action="/customers/{{$d.C.ID}}/transfer" class="stack" data-confirm="{{.T "Move the account now?"}}">
+    <input type="hidden" name="url" value="{{$d.URL}}">
+    <input type="hidden" name="token" value="{{$d.Token}}">
+    <input type="hidden" name="fingerprint" value="{{$d.Fingerprint}}">
+    <label class="check"><input type="checkbox" name="suspend" {{if $d.Suspend}}checked{{end}}><span>{{.T "Suspend the account here when the target has it"}}</span></label>
+    <div><button class="primary">{{template "icon" "upload"}}{{.T "Move"}}</button></div>
+  </form>
+</section>
+{{end}}

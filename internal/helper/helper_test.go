@@ -527,3 +527,17 @@ func TestParseGoAccess(t *testing.T) {
 		t.Fatalf("%+v", st)
 	}
 }
+
+func TestTransferChecks(t *testing.T) {
+	if u, err := CheckTargetURL(" https://host2.example.com:8442/ "); err != nil || u != "https://host2.example.com:8442" {
+		t.Fatal(u, err)
+	}
+	for _, bad := range []string{"http://h:8442", "https://u:p@h", "https://h/x", "https://h?x=1", "ftp://h"} {
+		if _, err := CheckTargetURL(bad); err == nil {
+			t.Errorf("accepted %s", bad)
+		}
+	}
+	if !TransferName("hostzit-20261031-225625.tar.gz") || TransferName("../x.tar.gz") || TransferName("cpmove-a.tar.gz") {
+		t.Fatal("names")
+	}
+}

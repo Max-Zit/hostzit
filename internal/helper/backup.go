@@ -90,7 +90,7 @@ func (h *Helper) importStage(ctx context.Context, a stageArgs) (any, error) {
 	if !ok {
 		return nil, userErr("no such account")
 	}
-	src, err := os.Open(filepath.Join(ImportDir, a.File)) // #nosec G304 -- checked name in the root-only import folder
+	src, err := os.OpenFile(filepath.Join(ImportDir, a.File), os.O_RDONLY|noFollowFile, 0) // #nosec G304 -- checked name in the root-only import folder
 	if err != nil {
 		return nil, userErr("archive not found")
 	}

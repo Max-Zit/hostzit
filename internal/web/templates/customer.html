@@ -74,7 +74,20 @@
   </form>
   {{if .Data.User}}{{if .Data.User.TOTPEnabled}}<form method="post" action="/customers/{{$c.ID}}/reset-2fa" class="mt" data-confirm="{{.T "Remove the two-factor sign-in of %s?" $c.Username}}"><button class="ghost sm">{{.T "Remove two-factor sign-in"}}</button></form>{{end}}{{end}}
 </section>
-{{if .User.IsAdmin}}
+{{if .User.IsAdmin}}{{if eq $c.Status "active"}}
+<section class="panel">
+  <h2>{{template "icon" "route"}}{{.T "Move to another server"}}</h2>
+  <p class="muted small">{{.T "Moves the account to another HostZit server: enter the target's admin panel and an API token of the target with the rights customers:write and customers:read."}}</p>
+  <form method="post" action="/customers/{{$c.ID}}/transfer/check" class="stack">
+    <div class="cols">
+      <label>{{.T "Target admin panel"}}<input name="url" required class="mono" spellcheck="false" placeholder="https://host2.example.com:8442"></label>
+      <label>{{.T "API token of the target"}}<input name="token" type="password" required autocomplete="off" class="mono" spellcheck="false" placeholder="hzt_…"></label>
+    </div>
+    <label class="check"><input type="checkbox" name="suspend" checked><span>{{.T "Suspend the account here when the target has it"}}</span></label>
+    <div><button class="secondary">{{.T "Check the target"}}</button></div>
+  </form>
+</section>
+{{end}}
 <section class="panel">
   <h2>{{template "icon" "trash"}}{{.T "Delete now"}}</h2>
   <p class="muted">{{.T "Deletes the account, all websites, files, databases and DNS zones at once. This cannot be undone."}}</p>

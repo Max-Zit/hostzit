@@ -73,6 +73,9 @@ func (s *Server) apiHandler() http.Handler {
 	need("dns:mail", "GET /api/v1/dns/zones/{zone}/owned/{owner}", s.apiOwned)
 	need("dns:mail", "PUT /api/v1/dns/zones/{zone}/owned/{owner}", s.apiOwnedPut)
 	need("dns:mail", "DELETE /api/v1/dns/zones/{zone}/owned/{owner}", s.apiOwnedPut)
+	for _, f := range apiExtra {
+		f(s, need)
+	}
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		apiError(w, http.StatusNotFound, "not_found", "unknown API path")
 	})

@@ -9,7 +9,7 @@
   <div class="table-wrap"><table><tbody>{{range .Data.Files}}<tr><td class="mono small">{{.Name}}</td><td class="num">{{bytes .Size}}</td><td class="hide-sm muted">{{$.Time .Time}}</td>
     <td><form method="post" action="/import" class="row">
       <input type="hidden" name="file" value="{{.Name}}">
-      <input name="username" placeholder="{{$.T "account name (as in cPanel)"}}" pattern="[a-z][a-z0-9]{2,15}" class="num-sm" aria-label="{{$.T "Account name"}}">
+      <input name="username" placeholder="{{$.T "account name (as in the archive)"}}" pattern="[a-z][a-z0-9]{2,15}" class="num-sm" aria-label="{{$.T "Account name"}}">
       <select name="package" aria-label="{{$.T "Package"}}">{{range $.Data.Packages}}<option value="{{.ID}}">{{.Name}}</option>{{end}}</select>
       <button class="primary sm">{{$.T "Import"}}</button></form></td></tr>{{end}}</tbody></table></div>
   {{else}}<p class="muted">{{.T "No archives in /var/lib/hostzit/import yet."}}</p>{{end}}

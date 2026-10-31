@@ -270,8 +270,15 @@ func main() {
 			k, v, _ := strings.Cut(kv, "=")
 			form.Add(k, v)
 		}
-		_, err := a.post(args[1], form)
-		must(err)
+		if out := os.Getenv("LABQA_OUT"); out != "" {
+			// the answer goes into a file (it may hold a secret)
+			_, body, _, err := a.do("POST", args[1], form)
+			must(err)
+			must(os.WriteFile(out, []byte(body), 0o600))
+		} else {
+			_, err := a.post(args[1], form)
+			must(err)
+		}
 		fmt.Println("ok")
 	case "page":
 		_, body, _, err := a.do("GET", args[1], nil)

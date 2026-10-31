@@ -323,3 +323,20 @@ func (s *Store) SetEmail(ctx context.Context, id int64, email string) error {
 	_, err = s.db.Exec(ctx, `UPDATE users SET email=$2 WHERE id=$1`, id, e)
 	return err
 }
+
+// PasswordHash returns a user's password hash (moving a customer to
+// another server keeps the password).
+func (s *Store) PasswordHash(ctx context.Context, userID int64) (string, error) {
+	var h string
+	err := s.db.QueryRow(ctx, `SELECT password_hash FROM users WHERE id=$1`, userID).Scan(&h)
+	return h, err
+}
+
+// SetPasswordHash stores a hash made on another HostZit server.
+func (s *Store) SetPasswordHash(ctx context.Context, userID int64, hash string) error {
+	if !strings.HasPrefix(hash, "$argon2id$v=19$") || len(hash) > 300 || strings.ContainsAny(hash, " \r\n") {
+		return errors.New("invalid password hash")
+	}
+	_, err := s.db.Exec(ctx, `UPDATE users SET password_hash=$2, must_change_password=false WHERE id=$1`, userID, hash)
+	return err
+}

@@ -39,6 +39,22 @@ type Manifest struct {
 	Databases []string                    `json:"databases"`
 	DBUsers   map[string][]string         `json:"db_users"`
 	Cron      []hosting.CronJob           `json:"cron"`
+	// since 0.9
+	ServerIPv4 string                        `json:"server_ipv4,omitempty"`
+	PHPVersion string                        `json:"php_version,omitempty"`
+	DBHashes   map[string]string             `json:"db_hashes,omitempty"`
+	PHP        map[string]hosting.PHPOptions `json:"php,omitempty"`
+	Redis      bool                          `json:"redis,omitempty"`
+	Apps       []ManifestApp                 `json:"apps,omitempty"`
+	Git        []hosting.GitRepo             `json:"git,omitempty"`
+	// only when moving to another server
+	PasswordHash string `json:"password_hash,omitempty"`
+}
+
+// ManifestApp is an application in a backup.
+type ManifestApp struct {
+	hosting.App
+	Enabled bool `json:"enabled"`
 }
 
 // backupAccount makes ~/backups/hostzit-<time>.tar.gz with the files, the
@@ -56,6 +72,12 @@ func (s *Server) backupAccount(ctx context.Context, by string, c *store.Customer
 // backupRequest is the archive name, the databases and the manifest of an
 // account backup.
 func (s *Server) backupRequest(ctx context.Context, c *store.Customer) (name string, dbs []string, manifest string) {
+	return s.backupRequestFor(ctx, c, false)
+}
+
+// backupRequestFor adds the customer's password hash when the account
+// moves to another server.
+func (s *Server) backupRequestFor(ctx context.Context, c *store.Customer, transfer bool) (name string, dbs []string, manifest string) {
 	man := Manifest{Product: "hostzit", Version: s.Version, Package: c.PackageSlug, Zones: map[string][]hosting.Record{}, DBUsers: map[string][]string{},
 		Customer: map[string]string{"id": c.UUID, "username": c.Username, "name": c.DisplayName, "email": c.Email}}
 	sites, _ := s.store.Sites(ctx, c.ID)
@@ -81,6 +103,7 @@ func (s *Server) backupRequest(ctx context.Context, c *store.Customer) (name str
 	for _, j := range jobs {
 		man.Cron = append(man.Cron, hosting.CronJob{ID: j.ID, Schedule: j.Schedule, Command: j.Command, Enabled: j.Enabled})
 	}
+	s.manifestExtras(ctx, c, &man, transfer)
 	mb, _ := json.MarshalIndent(man, "", "  ")
 	name = "hostzit-" + s.now().UTC().Format("20060102-150405")
 	return name, man.Databases, string(mb)
@@ -165,6 +188,16 @@ func (s *Server) handleImport(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleImportStart(w http.ResponseWriter, r *http.Request) {
 	file := r.FormValue("file")
 	user := strings.ToLower(strings.TrimSpace(r.FormValue("username")))
+	pkg, _ := strconv.ParseInt(r.FormValue("package"), 10, 64)
+	by := actor(r)
+	m, err := s.readManifest(r.Context(), by, file)
+	if err != nil {
+		s.redirectErr(w, r, "/import", storeErr(err))
+		return
+	}
+	if user == "" && m != nil {
+		user = m.Customer["username"]
+	}
 	if user == "" {
 		user = strings.TrimSuffix(strings.TrimSuffix(strings.TrimPrefix(file, "cpmove-"), ".tar.gz"), ".tgz")
 	}
@@ -172,8 +205,23 @@ func (s *Server) handleImportStart(w http.ResponseWriter, r *http.Request) {
 		s.redirectErr(w, r, "/import", err.Error())
 		return
 	}
-	pkg, _ := strconv.ParseInt(r.FormValue("package"), 10, 64)
-	by := actor(r)
+	if m != nil {
+		j, err := s.runJob("import.hostzit", nil, file+" → "+user, func(ctx context.Context) error {
+			rep, c, err := s.importHostZit(ctx, by, file, user, pkg, m)
+			if err != nil {
+				return err
+			}
+			_ = s.store.Audit(ctx, by, "local", "import.hostzit", "customer:"+c.Username, importSummary(file, c.Username, rep))
+			return nil
+		})
+		if err != nil {
+			s.redirectErr(w, r, "/import", storeErr(err))
+			return
+		}
+		s.audit(r, "import.start", "customer:"+user, "HostZit import of %s started (job %s)", file, j.ID)
+		s.redirect(w, r, "/jobs", "The import was started. The result is in the audit log.")
+		return
+	}
 	j, err := s.runJob("import.cpanel", nil, file+" → "+user, func(ctx context.Context) error {
 		rep, err := s.importCPanel(ctx, by, file, user, pkg)
 		if err != nil {
