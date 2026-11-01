@@ -11,8 +11,17 @@
 <p><b>Sign the zone</b> switches DNSSEC on; put the DS record shown at the registrar. Before switching it off, remove the DS record at the registrar first.</p>
 
 <h2 id="secondary">Secondary name servers</h2>
-<p>Under Settings → Hosting, enter the IP addresses of other name servers that should copy every zone (for example a second server as <code>ns2</code>). They may then transfer the zones (AXFR) and are notified of each change.</p>
-<h2 id="dns-only">DNS-only server</h2>
-<p>Like cPanel's DNSOnly, the second name server can be a small Debian 12 or 13 server that runs only PowerDNS. Enter its address under Secondary name servers and save: the page then shows the command to run there, for example:</p>
+<p>Under Settings → Hosting, <b>Secondary name servers</b> holds the IP addresses of the name servers that copy every zone of this server, <b>one per line</b> (commas or spaces work too), for example:</p>
+<pre>198.51.100.53
+203.0.113.77
+192.0.2.10</pre>
+<p>Only these addresses may transfer the zones (AXFR), and each of them is notified of every change. Add every name server's name under <b>Name servers</b> as well (<code>ns1</code>, <code>ns2</code>, <code>ns3</code> …) with glue records at the registrar.</p>
+<h2 id="dns-only">DNS-only servers</h2>
+<p>Like cPanel's DNSOnly, the other name servers can be small Debian 12 or 13 servers that run only PowerDNS (1 CPU, 512 MB are enough). Adding one:</p>
+<ol>
+  <li>Enter its IP address under Secondary name servers (one per line) and save.</li>
+  <li>Run the command the page then shows on the new server as root — the same command on every DNS-only server, for example:</li>
+</ol>
 <pre>curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash -s -- --dns-only --primary 203.0.113.10 --catalog host1.example.com.catalog.invalid</pre>
-<p>HostZit lists every zone in a catalog zone (RFC 9432); the DNS-only server follows it, so new zones appear there within a minute and deleted zones disappear. Changes of records arrive within seconds (NOTIFY). One DNS-only server can follow several HostZit servers: run the command again with the address and catalog of each. The table under the command compares the serial of every zone on each secondary. In a Proxmox container switch on <i>Nesting</i> first.</p>
+<p>A DNS-only server <b>only receives</b>: HostZit lists every zone in a catalog zone (RFC 9432) and the DNS-only server follows it, so new zones appear there within a minute and deleted zones disappear; changes of records arrive within seconds (NOTIFY). It sends nothing back to HostZit and only answers DNS queries from the internet.</p>
+<p><b>Several HostZit servers, the same DNS servers</b>: you do not need own name servers for every hosting server. Run the command of each HostZit server (its own address and catalog) on the same DNS-only servers and enter their addresses on each HostZit server. A domain must then exist on only one of the HostZit servers. The table under the command compares the serial of every zone on each secondary. In a Proxmox container switch on <i>Nesting</i> first.</p>

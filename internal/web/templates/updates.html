@@ -28,7 +28,7 @@
       <option value="official" {{if eq .Data.U.Channel "official"}}selected{{end}}>{{.T "Official releases"}}</option>
       <option value="testing" {{if eq .Data.U.Channel "testing"}}selected{{end}}>{{.T "Testing (release candidates)"}}</option>
     </select></label>
-    <label>{{.T "Update source"}} <small>{{.T "optional"}}</small><input name="source" value="{{.Data.U.Source}}" class="mono" spellcheck="false" placeholder="https://github.com/Max-Zit/hostzit/releases"><small>{{.T "Empty: the official releases on GitHub. A mirror must hold the same signed files."}}</small></label>
+    <label><span>{{.T "Update source"}} <small>{{.T "optional"}}</small></span><input name="source" value="{{.Data.U.Source}}" class="mono" spellcheck="false" placeholder="https://github.com/Max-Zit/hostzit/releases"><small>{{.T "Empty: the official releases on GitHub. A mirror must hold the same signed files."}}</small></label>
     <div><button class="primary">{{.T "Save"}}</button></div>
   </form>
 </section>

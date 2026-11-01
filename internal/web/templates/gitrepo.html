@@ -29,7 +29,7 @@
       <label>{{.T "Branch"}}<input name="branch" value="{{$g.Branch}}" required class="mono" spellcheck="false"></label>
       <label>{{.T "Deploy into"}}<input name="target" value="{{$g.Target}}" required class="mono" spellcheck="false"></label>
     </div>
-    <label>{{.T "Clone from"}} <small>{{.T "optional"}}</small><input name="remote" value="{{maskremote $g.Remote}}" class="mono" spellcheck="false" placeholder="https://github.com/me/shop.git"></label>
+    <label><span>{{.T "Clone from"}} <small>{{.T "optional"}}</small></span><input name="remote" value="{{maskremote $g.Remote}}" class="mono" spellcheck="false" placeholder="https://github.com/me/shop.git"></label>
     <div><button class="secondary">{{.T "Save"}}</button></div>
   </form>
   <form method="post" action="/git/{{$g.ID}}/delete" class="row mt" data-confirm="{{.T "Delete the repository %s?" $g.Name}}">

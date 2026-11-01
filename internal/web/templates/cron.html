@@ -21,7 +21,7 @@
   <form method="post" action="/cron" class="stack mt">
     <div class="cols">
       <label>{{.T "When (cron syntax)"}}<input name="schedule" value="{{index .Data.F "schedule"}}" required class="mono" spellcheck="false"><small>{{.T "minute hour day month weekday — */15 * * * * every 15 minutes, 0 3 * * * daily at 3:00, @hourly"}}</small></label>
-      <label>{{.T "Note"}} <small>{{.T "optional"}}</small><input name="note" maxlength="100"></label>
+      <label><span>{{.T "Note"}} <small>{{.T "optional"}}</small></span><input name="note" maxlength="100"></label>
     </div>
     <label>{{.T "Command"}}<input name="command" required class="mono" spellcheck="false" placeholder="php ~/sites/example.com/public/wp-cron.php"><small>{{.T "Runs as your account in your own environment, like in SSH. The output is kept in the job log."}}</small></label>
     <div><button class="primary">{{template "icon" "plus"}}{{.T "Add job"}}</button></div>

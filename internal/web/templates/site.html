@@ -64,12 +64,12 @@
     <label class="check"><input type="checkbox" name="waf" {{if $s.WAF}}checked{{end}}><span><b>{{.T "Web application firewall"}}</b> — {{.T "blocks known attacks (SQL injection, cross-site scripting, scanners) with the OWASP Core Rule Set, tuned for WordPress"}}</span></label>
     <div class="cols">
       <label class="check"><input type="checkbox" name="waf_detect" {{if $s.WAFDetect}}checked{{end}}><span>{{.T "Only log, do not block (to test the firewall first)"}}</span></label>
-      <label>{{.T "Rules switched off"}} <small>{{.T "optional"}}</small><input name="waf_exclude" value="{{.Data.Exclude}}" class="mono" spellcheck="false" placeholder="942100 941160"><small>{{.T "Numbers of rules that block your site by mistake, separated by spaces."}}</small></label>
+      <label><span>{{.T "Rules switched off"}} <small>{{.T "optional"}}</small></span><input name="waf_exclude" value="{{.Data.Exclude}}" class="mono" spellcheck="false" placeholder="942100 941160"><small>{{.T "Numbers of rules that block your site by mistake, separated by spaces."}}</small></label>
     </div>
     <label class="check"><input type="checkbox" name="hotlink" {{if $s.Hotlink}}checked{{end}}><span>{{.T "Hotlink protection: other websites cannot embed your images and videos"}}</span></label>
     <div class="cols">
-      <label>{{.T "Only these addresses may open the site"}} <small>{{.T "optional"}}</small><textarea name="ip_allow" rows="3" class="mono small" spellcheck="false" placeholder="203.0.113.0/24">{{join $s.IPAllow "\n"}}</textarea></label>
-      <label>{{.T "Blocked addresses"}} <small>{{.T "optional"}}</small><textarea name="ip_deny" rows="3" class="mono small" spellcheck="false" placeholder="198.51.100.7">{{join $s.IPDeny "\n"}}</textarea></label>
+      <label><span>{{.T "Only these addresses may open the site"}} <small>{{.T "optional"}}</small></span><textarea name="ip_allow" rows="3" class="mono small" spellcheck="false" placeholder="203.0.113.0/24">{{join $s.IPAllow "\n"}}</textarea></label>
+      <label><span>{{.T "Blocked addresses"}} <small>{{.T "optional"}}</small></span><textarea name="ip_deny" rows="3" class="mono small" spellcheck="false" placeholder="198.51.100.7">{{join $s.IPDeny "\n"}}</textarea></label>
     </div>
     <label class="check"><input type="checkbox" name="lockout_ok"><span class="small">{{.T "I know my own address is not in the allowed list"}}</span></label>
     <div><button class="secondary">{{.T "Save"}}</button></div>

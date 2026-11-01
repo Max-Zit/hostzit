@@ -25,7 +25,7 @@
       <label>{{.T "Folder"}}<input name="root" required class="mono" spellcheck="false" placeholder="apps/api"><small>{{.T "Inside your home; created when missing."}}</small></label>
     </div>
     <label>{{.T "Start command"}}<input name="command" required class="mono" spellcheck="false" placeholder="node server.js"><small>{{.T "Examples: node server.js · npm start · gunicorn --bind unix:$PORT app:app · python3 app.py"}}</small></label>
-    <label>{{.T "Environment variables"}} <small>{{.T "optional"}}</small><textarea name="env" rows="3" class="mono small" spellcheck="false" placeholder="DATABASE_URL=mysql://…"></textarea><small>{{.T "One KEY=value per line."}}</small></label>
+    <label><span>{{.T "Environment variables"}} <small>{{.T "optional"}}</small></span><textarea name="env" rows="3" class="mono small" spellcheck="false" placeholder="DATABASE_URL=mysql://…"></textarea><small>{{.T "One KEY=value per line."}}</small></label>
     <div><button class="primary">{{.T "Create"}}</button></div>
   </form>
 </section>

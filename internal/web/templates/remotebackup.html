@@ -28,7 +28,7 @@
     {{if $d.HostKey}}<p class="small muted">{{.T "Host key of the server:"}} <span class="mono">{{$d.HostKey}}</span></p>{{end}}
     <h3>S3</h3>
     <div class="cols">
-      <label>{{.T "Address"}} <small>{{.T "optional"}}</small><input name="endpoint" value="{{$d.Endpoint}}" class="mono" spellcheck="false" placeholder="https://s3.eu-central-003.backblazeb2.com"><small>{{.T "Empty: Amazon S3."}}</small></label>
+      <label><span>{{.T "Address"}} <small>{{.T "optional"}}</small></span><input name="endpoint" value="{{$d.Endpoint}}" class="mono" spellcheck="false" placeholder="https://s3.eu-central-003.backblazeb2.com"><small>{{.T "Empty: Amazon S3."}}</small></label>
       <label>{{.T "Region"}}<input name="region" value="{{$d.Region}}" class="mono" spellcheck="false" placeholder="eu-central-1"></label>
       <label>{{.T "Bucket"}}<input name="bucket" value="{{$d.Bucket}}" class="mono" spellcheck="false"></label>
       <label>{{.T "Access key"}}<input name="access_key" value="{{$d.AccessKey}}" class="mono" spellcheck="false" autocomplete="off"></label>

@@ -14,11 +14,11 @@
   </select></label>
   <div class="cols">
     <label>{{.T "Server name"}}<input name="server_name" value="{{$h.ServerName}}" placeholder="host1.example.com" spellcheck="false" class="mono"><small>{{.T "The host name customers use for SFTP and SSH."}}</small></label>
-    <label>{{.T "Customer panel address"}} <small>{{.T "optional"}}</small><input name="panel_url" value="{{$h.PanelURL}}" placeholder="https://panel.example.com:8443" spellcheck="false" class="mono"><small>{{.T "Used in sign-in links from the billing system."}}</small></label>
+    <label><span>{{.T "Customer panel address"}} <small>{{.T "optional"}}</small></span><input name="panel_url" value="{{$h.PanelURL}}" placeholder="https://panel.example.com:8443" spellcheck="false" class="mono"><small>{{.T "Used in sign-in links from the billing system."}}</small></label>
   </div>
   <div class="cols">
     <label>{{.T "IPv4 address of the websites"}}<input name="ipv4" value="{{$h.IPv4}}" placeholder="203.0.113.10" spellcheck="false" class="mono"></label>
-    <label>{{.T "IPv6 address"}} <small>{{.T "optional"}}</small><input name="ipv6" value="{{$h.IPv6}}" placeholder="2001:db8::10" spellcheck="false" class="mono"></label>
+    <label><span>{{.T "IPv6 address"}} <small>{{.T "optional"}}</small></span><input name="ipv6" value="{{$h.IPv6}}" placeholder="2001:db8::10" spellcheck="false" class="mono"></label>
   </div>
   <div class="cols">
     <label>{{.T "Default PHP version"}}<select name="default_php">{{range .Data.PHP}}<option value="{{.}}" {{if eq . $h.DefaultPHP}}selected{{end}}>PHP {{.}}</option>{{end}}</select></label>
@@ -27,16 +27,22 @@
 </section>
 <section class="panel">
   <h2>{{template "icon" "network"}}DNS</h2>
-  <label>{{.T "Name servers"}}<textarea name="nameservers" rows="3" spellcheck="false" class="mono" placeholder="ns1.example.com&#10;ns2.example.com">{{.Data.NS}}</textarea><small>{{.T "One per line. Customers enter these at their domain registrar. Both names need glue records (A/AAAA) at the registrar of their own domain."}}</small></label>
   <div class="cols">
-    <label>{{.T "Hostmaster e-mail"}} <small>{{.T "optional"}}</small><input type="email" name="hostmaster" value="{{$h.Hostmaster}}" placeholder="hostmaster@example.com"></label>
-    <label>{{.T "Secondary name servers"}} <small>{{.T "optional"}}</small><input name="secondaries" value="{{join .Data.H.Secondaries " "}}" class="mono" spellcheck="false" placeholder="198.51.100.53"><small>{{.T "IP addresses of other name servers (for example ns2) that copy every zone from this server; they are notified of each change."}}</small></label>
-    <label>{{.T "SPF record of new zones"}}<input name="spf" value="{{$h.SPF}}" spellcheck="false" class="mono"><small>{{.T "Empty: no SPF record."}}</small></label>
+    <label><span>{{.T "Name servers"}}</span><textarea name="nameservers" rows="4" spellcheck="false" class="mono" placeholder="ns1.example.com&#10;ns2.example.com">{{.Data.NS}}</textarea><small>{{.T "One per line. Customers enter these at their domain registrar. Both names need glue records (A/AAAA) at the registrar of their own domain."}}</small></label>
+    <label><span>{{.T "Secondary name servers"}} <small>{{.T "optional"}}</small></span><textarea name="secondaries" rows="4" spellcheck="false" class="mono" placeholder="198.51.100.53&#10;203.0.113.77">{{join .Data.H.Secondaries "\n"}}</textarea><small>{{.T "IP addresses of the DNS-only servers (or other name servers) that copy every zone from this server, one per line."}}</small></label>
+  </div>
+  <div class="cols">
+    <label><span>{{.T "Hostmaster e-mail"}} <small>{{.T "optional"}}</small></span><input type="email" name="hostmaster" value="{{$h.Hostmaster}}" placeholder="hostmaster@example.com"></label>
+    <label><span>{{.T "SPF record of new zones"}}</span><input name="spf" value="{{$h.SPF}}" spellcheck="false" class="mono"><small>{{.T "Empty: no SPF record."}}</small></label>
   </div>
   {{if $h.Catalog}}
-  <h3>{{.T "DNS-only server"}}</h3>
-  <p class="muted small">{{.T "Install the second name server on a small Debian 12 or 13 server with this command. It runs only PowerDNS and takes every zone of this server by itself, also zones added later; deleted zones disappear there too. One DNS-only server can follow several HostZit servers: run the command again with the address and catalog of the other server."}}</p>
+  <h3>{{.T "DNS-only servers"}}</h3>
+  <ol class="small muted">
+    <li>{{.T "Enter the IP address of each DNS-only server above (one per line) and save."}}</li>
+    <li>{{.T "Run this command on each DNS-only server (Debian 12 or 13) — the same command on all of them:"}}</li>
+  </ol>
   <pre class="mono small">curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash -s -- --dns-only --primary {{or $h.IPv4 "IP"}} --catalog {{$h.Catalog}}</pre>
+  <p class="muted small">{{.T "A DNS-only server runs only PowerDNS and only receives: it copies every zone of this server, also zones added later, and drops deleted ones; it sends nothing back. The same DNS-only servers can serve several HostZit servers: run the command of each HostZit server on them."}}</p>
   {{if .Data.Secondaries}}
   <div class="table-wrap"><table>
     <thead><tr><th>{{.T "Secondary name servers"}}</th><th>{{.T "State"}}</th><th>{{.T "Zones"}}</th></tr></thead>

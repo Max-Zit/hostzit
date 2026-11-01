@@ -5,7 +5,7 @@
 <form method="post" action="/setup" class="stack">
   {{if .Data.NeedToken}}<label>{{.T "Setup token"}}<input name="token" required autocomplete="off" spellcheck="false"><small>{{.T "It is in the file setup-token.txt in the server's data directory and in the server log."}}</small></label>{{end}}
   <label>{{.T "Username"}}<input name="username" value="{{.Data.Username}}" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
-  <label>{{.T "Full name"}} <small>{{.T "optional"}}</small><input name="display_name" autocomplete="name"></label>
+  <label><span>{{.T "Full name"}} <small>{{.T "optional"}}</small></span><input name="display_name" autocomplete="name"></label>
   <label>{{.T "Password"}}<input type="password" name="password" required minlength="12" autocomplete="new-password"><small>{{.T "At least 12 characters. A passphrase of several words is best."}}</small></label>
   <label>{{.T "Repeat the password"}}<input type="password" name="password2" required minlength="12" autocomplete="new-password"></label>
   <button class="primary">{{.T "Continue"}}</button>

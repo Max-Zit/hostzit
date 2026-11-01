@@ -13,7 +13,7 @@
     <label>{{.T "Administrator e-mail"}}<input type="email" name="email" value="{{index .Data.F "email"}}" required></label>
   </div>
   <div class="cols">
-    <label>{{.T "Password"}} <small>{{.T "optional"}}</small><input type="password" name="password" minlength="12" autocomplete="new-password"><small>{{.T "Empty: a strong password is generated and shown once."}}</small></label>
+    <label><span>{{.T "Password"}} <small>{{.T "optional"}}</small></span><input type="password" name="password" minlength="12" autocomplete="new-password"><small>{{.T "Empty: a strong password is generated and shown once."}}</small></label>
     <label>{{.T "Language"}}<select name="lang">{{$l := index .Data.F "lang"}}{{range list "en_US" "de_DE" "fr_FR" "es_ES" "it_IT" "pt_PT" "nl_NL" "pl_PL" "cs_CZ" "sr_RS" "hr" "tr_TR" "ru_RU" "zh_CN" "ja"}}<option {{if eq . $l}}selected{{end}}>{{.}}</option>{{end}}</select></label>
   </div>
   <p class="small muted">{{.T "A database and its user are created for it, the file editor in wp-admin is switched off and pretty links are set up."}}</p>

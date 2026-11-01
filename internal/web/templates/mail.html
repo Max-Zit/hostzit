@@ -19,7 +19,7 @@
     </select></label>
   </div>
   <div class="cols">
-    <label>{{.T "User"}} <small>{{.T "optional"}}</small><input name="user" value="{{$m.User}}" autocomplete="off"></label>
+    <label><span>{{.T "User"}} <small>{{.T "optional"}}</small></span><input name="user" value="{{$m.User}}" autocomplete="off"></label>
     <label>{{.T "Password"}} <small>{{if .Data.HasPW}}{{.T "saved; empty keeps it"}}{{else}}{{.T "optional"}}{{end}}</small><input type="password" name="password" autocomplete="new-password"></label>
     <label>{{.T "Sender address"}}<input type="email" name="from" value="{{$m.From}}" placeholder="hostzit@example.com"></label>
   </div>

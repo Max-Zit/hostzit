@@ -23,7 +23,7 @@
       <label>{{.T "Branch"}}<input name="branch" value="main" required class="mono" spellcheck="false"></label>
       <label>{{.T "Deploy into"}}<select name="target">{{range $d.Sites}}<option value="{{.DocRoot}}">{{.Domain}} — {{.DocRoot}}</option>{{end}}</select><small>{{.T "The folder of a website; its files are replaced by the branch."}}</small></label>
     </div>
-    <label>{{.T "Clone from"}} <small>{{.T "optional"}}</small><input name="remote" class="mono" spellcheck="false" placeholder="https://github.com/me/shop.git"><small>{{.T "An https:// address. For a private repository put a read-only access token into it: https://user:token@github.com/me/shop.git. Without it, push to this server over SSH."}}</small></label>
+    <label><span>{{.T "Clone from"}} <small>{{.T "optional"}}</small></span><input name="remote" class="mono" spellcheck="false" placeholder="https://github.com/me/shop.git"><small>{{.T "An https:// address. For a private repository put a read-only access token into it: https://user:token@github.com/me/shop.git. Without it, push to this server over SSH."}}</small></label>
     {{if not $d.SSH}}<p class="small muted">{{.T "Your package has no SSH access, so you cannot push to this server; use a repository to clone from."}}</p>{{end}}
     <div><button class="primary">{{.T "Create"}}</button></div>
   </form>

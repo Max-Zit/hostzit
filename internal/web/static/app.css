@@ -154,7 +154,7 @@ form.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
 form.row > input { flex: 1 1 200px; width: auto; }
 form.row label.inline input { width: 110px; }
 .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
-label { display: grid; gap: 6px; font-weight: 600; font-size: 13px; }
+label { display: grid; gap: 6px; align-content: start; font-weight: 600; font-size: 13px; } /* start: a taller neighbour in .cols must not push the input down */
 label small { font-weight: 400; color: var(--muted); }
 input, select, textarea { font: inherit; padding: 9px 12px; border: 1px solid var(--line-2); border-radius: var(--radius-sm); background: var(--panel); color: var(--text); width: 100%; transition: border-color .15s, box-shadow .15s; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
