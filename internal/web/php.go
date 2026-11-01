@@ -27,6 +27,8 @@ type phpRow struct {
 type phpData struct {
 	Installed []phpRow
 	Offered   []string
+	// Candidate: the full version apt installs now ("8.4" → "8.4.16")
+	Candidate map[string]string
 }
 
 // phpUse counts the websites per PHP version.
@@ -45,6 +47,7 @@ func (s *Server) handlePHP(w http.ResponseWriter, r *http.Request) {
 	def := s.hostingSettings(r.Context()).DefaultPHP
 	use := s.phpUse(r)
 	d := &phpData{}
+	_ = s.call(r.Context(), "system", "php.candidates", nil, &d.Candidate)
 	for _, v := range installed {
 		d.Installed = append(d.Installed, phpRow{Version: v, Sites: use[v], Default: v == def})
 	}

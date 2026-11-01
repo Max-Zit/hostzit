@@ -26,7 +26,7 @@
 {{end}}{{end}}
 {{range $d.Versions}}{{$v := .}}
 <section class="panel">
-  <h2>{{template "icon" "service"}}PHP {{$v.Version}}</h2>
+  <h2>{{template "icon" "service"}}PHP {{phpfull $v.Version}}</h2>
   <form method="post" action="/php/{{$v.Version}}" class="stack">
     <h3>{{$.T "Extensions"}}</h3>
     <div class="checkgrid">

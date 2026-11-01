@@ -193,11 +193,15 @@ type siteData struct {
 	Zone     *store.Zone
 	WAF      []helper.WAFEvent
 	Exclude  string
+	// ACME: free certificates are on; CertValid: a certificate is still in use
+	ACME, CertValid bool
 }
 
 func (s *Server) showSite(w http.ResponseWriter, r *http.Request, status int, c *store.Customer, x *store.Site, errMsg string) {
 	p, _ := s.store.PackageByID(r.Context(), c.PackageID)
 	d := &siteData{S: x, PHP: s.phpVersions(r.Context()), Aliases: strings.Join(x.Aliases, "\n")}
+	d.ACME = s.hostingSettings(r.Context()).ACME != ""
+	d.CertValid = x.CertNotAfter != nil && x.CertNotAfter.After(s.now())
 	if p != nil {
 		d.MaxUp = p.Limits.UploadMB
 	}
@@ -387,6 +391,45 @@ func (s *Server) handleSiteCert(w http.ResponseWriter, r *http.Request) {
 	}
 	s.audit(r, "site.cert.upload", "site:"+x.Domain, "own certificate until %s", res.NotAfter.Format("2006-01-02"))
 	s.redirect(w, r, back, "The certificate was installed.")
+}
+
+// handleSiteCertRenew requests the free certificate now (again after a
+// failure, or a renewal of a valid one), at most once per 15 minutes per
+// website: Let's Encrypt blocks a name after a few failed tries an hour.
+func (s *Server) handleSiteCertRenew(w http.ResponseWriter, r *http.Request) {
+	c := s.me(w, r)
+	if c == nil {
+		return
+	}
+	x := s.mySite(w, r, c)
+	if x == nil {
+		return
+	}
+	back := "/sites/" + strconv.FormatInt(x.ID, 10)
+	hs := s.hostingSettings(r.Context())
+	switch {
+	case hs.ACME == "":
+		s.redirectErr(w, r, back, "Free certificates are switched off on this server.")
+		return
+	case !x.AutoTLS || x.CertStatus == "uploaded":
+		s.redirectErr(w, r, back, "This website does not use the free certificate.")
+		return
+	case x.CertStatus == "pending":
+		s.redirectErr(w, r, back, "The certificate is already being requested.")
+		return
+	case !s.store.NoticeDue(r.Context(), "certrenew:"+strconv.FormatInt(x.ID, 10), 15*time.Minute):
+		s.redirectErr(w, r, back, "A certificate was requested a few minutes ago; try again in 15 minutes.")
+		return
+	}
+	// the certificate loop takes pending sites at once (and only it talks
+	// to the CA, so a request is never sent twice)
+	if err := s.store.SetCert(r.Context(), x.ID, "pending", "", x.CertNotAfter, x.CertNames); err != nil {
+		s.redirectErr(w, r, back, storeErr(err))
+		return
+	}
+	s.kickCerts()
+	s.audit(r, "site.cert.request", "site:"+x.Domain, "free certificate requested by hand")
+	s.redirect(w, r, back, "The certificate is being requested; reload the page in a minute.")
 }
 
 func (s *Server) handleSiteDelete(w http.ResponseWriter, r *http.Request) {

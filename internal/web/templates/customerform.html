@@ -16,7 +16,7 @@
   </div>
   <div class="cols">
     <label><span>{{.T "First website"}} <small>{{.T "optional"}}</small></span><input name="domain" value="{{index .Data.F "domain"}}" placeholder="example.com" spellcheck="false" autocapitalize="none"></label>
-    <label>PHP<select name="php"><option value="">{{.T "Server default"}}</option>{{range .Data.PHP}}<option value="{{.}}" {{if eq . (index $.Data.F "php")}}selected{{end}}>PHP {{.}}</option>{{end}}</select></label>
+    <label>PHP<select name="php"><option value="">{{.T "Server default"}}</option>{{range .Data.PHP}}<option value="{{.}}" {{if eq . (index $.Data.F "php")}}selected{{end}}>PHP {{phpfull .}}</option>{{end}}</select></label>
   </div>
   <label class="check"><input type="checkbox" name="dns" {{if index .Data.F "dns"}}checked{{end}}><span>{{.T "Host the DNS zone of the domain on this server"}}</span></label>
   <label><span>{{.T "Password"}} <small>{{.T "optional"}}</small></span><input type="password" name="password" minlength="12" autocomplete="new-password"><small>{{.T "Empty: a password is generated and shown once; the customer must change it at the first sign-in."}}</small></label>

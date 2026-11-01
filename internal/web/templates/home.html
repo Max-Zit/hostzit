@@ -20,7 +20,7 @@
   {{if .Data.Sites}}
   <div class="table-wrap"><table><tbody>{{range .Data.Sites}}<tr>
     <td><a href="/sites/{{.ID}}"><b>{{.Domain}}</b></a></td>
-    <td class="hide-sm muted">PHP {{.PHPVersion}}</td>
+    <td class="hide-sm muted">PHP {{phpfull .PHPVersion}}</td>
     <td>{{if or (eq .CertStatus "ok") (eq .CertStatus "uploaded")}}<span class="badge ok"><i></i>HTTPS</span>{{else if eq .CertStatus "failed"}}<span class="badge warn"><i></i>{{$.T "no certificate yet"}}</span>{{else}}<span class="badge"><i></i>HTTP</span>{{end}}
       {{if .Cache}}<span class="badge ok"><i></i>{{$.T "page cache"}}</span>{{end}}</td>
     <td class="actions"><a class="btn ghost sm" href="https://{{.Domain}}/" target="_blank" rel="noopener">{{$.T "Open"}}</a></td>

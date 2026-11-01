@@ -10,14 +10,14 @@
   <div class="table-wrap"><table>
     <thead><tr><th>PHP</th><th class="num">{{.T "Websites"}}</th><th></th></tr></thead>
     <tbody>{{range .Data.Installed}}<tr>
-      <td><b><a href="/settings/php/{{.Version}}">{{.Version}}</a></b>{{if .Default}} <span class="badge ok"><i></i>{{$.T "Default PHP"}}</span>{{end}}</td>
+      <td><b><a href="/settings/php/{{.Version}}">{{.Version}}</a></b> <span class="mono small muted">{{phpfull .Version}}</span>{{$c := index $.Data.Candidate .Version}}{{if and $c (ne $c (phpfull .Version))}} <span class="badge warn" title="{{$.T "Install it under Settings → System → System updates."}}"><i></i>{{$.T "%s available" $c}}</span>{{end}}{{if .Default}} <span class="badge ok"><i></i>{{$.T "Default PHP"}}</span>{{end}}</td>
       <td class="num">{{.Sites}}</td>
       <td class="actions">{{if and (not .Default) (eq .Sites 0)}}<form method="post" action="/settings/php/remove" data-confirm="{{$.T "Remove PHP %s from the server?" .Version}}"><input type="hidden" name="version" value="{{.Version}}"><button class="ghost sm danger" aria-label="{{$.T "Delete"}}">{{template "icon" "trash"}}</button></form>{{end}}</td>
     </tr>{{end}}</tbody>
   </table></div>
   {{if .Data.Offered}}
   <form method="post" action="/settings/php/install" class="row mt" data-confirm="{{.T "Install this PHP version? It takes a minute or two."}}">
-    <select name="version" aria-label="PHP">{{range .Data.Offered}}<option>{{.}}</option>{{end}}</select>
+    <select name="version" aria-label="PHP">{{range .Data.Offered}}<option value="{{.}}">PHP {{.}} — {{with index $.Data.Candidate .}}{{.}}{{else}}{{$.T "the newest from packages.sury.org"}}{{end}}</option>{{end}}</select>
     <button class="primary">{{template "icon" "plus"}}{{.T "Install"}}</button>
   </form>
   <p class="small muted">{{.T "Old versions (5.6 to 8.0) no longer get security fixes from PHP; use them only for websites that cannot run on a newer one."}}</p>

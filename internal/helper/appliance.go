@@ -217,10 +217,8 @@ type timeZoneArgs struct {
 
 var tzRE = regexp.MustCompile(`^[A-Za-z]+(/[A-Za-z0-9_+-]+){0,2}$|^UTC$`)
 
+// systemTimeZone sets the server's time zone (every server, not only the appliance).
 func (h *Helper) systemTimeZone(ctx context.Context, a timeZoneArgs) (any, error) {
-	if !h.isAppliance() {
-		return nil, errNotAppliance
-	}
 	if !tzRE.MatchString(a.Zone) || !h.Sys.Exists("/usr/share/zoneinfo/"+a.Zone) {
 		return nil, userErr("unknown time zone")
 	}

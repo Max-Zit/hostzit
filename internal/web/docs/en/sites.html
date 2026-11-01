@@ -11,6 +11,7 @@
   <li><b>Redirect HTTP to HTTPS</b> and <b>HSTS</b>.</li>
   <li><b>Redirects</b>: one per line, e.g. <code>/old /new 301</code>.</li>
   <li><b>Aliases</b>: more domains that show the same website.</li>
+  <li><b>Request the certificate again</b> / <b>Renew now</b>: asks Let's Encrypt right away, for example after the DNS was fixed (at most once per 15 minutes per website; Let's Encrypt blocks a name after a few failed tries an hour). Otherwise a failed request is retried every few hours and certificates renew 30 days before they expire.</li>
   <li><b>Own certificate</b>: paste a certificate and its key instead of Let's Encrypt.</li>
 </ul>
 

@@ -50,7 +50,7 @@
     </div>
     <div class="cols">
       <label>{{.T "Package"}}<select name="package">{{range .Data.Packages}}<option value="{{.ID}}" {{if eq .ID $c.PackageID}}selected{{end}}>{{.Name}}</option>{{end}}</select></label>
-      <label>{{.T "Default PHP"}}<select name="php"><option value="">{{.T "Server default"}}</option>{{range .Data.PHP}}<option value="{{.}}" {{if eq . $c.PHPVersion}}selected{{end}}>PHP {{.}}</option>{{end}}</select></label>
+      <label>{{.T "Default PHP"}}<select name="php"><option value="">{{.T "Server default"}}</option>{{range .Data.PHP}}<option value="{{.}}" {{if eq . $c.PHPVersion}}selected{{end}}>PHP {{phpfull .}}</option>{{end}}</select></label>
     </div>
     <div><button class="primary">{{.T "Save"}}</button></div>
   </form>

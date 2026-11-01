@@ -345,6 +345,7 @@ func (s *Server) CustomerHandler() http.Handler {
 	c("POST /sites/{id}", s.handleSiteUpdate)
 	c("POST /sites/{id}/cache/purge", s.handleSitePurge)
 	c("POST /sites/{id}/cert", s.handleSiteCert)
+	c("POST /sites/{id}/cert/renew", s.handleSiteCertRenew)
 	c("POST /sites/{id}/delete", s.handleSiteDelete)
 	c("GET /sites/{id}/logs", s.handleSiteLogs)
 	c("GET /dns", s.handleMyZones)

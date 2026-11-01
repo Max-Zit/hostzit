@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/max-zit/hostzit/internal/auth"
@@ -37,7 +38,23 @@ func (s *Server) serverInfo(ctx context.Context) (*helper.Info, error) {
 	if err := s.call(c, "system", "system.info", struct{}{}, &in); err != nil {
 		return nil, err
 	}
+	if len(in.PHPFull) > 0 {
+		phpFull.Store(in.PHPFull)
+	}
 	return &in, nil
+}
+
+// phpFull keeps the full PHP versions ("8.4" → "8.4.16") of the last
+// server check for the pages (template function phpfull).
+var phpFull atomic.Value
+
+func init() {
+	funcs["phpfull"] = func(v string) string {
+		if m, ok := phpFull.Load().(map[string]string); ok && m[v] != "" {
+			return m[v]
+		}
+		return v
+	}
 }
 
 func (s *Server) handleAdminOverview(w http.ResponseWriter, r *http.Request) {

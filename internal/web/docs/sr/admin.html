@@ -22,6 +22,10 @@
 <h2 id="php">PHP verzije</h2>
 <p>Podešavanja → PHP instalira dodatne PHP verzije (5.6 do 8.6) sa packages.sury.org, repozitorijuma održavaoca PHP-a u Debianu, sa uobičajenim ekstenzijama, i uklanja verzije koje nijedan sajt ne koristi. Svaki sajt bira svoju verziju; paketima koji navode PHP verzije treba dodati novu verziju.</p>
 <p>Klik na verziju otvara listu njenih ekstenzija (kao EasyApache): označene ekstenzije se instaliraju iz Debian paketa, neoznačene se uklanjaju, a svi nalozi dobijaju promenu za minut. fpm, cli, common, opcache i readline uvek ostaju. Svaki korisnik može da isključi instalirane ekstenzije za svoje sajtove i da podesi php.ini vrednosti kao memory_limit, upload_max_filesize, max_execution_time ili date.timezone pod <b>PHP</b> u korisničkom panelu; memorija i veličina otpremanja ostaju u granicama paketa.</p>
+<h3 id="timezone">Vremenska zona i sat servera</h3>
+<p>Na dnu menija je sat servera i vremenska zona. <b>Podešavanja → Sistem → Vremenska zona</b> je menja na svakom serveru (ne samo na appliance-u); paneli odmah prikazuju vreme u novoj zoni.</p>
+<h3 id="phpversions">PHP verzije</h3>
+<p><b>Podešavanja → PHP</b> prikazuje instalirane verzije sa punom verzijom (npr. 8.4.27) i napomenu kada novija čeka u Sistemskim ažuriranjima. Lista za instalaciju pokazuje koja bi verzija bila instalirana; verzije sa oznakom <code>~rc</code> ili <code>~beta</code> su test izdanja. Stare verzije (5.6 do 8.0) više ne dobijaju bezbednosne ispravke od PHP-a.</p>
 <h3 id="osupdates">Ažuriranja sistema</h3>
 <p>Podešavanja → Sistem prikazuje Debian i PHP pakete koji čekaju (bezbednosna ažuriranja su označena). <b>Proveri sada</b> ponovo čita liste paketa; <b>Instaliraj sada</b> instalira sve u pozadini (log pod <i>Poslednja instalacija</i>). Noćna bezbednosna ažuriranja svake noći preko unattended-upgrades instaliraju Debian bezbednosna ažuriranja i PHP verzije sa packages.sury.org. Posle svake promene paketa PHP procesi naloga koji još koriste zamenjeni PHP se sami restartuju, pa se zakrpljeni PHP zaista koristi. Server se nikad ne restartuje sam: kada novi kernel to zahteva, stranica to kaže.</p>
 

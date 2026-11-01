@@ -8,8 +8,8 @@
 {{if not $d.Appliance}}
 <section class="panel">
   <h2>{{template "icon" "cpu"}}{{.T "System"}}</h2>
-  <p class="muted">{{.T "On the HostZit appliance the network, host name and time zone are set here. This server was installed with the installer: its administrator sets them up in Debian."}}</p>
-  <dl class="kv"><dt>{{.T "Host name"}}</dt><dd class="mono">{{$n.Hostname}}</dd><dt>{{.T "Address"}}</dt><dd class="mono">{{$d.St.Current}}</dd><dt>{{.T "Time zone"}}</dt><dd>{{$d.St.TimeZone}}</dd></dl>
+  <p class="muted">{{.T "On the HostZit appliance the network and the host name are set here. This server was installed with the installer: its administrator sets them up in Debian."}}</p>
+  <dl class="kv"><dt>{{.T "Host name"}}</dt><dd class="mono">{{$n.Hostname}}</dd><dt>{{.T "Address"}}</dt><dd class="mono">{{$d.St.Current}}</dd></dl>
 </section>
 {{else}}
 <section class="panel">
@@ -30,13 +30,6 @@
   </form>
 </section>
 <section class="panel">
-  <h2>{{template "icon" "clock"}}{{.T "Time zone"}}</h2>
-  <form method="post" action="/settings/system/timezone" class="row">
-    <select name="zone" aria-label="{{.T "Time zone"}}">{{range $d.Zones}}<option {{if eq . $d.St.TimeZone}}selected{{end}}>{{.}}</option>{{end}}</select>
-    <button class="primary">{{.T "Save"}}</button>
-  </form>
-</section>
-<section class="panel">
   <h2>{{template "icon" "power"}}{{.T "Restart and shut down"}}</h2>
   <p class="muted small">{{.T "Websites, mail from websites and DNS stop while the server is down."}}</p>
   <div class="row">
@@ -45,6 +38,14 @@
   </div>
 </section>
 {{end}}
+<section class="panel">
+  <h2>{{template "icon" "clock"}}{{.T "Time zone"}}</h2>
+  <p class="muted small">{{.T "The panels and the logs show times in this zone."}}</p>
+  <form method="post" action="/settings/system/timezone" class="row">
+    <select name="zone" aria-label="{{.T "Time zone"}}">{{range $d.Zones}}<option {{if eq . $d.St.TimeZone}}selected{{end}}>{{.}}</option>{{end}}</select>
+    <button class="primary">{{.T "Save"}}</button>
+  </form>
+</section>
 <section class="panel" {{if and $d.OS $d.OS.Running}}data-autorefresh{{end}}>
   <h2>{{template "icon" "package"}}{{.T "System updates"}}</h2>
   {{if $d.OSError}}<p class="warn-text">{{$d.OSError}}</p>

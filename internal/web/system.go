@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/max-zit/hostzit/internal/helper"
 )
@@ -76,9 +77,7 @@ func (s *Server) handleSystem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	d.DNS = strings.Join(d.St.Network.DNS, " ")
-	if d.Appliance {
-		d.Zones = timeZones()
-	}
+	d.Zones = timeZones()
 	s.render(w, r, http.StatusOK, "system", &Page{Title: "System", Nav: "settings", Data: d})
 }
 
@@ -118,6 +117,10 @@ func (s *Server) handleSystemTimeZone(w http.ResponseWriter, r *http.Request) {
 	if err := s.call(r.Context(), actor(r), "system.timezone", map[string]string{"zone": z}, nil); err != nil {
 		s.redirectErr(w, r, "/settings/system", storeErr(err))
 		return
+	}
+	// the panel shows times in the new zone at once (Go reads it only at start)
+	if loc, err := time.LoadLocation(z); err == nil {
+		time.Local = loc
 	}
 	s.audit(r, "system.timezone", "server", "time zone %s", z)
 	s.redirect(w, r, "/settings/system", "Saved.")

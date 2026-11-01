@@ -283,3 +283,49 @@ func init() {
 		h.ops["php.modules"] = op{handle(h.phpMods), false}
 	})
 }
+
+// phpCandidates reports, per offered PHP version, the full version apt
+// would install now ("8.4" → "8.4.16"; missing: not in the package lists,
+// e.g. before packages.sury.org was added).
+func (h *Helper) phpCandidates(ctx context.Context, _ struct{}) (any, error) {
+	pkgs := make([]string, 0, len(PHPVersionsOffered))
+	for _, v := range PHPVersionsOffered {
+		pkgs = append(pkgs, "php"+v+"-fpm")
+	}
+	out, _ := h.Sys.Run(ctx, nil, "apt-cache", append([]string{"policy"}, pkgs...)...)
+	res := map[string]string{}
+	cur := ""
+	for _, l := range strings.Split(string(out), "\n") {
+		if v, ok := strings.CutPrefix(strings.TrimSuffix(l, ":"), "php"); ok && !strings.HasPrefix(l, " ") {
+			cur = strings.TrimSuffix(v, "-fpm")
+			continue
+		}
+		if c, ok := strings.CutPrefix(strings.TrimSpace(l), "Candidate:"); ok && cur != "" {
+			if full := phpUpstream(c, cur); full != "" {
+				res[cur] = full
+			}
+		}
+	}
+	return res, nil
+}
+
+func init() {
+	moreOps = append(moreOps, func(h *Helper) {
+		h.ops["php.candidates"] = op{handle(h.phpCandidates), false}
+	})
+}
+
+var phpVerRE = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+(~[a-z]+[0-9]*)?$`)
+
+// phpUpstream turns a Debian package version ("1:8.6.0~rc3-1+0~2026…")
+// into the PHP version ("8.6.0~rc3"); "" when it is not one of v.
+func phpUpstream(deb, v string) string {
+	if _, after, found := strings.Cut(deb, ":"); found {
+		deb = after
+	}
+	deb, _, _ = strings.Cut(strings.TrimSpace(deb), "-")
+	if !phpVerRE.MatchString(deb) || !strings.HasPrefix(deb, v+".") {
+		return ""
+	}
+	return deb
+}

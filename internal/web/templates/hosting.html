@@ -21,7 +21,7 @@
     <label><span>{{.T "IPv6 address"}} <small>{{.T "optional"}}</small></span><input name="ipv6" value="{{$h.IPv6}}" placeholder="2001:db8::10" spellcheck="false" class="mono"></label>
   </div>
   <div class="cols">
-    <label>{{.T "Default PHP version"}}<select name="default_php">{{range .Data.PHP}}<option value="{{.}}" {{if eq . $h.DefaultPHP}}selected{{end}}>PHP {{.}}</option>{{end}}</select></label>
+    <label>{{.T "Default PHP version"}}<select name="default_php">{{range .Data.PHP}}<option value="{{.}}" {{if eq . $h.DefaultPHP}}selected{{end}}>PHP {{phpfull .}}</option>{{end}}</select></label>
     <label>{{.T "Keep files of terminated customers (days)"}}<input type="number" name="grace_days" value="{{$h.GraceDays}}" min="0" max="365"></label>
   </div>
 </section>

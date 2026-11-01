@@ -104,6 +104,7 @@ func (h *Helper) setup(ctx context.Context, _ struct{}) (any, error) {
 // Info describes the server for the admin panel.
 type Info struct {
 	PHPVersions []string          `json:"php_versions"`
+	PHPFull     map[string]string `json:"php_full"` // "8.4" → "8.4.16" (the installed package)
 	Programs    map[string]string `json:"programs"` // name → version ("" = missing)
 	Quota       bool              `json:"quota"`
 	CgroupV2    bool              `json:"cgroup_v2"`
@@ -137,6 +138,13 @@ func (h *Helper) info(ctx context.Context, _ struct{}) (any, error) {
 		}
 	}
 	sort.Strings(in.PHPVersions)
+	in.PHPFull = map[string]string{}
+	for _, v := range in.PHPVersions {
+		out, _ := h.Sys.Run(ctx, nil, "dpkg-query", "-W", "-f=${source:Upstream-Version}", "php"+v+"-fpm")
+		if full := phpUpstream(string(out), v); full != "" {
+			in.PHPFull[v] = full
+		}
+	}
 	// versions of the Debian packages from dpkg: nginx -v and pdns_server
 	// --version print to stderr, so the panel showed them as not installed
 	// (and never warned when they stopped)
