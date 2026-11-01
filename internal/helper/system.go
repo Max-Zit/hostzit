@@ -137,7 +137,19 @@ func (h *Helper) info(ctx context.Context, _ struct{}) (any, error) {
 		}
 	}
 	sort.Strings(in.PHPVersions)
-	probe := map[string][]string{"nginx": {"nginx", "-v"}, "mariadb": {"mariadb", "--version"}, "pdns": {"pdns_server", "--version"}, "wp-cli": {"/usr/local/bin/wp", "--allow-root", "cli", "version"}}
+	// versions of the Debian packages from dpkg: nginx -v and pdns_server
+	// --version print to stderr, so the panel showed them as not installed
+	// (and never warned when they stopped)
+	for name, pkg := range map[string]string{"nginx": "nginx", "mariadb": "mariadb-server", "pdns": "pdns-server"} {
+		out, _ := h.Sys.Run(ctx, nil, "dpkg-query", "-W", "-f=${Status}|${source:Upstream-Version}", pkg)
+		st, ver, _ := strings.Cut(string(out), "|")
+		v := ""
+		if strings.HasSuffix(st, " installed") {
+			v = verRE.FindString(ver)
+		}
+		in.Programs[name] = v
+	}
+	probe := map[string][]string{"wp-cli": {"/usr/local/bin/wp", "--allow-root", "cli", "version"}}
 	for name, argv := range probe {
 		out, err := h.Sys.Run(ctx, nil, argv[0], argv[1:]...)
 		v := verRE.FindString(string(out))
