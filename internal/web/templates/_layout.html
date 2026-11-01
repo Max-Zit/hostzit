@@ -133,17 +133,24 @@
   <p class="muted small">{{.T "The country database is not on this server yet."}}{{if .IsAdminPanel}} {{.T "It is downloaded from DB-IP (about 9 MB, free, updated every month)."}}{{else}} {{.T "Ask the administrator to download it."}}{{end}}</p>
   {{if .IsAdminPanel}}<form method="post" action="/settings/geo/update"><button class="primary">{{template "icon" "download"}}{{.T "Download the country database"}}</button></form>{{end}}
   {{else}}
-  <form method="post" action="{{.Data.GeoAction}}" class="stack">
-    <label><span>{{.T "Rule"}}</span><select name="geo_mode">
-      <option value="" {{if not $g.Mode}}selected{{end}}>{{.T "Off: every country"}}</option>
+  <div class="geo-now">
+    {{if not $g.Mode}}<span class="badge ok"><i></i>{{.T "Now: every country may connect"}}</span>
+    {{else if eq $g.Mode "block"}}<span class="badge bad"><i></i>{{.T "Now refused:"}}</span> {{range $g.Chosen}}<span class="chip"{{if not .Continent}} data-cc="{{.Code}}"{{end}}>{{if .Continent}}{{$.T .Name}}{{else}}{{.Name}}{{end}}</span> {{end}} <span class="small muted">{{.T "All other countries may connect."}}</span>
+    {{else}}<span class="badge ok"><i></i>{{.T "Now only allowed:"}}</span> {{range $g.Chosen}}<span class="chip"{{if not .Continent}} data-cc="{{.Code}}"{{end}}>{{if .Continent}}{{$.T .Name}}{{else}}{{.Name}}{{end}}</span> {{end}} <span class="small muted">{{.T "All other countries are refused."}}</span>{{end}}
+  </div>
+  <form method="post" action="{{.Data.GeoAction}}" class="stack geo-form">
+    <label><span>{{.T "Rule"}}</span><select name="geo_mode" class="geo-mode">
+      <option value="" {{if not $g.Mode}}selected{{end}}>{{.T "Off: every country may connect"}}</option>
       <option value="block" {{if eq $g.Mode "block"}}selected{{end}}>{{.T "Refuse the chosen countries"}}</option>
       <option value="allow" {{if eq $g.Mode "allow"}}selected{{end}}>{{.T "Allow only the chosen countries"}}</option>
     </select></label>
-    <label><span>{{.T "Countries and continents"}}</span><input type="search" class="geo-filter" placeholder="{{.T "Search"}}" aria-label="{{.T "Search"}}">
-      <select name="geo" multiple size="12" class="geo-select">
-      <optgroup label="{{.T "Continents"}}">{{range $g.Continents}}<option value="@{{.Code}}" {{if $g.Has (printf "@%s" .Code)}}selected{{end}}>{{$.T .Name}}</option>{{end}}</optgroup>
-      {{range $g.Continents}}{{if .Countries}}<optgroup label="{{$.T .Name}}">{{range .Countries}}<option value="{{.Code}}" data-cc="{{.Code}}" {{if $g.Has .Code}}selected{{end}}>{{.Name}} ({{.Code}})</option>{{end}}</optgroup>{{end}}{{end}}
-      </select><small>{{.T "Ctrl (or ⌘) + click chooses several. Addresses of local networks are never refused."}}{{with $g.List}} {{$.T "Chosen:"}} <span class="mono">{{join . " "}}</span>{{end}}</small></label>
+    <div class="geo-picked"><b class="small" data-block="{{.T "Will be refused:"}}" data-allow="{{.T "Will be the only ones allowed:"}}" data-off="{{.T "Chosen (not used while the rule is off):"}}"></b> <span class="geo-chips"></span> <span class="small muted geo-none">{{.T "nothing chosen yet"}}</span></div>
+    <input type="search" class="geo-filter" placeholder="{{.T "Search a country or continent"}}" aria-label="{{.T "Search a country or continent"}}">
+    <div class="geo-list">
+      <fieldset><legend>{{.T "Continents"}}</legend>{{range $g.Continents}}<label class="check"><input type="checkbox" name="geo" value="@{{.Code}}" data-name="{{$.T .Name}}" {{if $g.Has (printf "@%s" .Code)}}checked{{end}}><span>{{$.T .Name}}</span></label>{{end}}</fieldset>
+      {{range $g.Continents}}{{if .Countries}}<fieldset><legend>{{$.T .Name}}</legend>{{range .Countries}}<label class="check"><input type="checkbox" name="geo" value="{{.Code}}" data-cc="{{.Code}}" data-name="{{.Name}}" {{if $g.Has .Code}}checked{{end}}><span data-cc="{{.Code}}">{{.Name}}</span> <small class="muted">{{.Code}}</small></label>{{end}}</fieldset>{{end}}{{end}}
+    </div>
+    <p class="small muted">{{.T "Addresses of local networks are never refused."}}</p>
     <div><button class="primary">{{.T "Save"}}</button></div>
   </form>
   <p class="small muted">{{.T "IP geolocation by"}} <a href="https://db-ip.com" target="_blank" rel="noopener">DB-IP</a>{{if not $g.Updated.IsZero}} · {{.T "as of %s" (.Time $g.Updated)}}{{end}}</p>

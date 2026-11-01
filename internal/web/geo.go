@@ -238,3 +238,27 @@ func (s *Server) geoMonthly(ctx context.Context) {
 		s.log.Warn("country database not updated", "err", err)
 	}
 }
+
+// geoChip is a chosen country or continent, for the summary.
+type geoChip struct {
+	Code, Name string
+	Continent  bool
+}
+
+// Chosen lists the chosen codes with their names (continents first).
+func (g *geoChoice) Chosen() []geoChip {
+	var out []geoChip
+	for _, c := range g.Continents {
+		if g.Has("@" + c.Code) {
+			out = append(out, geoChip{Code: c.Code, Name: c.Name, Continent: true})
+		}
+	}
+	for _, c := range g.Continents {
+		for _, x := range c.Countries {
+			if g.Has(x.Code) {
+				out = append(out, geoChip{Code: x.Code, Name: x.Name})
+			}
+		}
+	}
+	return out
+}

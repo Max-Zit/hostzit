@@ -225,25 +225,41 @@ document.addEventListener("click", function (ev) {
   if (ev.target.closest && ev.target.closest("[data-closewin]")) window.close();
 });
 
-// Country lists: names in the page's language and a search field.
+// Country rules: names in the page's language, a search field and the
+// chosen countries as chips that say what the rule will do with them.
 document.addEventListener("DOMContentLoaded", function () {
   "use strict";
   var names = null;
   try { names = new Intl.DisplayNames([document.documentElement.lang || "en"], { type: "region" }); } catch (e) { names = null; }
-  document.querySelectorAll("select.geo-select").forEach(function (sel) {
-    if (names) {
-      sel.querySelectorAll("option[data-cc]").forEach(function (o) {
-        var n = names.of(o.getAttribute("data-cc"));
-        if (n) o.textContent = n + " (" + o.getAttribute("data-cc") + ")";
+  var cc = function (el) { var n = names && names.of(el.getAttribute("data-cc")); return n || el.getAttribute("data-name") || el.textContent; };
+  document.querySelectorAll(".chip[data-cc], .geo-list span[data-cc]").forEach(function (el) { if (names) el.textContent = cc(el); });
+  document.querySelectorAll("form.geo-form").forEach(function (form) {
+    var mode = form.querySelector(".geo-mode"), head = form.querySelector(".geo-picked b"), chips = form.querySelector(".geo-chips"), none = form.querySelector(".geo-none");
+    var boxes = Array.prototype.slice.call(form.querySelectorAll(".geo-list input[type=checkbox]"));
+    var draw = function () {
+      head.textContent = head.getAttribute("data-" + (mode.value || "off"));
+      chips.textContent = "";
+      var n = 0;
+      boxes.forEach(function (b) {
+        if (!b.checked) return;
+        n++;
+        var c = document.createElement("button");
+        c.type = "button";
+        c.className = "chip " + (mode.value === "block" ? "bad" : mode.value === "allow" ? "ok" : "");
+        c.textContent = (b.hasAttribute("data-cc") ? cc(b) : b.getAttribute("data-name")) + " ×";
+        c.addEventListener("click", function () { b.checked = false; draw(); });
+        chips.appendChild(c);
       });
-    }
-    var f = sel.parentNode.querySelector("input.geo-filter");
-    if (!f) return;
+      none.hidden = n > 0;
+    };
+    mode.addEventListener("change", draw);
+    boxes.forEach(function (b) { b.addEventListener("change", draw); });
+    var f = form.querySelector(".geo-filter");
     f.addEventListener("input", function () {
       var q = f.value.trim().toLowerCase();
-      sel.querySelectorAll("option").forEach(function (o) {
-        o.hidden = q !== "" && !o.selected && o.textContent.toLowerCase().indexOf(q) < 0;
-      });
+      form.querySelectorAll(".geo-list label").forEach(function (l) { l.hidden = q !== "" && l.textContent.toLowerCase().indexOf(q) < 0; });
+      form.querySelectorAll(".geo-list fieldset").forEach(function (fs) { fs.hidden = !fs.querySelector("label:not([hidden])"); });
     });
+    draw();
   });
 });
