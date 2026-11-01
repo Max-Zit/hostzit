@@ -56,7 +56,7 @@
   <h2>{{template "icon" "key"}}{{.T "API tokens"}}</h2>
   <p class="muted">{{.T "Your billing system (for example the MaxZit portal) creates and suspends accounts through the REST API with a token. Give every token only what it needs and revoke it when it is no longer used."}}</p>
   {{with .Data.NewToken}}
-  <div class="notice-ok panel">
+  <div class="panel accent">
     <p><b>{{$.T "New API token"}}</b> — {{$.T "copy it now: it is shown only once."}}</p>
     <pre class="token" id="newtoken">{{.}}</pre>
     <p><button type="button" class="btn secondary sm" data-copy="#newtoken">{{template "icon" "copy"}}{{$.T "Copy"}}</button></p>

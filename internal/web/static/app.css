@@ -151,6 +151,10 @@ form.stack { display: grid; gap: 16px; max-width: 720px; }
 form.stack.wide { max-width: none; gap: 0; margin-bottom: 20px; }
 form.stack.wide .panel > * + * { margin-top: 14px; }
 form.stack.wide .panel > h2 + p { margin-top: -4px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.row > form.row { flex: 1 1 320px; }
+.num-sm { width: 6.5em; }
+label.check input.num-sm { display: inline-block; width: 5em; padding: 3px 6px; margin: 0 4px; height: auto; }
 form.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
 form.row > input { flex: 1 1 200px; width: auto; }
 form.row label.inline input { width: 110px; }
@@ -927,3 +931,14 @@ button.chip { cursor: pointer; }
 .geo-list legend { font-weight: 650; font-size: 12px; color: var(--muted); padding: 6px 0 4px; }
 .geo-list label.check { font-weight: 500; font-size: 13px; }
 .geo-list [hidden], .geo-none[hidden] { display: none; }
+/* a block inside a panel (database users …) */
+.subpanel { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 12px; background: var(--panel-2); }
+.subpanel .titlebar { margin: 0 0 8px; }
+.subpanel form.stack { gap: 10px; max-width: none; }
+.panel > form.stack { max-width: none; }
+/* several buttons or forms in one table cell: side by side with a gap, or one under the other with a gap */
+td.actions > form, td.actions > a.btn, td.actions > details { display: inline-block; vertical-align: middle; margin: 2px 0 2px 6px; }
+td.actions > form:first-child, td.actions > a.btn:first-child, td.actions > details:first-child { margin-left: 0; }
+td.actions > form + form { display: block; margin-left: 0; margin-top: 4px; }
+td.actions > form + form:not(:only-of-type) { text-align: right; }
+.geo-chips { display: inline-flex; flex-wrap: wrap; gap: 6px; }

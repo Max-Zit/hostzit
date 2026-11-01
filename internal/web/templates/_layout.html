@@ -43,10 +43,12 @@
 
 {{define "adminnav"}}<nav>
     <a href="/" class="{{if eq .Nav "overview"}}on{{end}}">{{template "icon" "overview"}}{{.T "Overview"}}</a>
+    <span class="navlabel">{{.T "Hosting"}}</span>
     <a href="/customers" class="{{if eq .Nav "customers"}}on{{end}}">{{template "icon" "users"}}{{.T "Customers"}}</a>
     <a href="/packages" class="{{if eq .Nav "packages"}}on{{end}}">{{template "icon" "package"}}{{.T "Packages"}}</a>
     <a href="/sites" class="{{if eq .Nav "sites"}}on{{end}}">{{template "icon" "globe"}}{{.T "Websites"}}</a>
     <a href="/dns" class="{{if eq .Nav "dns"}}on{{end}}">{{template "icon" "network"}}{{.T "DNS zones"}}</a>
+    <span class="navlabel">{{.T "Server and tasks"}}</span>
     <a href="/resources" class="{{if eq .Nav "resources"}}on{{end}}">{{template "icon" "cpu"}}{{.T "Resource usage"}}</a>
     <a href="/server" class="{{if eq .Nav "server"}}on{{end}}">{{template "icon" "rack"}}{{.T "Server"}}</a>
     <a href="/jobs" class="{{if eq .Nav "jobs"}}on{{end}}">{{template "icon" "clock"}}{{.T "Jobs"}}</a>
@@ -63,19 +65,22 @@
 
 {{define "customernav"}}<nav>
     <a href="/" class="{{if eq .Nav "home"}}on{{end}}">{{template "icon" "overview"}}{{.T "Overview"}}</a>
+    <span class="navlabel">{{.T "Websites and apps"}}</span>
     <a href="/sites" class="{{if eq .Nav "sites"}}on{{end}}">{{template "icon" "globe"}}{{.T "Websites"}}</a>
-    <a href="/dns" class="{{if eq .Nav "dns"}}on{{end}}">{{template "icon" "network"}}{{.T "Domains and DNS"}}</a>
     <a href="/wordpress" class="{{if eq .Nav "wordpress"}}on{{end}}">{{template "icon" "wordpress"}}WordPress</a>
-    <a href="/databases" class="{{if eq .Nav "databases"}}on{{end}}">{{template "icon" "database"}}{{.T "Databases"}}</a>
-    <a href="/php" class="{{if eq .Nav "php"}}on{{end}}">{{template "icon" "service"}}PHP</a>
-    <a href="/git" class="{{if eq .Nav "git"}}on{{end}}">{{template "icon" "route"}}Git</a>
     <a href="/apps" class="{{if eq .Nav "apps"}}on{{end}}">{{template "icon" "terminal"}}{{.T "Applications"}}</a>
+    <a href="/git" class="{{if eq .Nav "git"}}on{{end}}">{{template "icon" "route"}}Git</a>
+    <span class="navlabel">{{.T "Domains and data"}}</span>
+    <a href="/dns" class="{{if eq .Nav "dns"}}on{{end}}">{{template "icon" "network"}}{{.T "Domains and DNS"}}</a>
+    <a href="/databases" class="{{if eq .Nav "databases"}}on{{end}}">{{template "icon" "database"}}{{.T "Databases"}}</a>
     <a href="/files" class="{{if eq .Nav "files"}}on{{end}}">{{template "icon" "folder"}}{{.T "Files"}}</a>
-    <a href="/access" class="{{if eq .Nav "access"}}on{{end}}">{{template "icon" "terminal"}}{{.T "SFTP and SSH"}}</a>
+    <a href="/backups" class="{{if eq .Nav "backups"}}on{{end}}">{{template "icon" "layers"}}{{.T "Backups"}}</a>
+    <span class="navlabel">{{.T "Account"}}</span>
+    <a href="/php" class="{{if eq .Nav "php"}}on{{end}}">{{template "icon" "service"}}PHP</a>
+    <a href="/access" class="{{if eq .Nav "access"}}on{{end}}">{{template "icon" "key"}}{{.T "SFTP and SSH"}}</a>
     <a href="/cron" class="{{if eq .Nav "cron"}}on{{end}}">{{template "icon" "clock"}}{{.T "Scheduled jobs"}}</a>
     <a href="/security" class="{{if eq .Nav "security"}}on{{end}}">{{template "icon" "shield"}}{{.T "Security"}}</a>
-    <a href="/backups" class="{{if eq .Nav "backups"}}on{{end}}">{{template "icon" "download"}}{{.T "Backups"}}</a>
-    <a href="/usage" class="{{if eq .Nav "usage"}}on{{end}}">{{template "icon" "disk"}}{{.T "Usage"}}</a>
+    <a href="/usage" class="{{if eq .Nav "usage"}}on{{end}}">{{template "icon" "cpu"}}{{.T "Usage"}}</a>
     <a href="/docs" class="{{if eq .Nav "docs"}}on{{end}}">{{template "icon" "book"}}{{.T "User guide"}}</a>
   </nav>{{end}}
 

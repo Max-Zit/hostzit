@@ -17,7 +17,7 @@
   <div class="table-wrap"><table>
     <thead><tr><th>{{.T "Name"}}</th><th class="num">{{.T "Size"}}</th><th class="hide-sm">{{.T "Users"}}</th><th></th></tr></thead>
     <tbody>{{range .Data.DBs}}<tr><td class="mono">{{.Name}}</td><td class="num">{{bytes .SizeB}}</td><td class="hide-sm mono small">{{join .Users ", "}}</td>
-      <td class="actions"><a class="btn ghost sm" href="/databases/{{.Name}}/manage">{{template "icon" "database"}}{{$.T "Open"}}</a> <form method="post" action="/databases/{{.Name}}/delete" class="row"><input name="confirm" required placeholder="{{.Name}}" aria-label="{{$.T "Type the database name to confirm."}}" class="num-sm" autocomplete="off"><button class="ghost sm danger">{{template "icon" "trash"}}</button></form></td></tr>{{end}}</tbody>
+      <td class="actions"><a class="btn ghost sm" href="/databases/{{.Name}}/manage">{{template "icon" "database"}}{{$.T "Open"}}</a> <details class="pop right"><summary class="btn ghost sm danger" title="{{$.T "Delete"}}">{{template "icon" "trash"}}</summary><div class="pop-body"><p class="small">{{$.T "Type the database name to confirm."}}</p><form method="post" action="/databases/{{.Name}}/delete" class="row"><input name="confirm" required placeholder="{{.Name}}" aria-label="{{$.T "Type the database name to confirm."}}" autocomplete="off" class="mono"><button class="danger sm">{{template "icon" "trash"}}{{$.T "Delete"}}</button></form></div></details></td></tr>{{end}}</tbody>
   </table></div>
   {{else}}<p class="muted">{{.T "No databases yet."}}</p>{{end}}
   <form method="post" action="/databases" class="row mt">
@@ -29,13 +29,14 @@
 <section class="panel">
   <h2>{{template "icon" "key"}}{{.T "Database users"}}</h2>
   {{range .Data.Users}}
-  <form method="post" action="/databases/users" class="stack panel">
+  <div class="subpanel">
+    <div class="titlebar"><b class="mono">{{.Name}}</b><form method="post" action="/databases/users/{{.Name}}/delete" data-confirm="{{$.T "Delete the database user %s?" .Name}}"><button class="ghost sm danger">{{template "icon" "trash"}}{{$.T "Delete user"}}</button></form></div>
+    <form method="post" action="/databases/users" class="stack">
     <input type="hidden" name="user" value="{{.Name}}">
-    <div class="titlebar"><b class="mono">{{.Name}}</b></div>
     <div class="row">{{$u := .}}{{range $.Data.DBs}}<label class="check"><input type="checkbox" name="db_{{.Name}}" {{if inStrings $u.Databases .Name}}checked{{end}}><span class="mono small">{{.Name}}</span></label>{{end}}</div>
     <div class="row"><input type="password" name="password" minlength="10" autocomplete="new-password" placeholder="{{$.T "New password (empty = keep)"}}" aria-label="{{$.T "New password"}}"><label class="check"><input type="checkbox" name="generate"><span>{{$.T "generate a new one"}}</span></label><button class="secondary sm">{{$.T "Save"}}</button></div>
-  </form>
-  <form method="post" action="/databases/users/{{.Name}}/delete" data-confirm="{{$.T "Delete the database user %s?" .Name}}"><button class="ghost sm">{{template "icon" "trash"}}{{$.T "Delete user"}}</button></form>
+    </form>
+  </div>
   {{end}}
   <form method="post" action="/databases/users" class="row mt">
     <span class="mono">{{$c.Username}}_</span><input name="user" required pattern="[a-z0-9_]{1,32}" maxlength="32" class="mono" aria-label="{{.T "Name"}}" placeholder="app">

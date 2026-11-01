@@ -15,11 +15,11 @@
       <td class="hide-sm mono small">{{.Mode}}</td>
       <td class="actions">
         {{if not .Dir}}<a class="btn ghost sm" href="/files/download?path={{$p}}" title="{{$.T "Download"}}">{{template "icon" "download"}}</a>{{end}}
-        <details class="inline"><summary class="btn ghost sm" title="{{$.T "More"}}">⋯</summary>
+        <details class="pop right"><summary class="btn ghost sm" title="{{$.T "More"}}">⋯</summary><div class="pop-body">
           <form method="post" action="/files" class="row"><input type="hidden" name="dir" value="{{$d.Path}}"><input type="hidden" name="action" value="rename"><input type="hidden" name="name" value="{{.Name}}"><input name="to" value="{{.Name}}" required aria-label="{{$.T "New name"}}"><button class="ghost sm">{{$.T "Rename"}}</button></form>
           <form method="post" action="/files" class="row"><input type="hidden" name="dir" value="{{$d.Path}}"><input type="hidden" name="action" value="chmod"><input type="hidden" name="name" value="{{.Name}}"><input name="mode" value="{{.Mode}}" pattern="[0-7]{3}" class="num-sm mono" aria-label="{{$.T "Permissions"}}"><button class="ghost sm">{{$.T "Permissions"}}</button></form>
           <form method="post" action="/files" data-confirm="{{$.T "Delete %s?" .Name}}"><input type="hidden" name="dir" value="{{$d.Path}}"><input type="hidden" name="action" value="delete"><input type="hidden" name="name" value="{{.Name}}"><button class="ghost sm danger">{{template "icon" "trash"}}{{$.T "Delete"}}</button></form>
-        </details>
+        </div></details>
       </td>
     </tr>{{else}}<tr><td colspan="5" class="muted">{{.T "The folder is empty."}}</td></tr>{{end}}
     </tbody>

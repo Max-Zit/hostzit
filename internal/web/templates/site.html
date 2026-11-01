@@ -36,9 +36,9 @@
   </details>
 </section>
 
-<form method="post" action="/sites/{{$s.ID}}" class="stack">
 <section class="panel">
   <h2>{{template "icon" "settings"}}{{.T "Settings"}}</h2>
+<form method="post" action="/sites/{{$s.ID}}" class="stack">
   <div class="cols">
     <label>PHP<select name="php">{{range .Data.PHP}}<option value="{{.}}" {{if eq . $s.PHPVersion}}selected{{end}}>PHP {{phpfull .}}</option>{{end}}</select></label>
     <label>{{.T "Document root"}}<input name="doc_root" value="{{$s.DocRoot}}" required spellcheck="false" class="mono"><small>{{.T "A folder inside sites/ of your home."}}</small></label>
@@ -59,8 +59,8 @@
   <label>{{.T "More domains for this website (aliases)"}}<textarea name="aliases" rows="2" spellcheck="false" class="mono">{{.Data.Aliases}}</textarea><small>{{.T "One per line; they show the same website."}}</small></label>
   <label>{{.T "Redirects"}}<textarea name="redirects" rows="3" spellcheck="false" class="mono" placeholder="/old-page /new-page 301&#10;/shop https://shop.example.com/ 302">{{.Data.Redirect}}</textarea><small>{{.T "One per line: path, target and 301 (permanent) or 302 (temporary)."}}</small></label>
   <div><button class="primary">{{.T "Save"}}</button></div>
-</section>
 </form>
+</section>
 
 <section class="panel" id="access">
   <h2>{{template "icon" "shield"}}{{.T "Access and protection"}}</h2>
