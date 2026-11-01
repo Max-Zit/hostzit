@@ -233,7 +233,7 @@ func Rates(samples []UsageSample) []UsageRate {
 		out = append(out, UsageRate{At: b.At, MemoryB: b.MemoryB, Tasks: b.Tasks,
 			CPUPercent: float64(b.CPUUsec-a.CPUUsec) / sec / 1e4,
 			IOMBps:     float64(b.IOB-a.IOB) / sec / 1e6,
-			Throttled:  float64(b.ThrottledUsec-a.ThrottledUsec) / sec / 1e6,
+			Throttled:  min(float64(b.ThrottledUsec-a.ThrottledUsec)/sec/1e6, 1), // summed over threads: may pass 1
 			OOM:        b.OOM - a.OOM})
 	}
 	return out
