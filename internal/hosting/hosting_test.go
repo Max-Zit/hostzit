@@ -1,6 +1,7 @@
 package hosting
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -387,5 +388,28 @@ func TestApps(t *testing.T) {
 	}
 	if !strings.Contains(out, "proxy_pass http://unix:/var/lib/hostzit/cages/"+s.Account+"/.sock/app-api.sock:;") || strings.Contains(out, "fastcgi_pass") {
 		t.Fatal(out)
+	}
+}
+
+func TestNginxSiteGeo(t *testing.T) {
+	s := testSite()
+	s.GeoMode, s.GeoList, s.GeoReady = "allow", []string{"RS", "@EU"}, true
+	out, err := NginxSite(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := fmt.Sprint(s.ID)
+	for _, want := range []string{`map "$hz_ct:$hz_cc" $hz_geo_` + id + ` {`, "default 1;", `"~^--:--$" 0;`, `"~:RS$" 0;`, `"~^EU:" 0;`,
+		"set $hz_geo $hz_geo_" + id + ";", "if ($hz_geo) {", `acme-challenge/") {`} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+	s.GeoReady = false
+	if out, _ := NginxSite(s); strings.Contains(out, "hz_geo") {
+		t.Error("country rule without the country database")
+	}
+	if ValidGeo("block", []string{"rs"}) == nil || ValidGeo("allow", nil) == nil || ValidGeo("x", []string{"RS"}) == nil || ValidGeo("block", []string{"@EU", "US"}) != nil {
+		t.Error("ValidGeo")
 	}
 }

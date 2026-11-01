@@ -474,6 +474,7 @@ func (s *Server) Run(ctx context.Context) {
 		_ = s.applyFirewall(ctx, "system")
 		_ = s.applyRelay(ctx, "system")
 		_ = s.applyBrute(ctx, "system")
+		_ = s.applyGeo(ctx, "system")
 		// zones the DNS server refused before (e.g. records repaired by an update)
 		if zones, err := s.store.Zones(ctx, 0); err == nil {
 			for _, z := range zones {
@@ -497,6 +498,9 @@ func (s *Server) Run(ctx context.Context) {
 			_ = s.store.PurgeSessions(ctx)
 			_ = s.store.PruneUsage(ctx)
 			s.purgeTerminated(ctx)
+			if s.now().Hour() == 4 {
+				go s.geoMonthly(ctx)
+			}
 			if s.now().Hour() == 3 {
 				go s.autoUpdateWP(ctx)
 				go s.nightlyScans(ctx)

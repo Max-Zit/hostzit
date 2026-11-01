@@ -224,3 +224,26 @@ document.addEventListener("click", function (ev) {
   }
   if (ev.target.closest && ev.target.closest("[data-closewin]")) window.close();
 });
+
+// Country lists: names in the page's language and a search field.
+document.addEventListener("DOMContentLoaded", function () {
+  "use strict";
+  var names = null;
+  try { names = new Intl.DisplayNames([document.documentElement.lang || "en"], { type: "region" }); } catch (e) { names = null; }
+  document.querySelectorAll("select.geo-select").forEach(function (sel) {
+    if (names) {
+      sel.querySelectorAll("option[data-cc]").forEach(function (o) {
+        var n = names.of(o.getAttribute("data-cc"));
+        if (n) o.textContent = n + " (" + o.getAttribute("data-cc") + ")";
+      });
+    }
+    var f = sel.parentNode.querySelector("input.geo-filter");
+    if (!f) return;
+    f.addEventListener("input", function () {
+      var q = f.value.trim().toLowerCase();
+      sel.querySelectorAll("option").forEach(function (o) {
+        o.hidden = q !== "" && !o.selected && o.textContent.toLowerCase().indexOf(q) < 0;
+      });
+    });
+  });
+});

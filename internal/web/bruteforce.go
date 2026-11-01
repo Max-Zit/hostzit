@@ -9,6 +9,7 @@ import (
 
 	"github.com/max-zit/hostzit/internal/helper"
 	"github.com/max-zit/hostzit/internal/netacl"
+	"github.com/max-zit/hostzit/internal/store"
 )
 
 // Settings → Brute-force protection (like cPanel's cPHulk): one list of
@@ -65,6 +66,11 @@ type bruteData struct {
 	Allow  string
 	Rows   []blockRow
 	F2BErr string
+	// the country rule of the sign-in services and the websites that have one
+	Geo       *geoChoice
+	GeoAction string
+	GeoHelp   string
+	GeoSites  []*store.Site
 }
 
 // applyBrute writes fail2ban's jails with the panel's limits.
@@ -81,6 +87,9 @@ func (s *Server) handleBrute(w http.ResponseWriter, r *http.Request) {
 func (s *Server) showBrute(w http.ResponseWriter, r *http.Request, errMsg string) {
 	ctx := r.Context()
 	d := &bruteData{X: s.security(ctx), Allow: strings.Join(s.bruteSettings(ctx).Allow, "\n")}
+	g := s.geoSettings(ctx)
+	d.Geo, d.GeoAction, d.GeoSites = s.geoChoice(ctx, g.Mode, g.List), "/settings/geo", s.geoSites(ctx)
+	d.GeoHelp = "Who may reach the sign-in of the panels and SSH and SFTP. Websites have their own rule (Websites → the site); the table below lists them."
 	blocks, err := s.store.Blocks(ctx)
 	if err != nil {
 		s.serverError(w, r, err)
@@ -121,6 +130,7 @@ func (s *Server) handleBruteSave(w http.ResponseWriter, r *http.Request) {
 		s.redirectErr(w, r, "/settings/bruteforce", storeErr(err))
 		return
 	}
+	_ = s.applyGeo(r.Context(), actor(r)) // never-blocked addresses pass the country rule too
 	s.redirect(w, r, "/settings/bruteforce", "Saved.")
 }
 

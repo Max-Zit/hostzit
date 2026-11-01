@@ -227,7 +227,7 @@ func (s *Server) importHostZit(ctx context.Context, by, file, username string, p
 		st := &store.Site{CustomerID: c.ID, Account: c.Username, Domain: x.Domain, Aliases: x.Aliases, DocRoot: x.DocRoot, PHPVersion: ver, WWW: x.WWW,
 			Canonical: x.Canonical, ForceHTTPS: x.ForceHTTPS, HSTS: x.HSTS, Cache: x.Cache, CacheMinutes: x.CacheMinutes, WordPress: x.WordPress,
 			BlockXMLRPC: x.BlockXMLRPC, Redirects: x.Redirects, UploadMB: x.UploadMB, AutoTLS: true, IPAllow: x.IPAllow, IPDeny: x.IPDeny,
-			Hotlink: x.Hotlink, WAF: x.WAF, WAFDetect: x.WAFDetect, WAFExclude: x.WAFExclude, Protected: x.Protected}
+			Hotlink: x.Hotlink, WAF: x.WAF, WAFDetect: x.WAFDetect, WAFExclude: x.WAFExclude, Protected: x.Protected, GeoMode: x.GeoMode, GeoList: x.GeoList}
 		if st.CacheMinutes == 0 {
 			st.CacheMinutes = 60
 		}

@@ -53,6 +53,12 @@ func uiTexts(t *testing.T) map[string]bool {
 	for _, l := range noticeLabels {
 		out[l] = true
 	}
+	// the country forms: continent names and the help of each page
+	for _, c := range continents {
+		out[c.Name] = true
+	}
+	out["Who may reach the sign-in of the panels and SSH and SFTP. Websites have their own rule (Websites → the site); the table below lists them."] = true
+	out["Visitors from refused countries get the answer 403 (forbidden). Certificate checks always pass."] = true
 	for _, s := range []string{"Active", "Suspended", "Terminated", "Administrator", "Operator", "Viewer", "Getting started", "Installing the server", "Customers and packages",
 		"Websites, PHP and page cache", "Domains and DNS", "Databases", "Files, SFTP and SSH", "WordPress", "Isolation and security", "REST API for billing",
 		"Users, settings and updates", "Troubleshooting and FAQ", "by hand", "before update", "before push from staging", "Company sign-in",

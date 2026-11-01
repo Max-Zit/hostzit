@@ -18,6 +18,8 @@ const (
 	NginxAuthDir     = "/etc/nginx/zit.d/hostzit/auth"  // <site id>-<n>.htpasswd
 	ModSecConf       = "/etc/nginx/zit.d/hostzit/modsec.conf"
 	ModSecDetectConf = "/etc/nginx/zit.d/hostzit/modsec-detect.conf" // the same rules, only logging
+	NginxGeoConf     = "/etc/nginx/zit.d/hostzit/http/geoip.conf"    // the country database (http level)
+	GeoDB            = "/var/lib/hostzit/geo/country.mmdb"           // DB-IP IP to Country Lite (CC BY 4.0)
 )
 
 // SiteConfPath is the nginx file of a site.
@@ -58,6 +60,7 @@ func NginxSite(s Site) (string, error) {
 	sock := PHPSocket(s.Account, s.PHPVersion)
 
 	w("# HostZit site %s of account %s (generated, do not edit)\n", s.Domain, s.Account)
+	b.WriteString(geoMap(s))
 	httpOnlyRedirect := s.TLS && s.ForceHTTPS
 	// Port 80: ACME challenges always; the rest redirects to HTTPS or is
 	// the site itself.
@@ -106,6 +109,10 @@ func siteBody(b *strings.Builder, s Site, root, sock string) {
 		}
 	}
 	w("    root %s;\n    index index.php index.html index.htm;\n", root)
+	if s.GeoReady && s.GeoMode != "" {
+		// refused countries get 403; certificate checks always pass
+		w("    set $hz_geo $hz_geo_%d;\n    if ($uri ~ \"^/\\.well-known/acme-challenge/\") {\n        set $hz_geo 0;\n    }\n    if ($hz_geo) {\n        return 403;\n    }\n", s.ID)
+	}
 	for _, a := range s.IPAllow {
 		w("    allow %s;\n", a)
 	}
@@ -242,6 +249,7 @@ gzip_vary on;
 gzip_proxied any;
 gzip_types text/plain text/css application/javascript application/json image/svg+xml application/xml text/xml;
 include /etc/nginx/zit.d/hostzit/cache/*.conf;
+include /etc/nginx/zit.d/hostzit/http/*.conf;
 include /etc/nginx/zit.d/hostzit/sites/*/*.conf;
 include /etc/nginx/zit.d/emailzit/*.conf;
 
@@ -286,4 +294,33 @@ func appLocations(b *strings.Builder, s Site) {
 	w("    location @hz_app {\n")
 	proxy("        ")
 	w("    }\n")
+}
+
+// GeoConf reads the country database for the country rules of the sites
+// ($hz_cc country code, $hz_ct continent code; "--" when unknown, e.g.
+// private addresses).
+func GeoConf(db string) string {
+	return fmt.Sprintf("# HostZit: country database for the websites' country rules (generated, do not edit)\ngeoip2 %s {\n    auto_reload 60m;\n    $hz_cc default=-- country iso_code;\n    $hz_ct default=-- continent code;\n}\n", db)
+}
+
+// geoMap is the http-level map of a site's country rule: 1 = refuse.
+func geoMap(s Site) string {
+	if !s.GeoReady || s.GeoMode == "" || s.Suspended {
+		return ""
+	}
+	hit, miss := "1", "0"
+	if s.GeoMode == "allow" {
+		hit, miss = "0", "1"
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "map \"$hz_ct:$hz_cc\" $hz_geo_%d {\n    default %s;\n    \"~^--:--$\" 0;\n", s.ID, miss)
+	for _, c := range s.GeoList {
+		if cont, ok := strings.CutPrefix(c, "@"); ok {
+			fmt.Fprintf(&b, "    \"~^%s:\" %s;\n", cont, hit)
+		} else {
+			fmt.Fprintf(&b, "    \"~:%s$\" %s;\n", c, hit)
+		}
+	}
+	b.WriteString("}\n")
+	return b.String()
 }

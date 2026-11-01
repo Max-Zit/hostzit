@@ -172,6 +172,12 @@ type Site struct {
 	App string `json:"app,omitempty"`
 	// Protected folders need a user name and password.
 	Protected []Protected `json:"protected,omitempty"`
+	// GeoMode "block" refuses visitors from GeoList, "allow" everyone else;
+	// GeoList holds country codes (RS) and continents (@EU).
+	GeoMode string   `json:"geo_mode,omitempty"`
+	GeoList []string `json:"geo_list,omitempty"`
+	// GeoReady: the server has the country database and nginx module (set by the helper).
+	GeoReady bool `json:"geo_ready,omitempty"`
 }
 
 // Names lists every host name of the site.
@@ -240,6 +246,9 @@ func (s Site) Validate() error {
 	}
 	if s.App != "" && !appNameRE.MatchString(s.App) {
 		return errors.New("invalid application name")
+	}
+	if err := ValidGeo(s.GeoMode, s.GeoList); err != nil {
+		return err
 	}
 	if len(s.WAFExclude) > 50 {
 		return errors.New("at most 50 excluded firewall rules")
@@ -348,4 +357,29 @@ func Htpasswd(p Protected) string {
 		b.WriteString(u.Name + ":" + u.Hash + "\n")
 	}
 	return b.String()
+}
+
+var geoCodeRE = regexp.MustCompile(`^([A-Z]{2}|@(AF|AN|AS|EU|NA|OC|SA))$`)
+
+// ValidGeo checks a country rule: mode "", "block" or "allow" and the codes.
+func ValidGeo(mode string, list []string) error {
+	switch mode {
+	case "":
+		return nil
+	case "block", "allow":
+	default:
+		return errors.New("invalid country rule")
+	}
+	if len(list) == 0 {
+		return errors.New("choose at least one country or continent")
+	}
+	if len(list) > 300 {
+		return errors.New("at most 300 countries")
+	}
+	for _, c := range list {
+		if !geoCodeRE.MatchString(c) {
+			return fmt.Errorf("invalid country code %q", c)
+		}
+	}
+	return nil
 }

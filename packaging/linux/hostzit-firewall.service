@@ -1,5 +1,5 @@
 [Unit]
-Description=HostZit firewall table (no direct mail from websites, blocked addresses)
+Description=HostZit firewall tables (no direct mail from websites, blocked addresses, country rule of the sign-in services)
 After=nftables.service network-pre.target
 Wants=network-pre.target
 ConditionPathExists=/etc/hostzit/firewall.nft
@@ -8,6 +8,7 @@ ConditionPathExists=/etc/hostzit/firewall.nft
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/sbin/nft -f /etc/hostzit/firewall.nft
+ExecStart=/bin/sh -c "[ ! -f /etc/hostzit/geo.nft ] || /usr/sbin/nft -f /etc/hostzit/geo.nft"
 
 [Install]
 WantedBy=multi-user.target

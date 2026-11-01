@@ -23,6 +23,16 @@
     <div><button class="primary">{{.T "Save"}}</button></div>
   </form>
 </section>
+{{template "geoform" .}}
+{{if $d.GeoSites}}<section class="panel">
+  <h2>{{template "icon" "site"}}{{.T "Websites with a country rule"}}</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Website"}}</th><th>{{.T "Customer"}}</th><th>{{.T "Rule"}}</th></tr></thead>
+    <tbody>{{range $d.GeoSites}}<tr><td>{{.Domain}}</td><td><a href="/customers/{{.CustomerID}}">{{.Account}}</a></td>
+      <td>{{if eq .GeoMode "block"}}{{$.T "Refuse the chosen countries"}}{{else}}{{$.T "Allow only the chosen countries"}}{{end}}: <span class="mono small">{{join .GeoList " "}}</span></td></tr>{{end}}</tbody>
+  </table></div>
+  <p class="small muted">{{.T "Customers set the rule of their own websites; open the customer panel from the customer's page to change it."}}</p>
+</section>{{end}}
 <section class="panel">
   <h2>{{template "icon" "lock"}}{{.T "Blocked addresses"}}</h2>
   {{if $d.F2BErr}}<p class="warn-text small">SSH/SFTP, WordPress: {{$d.F2BErr}}</p>{{end}}

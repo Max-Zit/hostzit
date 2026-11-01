@@ -88,6 +88,10 @@ func (h *Helper) siteApply(ctx context.Context, a siteApplyArgs) (any, error) {
 	if len(a.Index) > 64<<10 {
 		return nil, userErr("the first page is too large")
 	}
+	s.GeoReady = h.geoReady()
+	if s.GeoMode != "" && !s.GeoReady {
+		return nil, userErr("country rules need the country database (the administrator downloads it under Settings → Brute-force protection)")
+	}
 	// The document root is created as the account (never by root inside a home).
 	if _, err := h.files(ctx, filesArgs{Account: s.Account, Req: WorkerReq{Op: "ensure-site", Path: s.DocRoot, Index: a.Index}}); err != nil {
 		return nil, fmt.Errorf("document root: %w", err)

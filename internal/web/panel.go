@@ -195,6 +195,10 @@ type siteData struct {
 	Exclude  string
 	// ACME: free certificates are on; CertValid: a certificate is still in use
 	ACME, CertValid bool
+	// the website's country rule
+	Geo       *geoChoice
+	GeoAction string
+	GeoHelp   string
 }
 
 func (s *Server) showSite(w http.ResponseWriter, r *http.Request, status int, c *store.Customer, x *store.Site, errMsg string) {
@@ -202,6 +206,8 @@ func (s *Server) showSite(w http.ResponseWriter, r *http.Request, status int, c 
 	d := &siteData{S: x, PHP: s.phpVersions(r.Context()), Aliases: strings.Join(x.Aliases, "\n")}
 	d.ACME = s.hostingSettings(r.Context()).ACME != ""
 	d.CertValid = x.CertNotAfter != nil && x.CertNotAfter.After(s.now())
+	d.Geo, d.GeoAction = s.geoChoice(r.Context(), x.GeoMode, x.GeoList), "/sites/"+strconv.FormatInt(x.ID, 10)+"/geo"
+	d.GeoHelp = "Visitors from refused countries get the answer 403 (forbidden). Certificate checks always pass."
 	if p != nil {
 		d.MaxUp = p.Limits.UploadMB
 	}

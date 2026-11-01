@@ -104,6 +104,7 @@
   </form>
   <p class="small muted">{{.T "Visitors of the folder must enter the user name and password. Adding a user that exists changes its password."}}</p>
 </section>
+{{template "geoform" .}}
 
 {{with .Data.Zone}}<p class="small muted">{{$.T "DNS of this domain:"}} <a href="/dns/{{.ID}}">{{.Name}}</a></p>{{end}}
 
