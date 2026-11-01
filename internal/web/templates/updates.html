@@ -7,6 +7,7 @@
 <section class="panel">
   <h2>{{template "icon" "download"}}{{.T "Updates"}}</h2>
   <p>{{.T "Installed version:"}} <b>{{.Data.Current}}</b></p>
+  {{if .Data.Unfinished}}<p class="err-text">{{.T "The last update did not finish: the package is unpacked but not set up. Run dpkg --configure -a on the server as root."}}</p>{{end}}
   <p class="muted small">{{.T "Releases are signed by MaxZit. The server installs only packages whose signature and checksum match; the panel database is saved before every update."}}</p>
   <form method="get" action="/settings/updates"><input type="hidden" name="check" value="1"><button class="secondary">{{template "icon" "refresh"}}{{.T "Check for a new version"}}</button></form>
   {{if .Data.Err}}<p class="err-text mt">{{.Data.Err}}</p>{{end}}

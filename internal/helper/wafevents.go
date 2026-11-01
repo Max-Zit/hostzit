@@ -149,6 +149,12 @@ func (h *Helper) wafEvents(ctx context.Context, a wafEventsArgs) (any, error) {
 	if err != nil {
 		return []WAFEvent{}, nil
 	}
+	// yesterday's log too (rotated each night, compressed only a day later)
+	if h.Sys.Exists(modsecAuditLog + ".1") {
+		if old, err := h.Sys.Run(ctx, nil, "tail", "-c", "4194304", modsecAuditLog+".1"); err == nil {
+			b = append(old, b...)
+		}
+	}
 	return parseAudit(string(b), hosts, a.Max), nil
 }
 

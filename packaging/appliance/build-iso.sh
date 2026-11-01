@@ -60,7 +60,8 @@ cp "$tmp/preseed.cfg" "$tmp/initrd/preseed.cfg"
 
 # Boot menus for BIOS (isolinux) and UEFI (grub): the installation starts
 # by itself after 5 seconds.
-title="HostZit appliance $ver (erases the first disk)"
+# (the BIOS menu cuts labels after about 46 characters)
+title="HostZit $ver (erases the first disk)"
 printf 'path\ninclude menu.cfg\ndefault vesamenu.c32\nprompt 0\ntimeout 50\n' > "$tmp/cd/isolinux/isolinux.cfg"
 cat > "$tmp/cd/isolinux/menu.cfg" <<EOF
 menu hshift 4

@@ -238,7 +238,9 @@ func cleanErr(err error, home string) error {
 // cageArgs are the systemd-run options that put a command into an
 // account's cage and slice, as that account.
 func (h *Helper) cageArgs(account string) []string {
-	return []string{"--quiet", "--wait", "--pipe", "--collect", "--service-type=exec",
+	// a fixed description: without it systemd logs the whole command line,
+	// which may hold a secret (a Git token in a remote address, a password)
+	return []string{"--quiet", "--wait", "--pipe", "--collect", "--service-type=exec", "--description=Command of hosting account " + account,
 		"-p", "User=" + account, "-p", "Group=" + account, "-p", "Slice=" + hosting.SliceName(account),
 		"-p", "RootDirectory=" + hosting.CageDir(account), "-p", "MountAPIVFS=yes", "-p", "BindPaths=-/run/mysqld", "-p", "ProtectProc=invisible", "-p", "ProcSubset=pid",
 		"-p", "PrivateDevices=yes", "-p", "NoNewPrivileges=yes", "-p", "RestrictSUIDSGID=yes", "-p", "CapabilityBoundingSet=",

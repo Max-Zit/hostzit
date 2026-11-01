@@ -28,7 +28,7 @@
 <h2 id="remote">Udaljene rezervne kopije</h2>
 <p>Podešavanja → Udaljene rezervne kopije svake noći šalju svaki aktivan nalog (fajlovi, baze, podešavanja) na SFTP server ili u S3 bucket (Amazon, MinIO, Wasabi, Backblaze B2 …) i čuvaju najnovije kopije po nalogu. Za SFTP dodajte prikazani ključ u <code>~/.ssh/authorized_keys</code> na backup serveru ili unesite lozinku; ključ hosta servera se pamti pri prvom povezivanju. <b>Proveri vezu</b> upisuje i briše probni fajl. Za vraćanje otvorite <b>Udaljene rezervne kopije</b> na stranici korisnika, izaberite kopiju, pa je vratite u Uvozu.</p>
 <h2 id="updates">Ažuriranja</h2>
-<p>Izdanja potpisuje MaxZit. Server instalira izdanje samo ako se potpis i kontrolni zbir slažu; baza panela se prvo sačuva. Sajtovi rade i tokom ažuriranja.</p>
+<p>Izdanja potpisuje MaxZit. Server instalira izdanje samo ako se potpis i kontrolni zbir slažu; baza panela se prvo sačuva. Sajtovi rade i tokom ažuriranja. Konfiguracioni fajlovi koje ste menjali (npr. <code>/etc/logrotate.d/hostzit</code>) ostaju kakvi jesu. Ako se ažuriranje zaustavi na pola, Podešavanja → Ažuriranja to prikazuju: pokrenite <code>dpkg --configure -a</code> kao root.</p>
 
 <h2 id="restore">Obnova panela</h2>
 <p>Na novom serveru: instalirajte HostZit, zaustavite <code>hostzit-server</code>, pokrenite <code>hostzit-server --restore FAJL.hzb</code> (traži se lozinka kopije), pokrenite servis i za svakog korisnika kliknite <b>Podesi ponovo</b>. Fajlovi i baze korisnika dolaze iz njihovih rezervnih kopija.</p>

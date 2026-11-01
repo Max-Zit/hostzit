@@ -254,8 +254,13 @@ func (s *Server) applyZone(ctx context.Context, by string, z *store.Zone) error 
 		return err
 	}
 	list := make([]hosting.Record, 0, len(recs))
+	seen := map[string]bool{}
 	for _, r := range recs {
-		list = append(list, r.Record)
+		// the DNS server refuses the whole change for a record given twice
+		if k := r.Name + " " + r.Type + " " + r.Content; !seen[k] {
+			seen[k] = true
+			list = append(list, r.Record)
+		}
 	}
 	hm := ""
 	if hs.Hostmaster != "" {
@@ -468,6 +473,14 @@ func (s *Server) Run(ctx context.Context) {
 		time.Sleep(2 * time.Second)
 		_ = s.applyFirewall(ctx, "system")
 		_ = s.applyRelay(ctx, "system")
+		// zones the DNS server refused before (e.g. records repaired by an update)
+		if zones, err := s.store.Zones(ctx, 0); err == nil {
+			for _, z := range zones {
+				if !z.Applied {
+					_ = s.applyZone(ctx, "system", z)
+				}
+			}
+		}
 	}()
 	time.AfterFunc(time.Minute, func() { s.collectUsage(ctx) })
 	for {

@@ -346,10 +346,17 @@ func (s *Store) CreateZone(ctx context.Context, customerID int64, name string, r
 	if err != nil {
 		return nil, err
 	}
+	seen := map[string]bool{}
 	for _, r := range recs {
 		c, err := hosting.CleanRecord(r, name)
 		if err != nil {
 			return nil, err
+		}
+		// the DNS server refuses a zone with the same record twice
+		if k := c.Name + " " + c.Type + " " + c.Content; seen[k] {
+			continue
+		} else {
+			seen[k] = true
 		}
 		if _, err := tx.Exec(ctx, `INSERT INTO records(zone_id, name, type, ttl, content, owner) VALUES($1,$2,$3,$4,$5,$6)`, id, c.Name, c.Type, c.TTL, c.Content, r.Owner); err != nil {
 			return nil, err
@@ -399,6 +406,13 @@ func (s *Store) AddRecord(ctx context.Context, z *Zone, r hosting.Record) (int64
 		return 0, errors.New("at most 5000 records per zone")
 	}
 	var id int64
+	err = s.db.QueryRow(ctx, `SELECT id FROM records WHERE zone_id=$1 AND name=$2 AND type=$3 AND content=$4 LIMIT 1`, z.ID, c.Name, c.Type, c.Content).Scan(&id)
+	if err == nil {
+		return id, ErrRecordExists
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return 0, err
+	}
 	err = s.db.QueryRow(ctx, `INSERT INTO records(zone_id, name, type, ttl, content, owner) VALUES($1,$2,$3,$4,$5,$6) RETURNING id`, z.ID, c.Name, c.Type, c.TTL, c.Content, r.Owner).Scan(&id)
 	if err == nil {
 		_, err = s.db.Exec(ctx, `UPDATE zones SET changed_at=$2, applied=false WHERE id=$1`, z.ID, s.now())
@@ -410,6 +424,14 @@ func (s *Store) AddRecord(ctx context.Context, z *Zone, r hosting.Record) (int64
 func (s *Store) UpdateRecord(ctx context.Context, z *Zone, id int64, r hosting.Record) error {
 	c, err := hosting.CleanRecord(r, z.Name)
 	if err != nil {
+		return err
+	}
+	var other int64
+	err = s.db.QueryRow(ctx, `SELECT id FROM records WHERE zone_id=$1 AND name=$2 AND type=$3 AND content=$4 AND id<>$5 LIMIT 1`, z.ID, c.Name, c.Type, c.Content, id).Scan(&other)
+	if err == nil {
+		return ErrRecordExists
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
 		return err
 	}
 	tag, err := s.db.Exec(ctx, `UPDATE records SET name=$3, type=$4, ttl=$5, content=$6 WHERE id=$1 AND zone_id=$2 AND owner=''`, id, z.ID, c.Name, c.Type, c.TTL, c.Content)

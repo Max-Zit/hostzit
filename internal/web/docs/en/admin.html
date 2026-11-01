@@ -28,7 +28,7 @@
 <h2 id="remote">Remote backups</h2>
 <p>Settings → Remote backups uploads every active account (files, databases, settings) each night to an SFTP server or an S3 bucket (Amazon, MinIO, Wasabi, Backblaze B2 …) and keeps the newest copies per account. For SFTP add the shown key to <code>~/.ssh/authorized_keys</code> on the backup server, or enter a password; the server's host key is remembered at the first connection. <b>Test the connection</b> writes and deletes a test file. To restore, open <b>Remote backups</b> on the customer's page, choose a copy and then restore it under Import.</p>
 <h2 id="updates">Updates</h2>
-<p>Releases are signed by MaxZit. The server installs a release only if its signature and checksum match; the panel database is saved first. Websites keep running during an update.</p>
+<p>Releases are signed by MaxZit. The server installs a release only if its signature and checksum match; the panel database is saved first. Websites keep running during an update. Configuration files you changed (e.g. <code>/etc/logrotate.d/hostzit</code>) are kept. If an update stops half-way, Settings → Updates says so: run <code>dpkg --configure -a</code> as root.</p>
 
 <h2 id="restore">Restore the panel</h2>
 <p>On a new server: install HostZit, stop <code>hostzit-server</code>, run <code>hostzit-server --restore FILE.hzb</code> (the passphrase is asked), start the service, then use <b>Set up again</b> for each customer. The customers' files and databases come from their own backups.</p>

@@ -35,6 +35,7 @@ func init() {
 	moreOps = append(moreOps, func(h *Helper) {
 		h.ops["update.check"] = op{handle(h.updateCheck), false}
 		h.ops["update.install"] = op{handle(h.updateInstall), true}
+		h.ops["update.state"] = op{handle(h.updateState), false}
 	})
 }
 

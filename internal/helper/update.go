@@ -92,9 +92,21 @@ func (h *Helper) updateInstall(ctx context.Context, a updateArgs) (any, error) {
 	// dpkg runs in a unit of its own: the package restarts the helper and the
 	// panel, which must not stop the installation itself
 	unit := "hostzit-update-" + strings.ReplaceAll(m.Version, ".", "-")
-	if out, err := h.Sys.Run(ctx, nil, "systemd-run", "--unit="+unit, "--collect", "--on-active=2", "--setenv=DEBIAN_FRONTEND=noninteractive", "dpkg", "-i", pkg); err != nil {
+	// keep configuration files the administrator changed: without
+	// --force-confold dpkg asks, gets no answer and leaves the package
+	// unpacked but not set up
+	if out, err := h.Sys.Run(ctx, nil, "systemd-run", "--unit="+unit, "--collect", "--on-active=2", "--setenv=DEBIAN_FRONTEND=noninteractive",
+		"dpkg", "--force-confdef", "--force-confold", "-i", pkg); err != nil {
 		return nil, fmt.Errorf("install: %v %s", err, tail(string(out), 400))
 	}
 	h.logf("update to %s started (%s)", m.Version, unit)
 	return map[string]string{"version": m.Version, "started": "yes"}, nil
+}
+
+// updateState reports whether the installed package is completely set up
+// (an update that stopped half-way leaves it "unpacked").
+func (h *Helper) updateState(ctx context.Context, _ struct{}) (any, error) {
+	out, err := h.Sys.Run(ctx, nil, "dpkg-query", "-W", "-f=${Status}", "hostzit")
+	st := strings.TrimSpace(string(out))
+	return map[string]bool{"unfinished": err == nil && st != "" && st != "install ok installed"}, nil
 }

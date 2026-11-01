@@ -30,6 +30,8 @@ type updatesData struct {
 	Latest  map[string]any
 	Err     string
 	Current string
+	// Unfinished: the last update stopped before the package was set up
+	Unfinished bool
 }
 
 func (s *Server) updateSettings(ctx context.Context) UpdateSettings {
@@ -41,6 +43,12 @@ func (s *Server) updateSettings(ctx context.Context) UpdateSettings {
 func (s *Server) handleUpdates(w http.ResponseWriter, r *http.Request) {
 	u := s.updateSettings(r.Context())
 	d := &updatesData{U: u, Current: s.Version}
+	var st struct {
+		Unfinished bool `json:"unfinished"`
+	}
+	if s.call(r.Context(), actor(r), "update.state", nil, &st) == nil {
+		d.Unfinished = st.Unfinished
+	}
 	if r.FormValue("check") != "" {
 		ctx, cancel := context.WithTimeout(r.Context(), 90*time.Second)
 		defer cancel()

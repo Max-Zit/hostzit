@@ -48,6 +48,14 @@ func (h *Helper) setup(ctx context.Context, _ struct{}) (any, error) {
 			return nil, err
 		}
 	}
+	// site log folders were 0750 before 0.9.1: nginx could not reopen the logs after a rotation
+	if list, err := h.Sys.ReadDir(hosting.SiteLogDir); err == nil {
+		for _, e := range list {
+			if e.IsDir() {
+				_ = h.Sys.Mkdir(hosting.SiteLogDir+"/"+e.Name(), 0o755, 0, h.admGID())
+			}
+		}
+	}
 	if err := h.Sys.Mkdir(SpoolRoot, 0o711, 0, 0); err != nil {
 		return nil, err
 	}

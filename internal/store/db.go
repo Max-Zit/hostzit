@@ -25,6 +25,9 @@ var ErrNotFound = errors.New("not found")
 // ErrConflict is returned when a unique name is already taken.
 var ErrConflict = errors.New("already exists")
 
+// ErrRecordExists: the zone already has the same DNS record.
+var ErrRecordExists = errors.New("the zone already has this record")
+
 // Store wraps the connection pool.
 type Store struct {
 	db  *pgxpool.Pool

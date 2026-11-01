@@ -511,8 +511,27 @@ func (s *Server) handleTransferCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	d.Version, _ = info["version"].(string)
-	if err := targetCall(ctx, base, d.Token, fp, http.MethodGet, "/api/v1/packages", nil, nil); err != nil {
+	var pk struct {
+		Items []struct {
+			Slug string `json:"slug"`
+		} `json:"items"`
+	}
+	if err := targetCall(ctx, base, d.Token, fp, http.MethodGet, "/api/v1/packages", nil, &pk); err != nil {
 		s.redirectErr(w, r, back, err.Error())
+		return
+	}
+	// the target imports into the package of the same name: say it now,
+	// not after the whole archive went over
+	slugs := make([]string, 0, len(pk.Items))
+	for _, x := range pk.Items {
+		slugs = append(slugs, x.Slug)
+	}
+	if p, err := s.store.PackageByID(r.Context(), c.PackageID); err == nil && !slices.Contains(slugs, p.Slug) {
+		s.redirectErr(w, r, back, translate(s.lang(r, userFrom(r)), "The target has no package %q: create it there first.", p.Slug))
+		return
+	}
+	if targetCall(ctx, base, d.Token, fp, http.MethodGet, "/api/v1/customers/"+c.Username, nil, nil) == nil {
+		s.redirectErr(w, r, back, translate(s.lang(r, userFrom(r)), "The target already has an account %s.", c.Username))
 		return
 	}
 	s.render(w, r, http.StatusOK, "transfer", &Page{Title: "Move to another server", Nav: "customers", Crumb: "Customers", CrumbURL: "/customers", Data: d})

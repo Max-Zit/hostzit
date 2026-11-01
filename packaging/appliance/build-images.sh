@@ -93,7 +93,7 @@ item() { # id type name extra-lines
       <Info>Description</Info>
       <Annotation>HostZit $ver. The panel addresses and the setup token are shown on the screen of the VM after the first start (a few minutes).</Annotation>
     </AnnotationSection>
-    <OperatingSystemSection ovf:id="96" vmw:osType="debian12_64Guest"><Info>Debian Linux (64-bit)</Info></OperatingSystemSection>
+    <OperatingSystemSection ovf:id="96" vmw:osType="debian10_64Guest"><Info>Debian Linux (64-bit)</Info></OperatingSystemSection>
     <VirtualHardwareSection>
       <Info>Virtual hardware</Info>
       <System>

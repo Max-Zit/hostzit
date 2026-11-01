@@ -93,7 +93,9 @@ func (h *Helper) siteApply(ctx context.Context, a siteApplyArgs) (any, error) {
 		return nil, fmt.Errorf("document root: %w", err)
 	}
 	cache, logs, cert := siteDirs(s.ID)
-	if err := h.Sys.Mkdir(logs, 0o750, 0, h.admGID()); err != nil {
+	// 0755 like /var/log/nginx: the nginx workers (www-data) open the logs
+	// again by path after logrotate (USR1)
+	if err := h.Sys.Mkdir(logs, 0o755, 0, h.admGID()); err != nil {
 		return nil, err
 	}
 	if s.TLS && !(h.Sys.Exists(cert+"/fullchain.pem") && h.Sys.Exists(cert+"/privkey.pem")) {
