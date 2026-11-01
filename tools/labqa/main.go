@@ -78,7 +78,7 @@ func (c *client) post(path string, form url.Values) (string, error) {
 		}
 	}
 	for _, m := range flashErr.FindAllStringSubmatch(body, -1) {
-		if !strings.Contains(m[1], "Development mode") {
+		if !strings.Contains(m[1], "--dev-no-2fa") { // the banner of a lab server, in any language
 			return body, fmt.Errorf("POST %s: %s", path, m[1])
 		}
 	}
