@@ -1,0 +1,44 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Settings"}}</h1>
+<div class="settings">
+{{template "settingstabs" .}}
+<div class="settings-body">
+{{$d := .Data}}
+<section class="panel">
+  <h2>{{template "icon" "shield"}}{{.T "Brute-force protection"}}</h2>
+  <p class="muted small">{{.T "An address that fails to sign in too often is blocked. This protects the panels, SSH and SFTP, and the sign-in of every WordPress website."}}</p>
+  <dl class="kv">
+    <dt>{{.T "Panels"}}</dt><dd>{{.T "%d failed sign-ins within %d minutes" $d.X.MaxAttempts $d.X.WindowMinutes}}</dd>
+    <dt>{{.T "SSH and SFTP"}}</dt><dd>{{.T "%d failed sign-ins within %d minutes" $d.X.MaxAttempts $d.X.WindowMinutes}}</dd>
+    <dt>WordPress</dt><dd>{{.T "%d refused sign-in attempts within %d minutes (over 10 a minute from one address)" $d.X.MaxAttempts $d.X.WindowMinutes}}</dd>
+    <dt>{{.T "Block length"}}</dt><dd>{{.T "%d minutes, doubled for every repeated block (up to 7 days)" $d.X.BlockMinutes}}</dd>
+  </dl>
+  <p class="small"><a href="/settings/security">{{.T "Change the limits under Sign-in and security."}}</a></p>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "check"}}{{.T "Never blocked"}}</h2>
+  <form method="post" action="/settings/bruteforce" class="stack">
+    <label><span>{{.T "Addresses and networks"}} <small>{{.T "optional"}}</small></span><textarea name="allow" rows="4" class="mono small" spellcheck="false" placeholder="203.0.113.10&#10;198.51.100.0/24">{{$d.Allow}}</textarea><small>{{.T "One per line, for example your office. They are never blocked by the panels, SSH or WordPress; the server itself is never blocked either."}}</small></label>
+    <div><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+</section>
+<section class="panel">
+  <h2>{{template "icon" "lock"}}{{.T "Blocked addresses"}}</h2>
+  {{if $d.F2BErr}}<p class="warn-text small">SSH/SFTP, WordPress: {{$d.F2BErr}}</p>{{end}}
+  {{if $d.Rows}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Address"}}</th><th>{{.T "Where"}}</th><th>{{.T "Until"}}</th><th class="hide-sm">{{.T "Reason"}}</th><th></th></tr></thead>
+    <tbody>{{range $d.Rows}}<tr>
+      <td><code>{{.IP}}</code></td>
+      <td>{{if eq .Source "panels"}}{{$.T "Panels"}}{{else if eq .Source "ssh"}}{{$.T "SSH and SFTP"}}{{else}}WordPress{{end}}</td>
+      <td>{{$.Time .Until}}</td>
+      <td class="hide-sm muted small">{{if .Reason}}{{.Reason}}{{if gt .Strikes 1}} · {{$.T "%d blocks today" .Strikes}}{{end}}{{else}}{{$.T "since %s" ($.Time .Since)}}{{end}}</td>
+      <td class="actions"><form method="post" action="/settings/bruteforce/unblock"><input type="hidden" name="ip" value="{{.IP}}"><input type="hidden" name="source" value="{{.Source}}"><button class="ghost sm">{{$.T "Unblock"}}</button></form></td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<p class="muted">{{.T "No address is blocked."}}</p>{{end}}
+</section>
+</div>
+</div>
+{{end}}

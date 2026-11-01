@@ -93,6 +93,7 @@ func (h *Helper) siteApply(ctx context.Context, a siteApplyArgs) (any, error) {
 		return nil, fmt.Errorf("document root: %w", err)
 	}
 	cache, logs, cert := siteDirs(s.ID)
+	newLog := !h.Sys.Exists(logs)
 	// 0755 like /var/log/nginx: the nginx workers (www-data) open the logs
 	// again by path after logrotate (USR1)
 	if err := h.Sys.Mkdir(logs, 0o755, 0, h.admGID()); err != nil {
@@ -147,6 +148,9 @@ func (h *Helper) siteApply(ctx context.Context, a siteApplyArgs) (any, error) {
 	}
 	if err := h.nginxApply(ctx, files, remove); err != nil {
 		return nil, err
+	}
+	if newLog {
+		h.bruteNewLog(ctx) // nginx made the log just now
 	}
 	if !s.Cache {
 		_ = h.Sys.RemoveAll(cache)

@@ -52,13 +52,7 @@
 </section>
 <section class="panel">
   <h2>{{.T "Blocked addresses"}}</h2>
-  {{if .Data.Blocks}}
-  <div class="table-wrap"><table>
-    <thead><tr><th>{{.T "Address"}}</th><th>{{.T "Until"}}</th><th class="num">{{.T "Blocks today"}}</th><th class="hide-sm">{{.T "Reason"}}</th><th></th></tr></thead>
-    <tbody>{{range .Data.Blocks}}<tr><td><code>{{.IP}}</code></td><td>{{$.Time .Until}}</td><td class="num">{{.Strikes}}</td><td class="hide-sm muted">{{.Reason}}</td>
-      <td class="actions"><form method="post" action="/settings/security/unblock"><input type="hidden" name="ip" value="{{.IP}}"><button class="ghost sm">{{$.T "Unblock"}}</button></form></td></tr>{{end}}</tbody>
-  </table></div>
-  {{else}}<p class="muted">{{.T "No address is blocked."}}</p>{{end}}
+  <p class="muted small">{{.T "Addresses blocked after failed sign-ins (panels, SSH and SFTP, WordPress) are listed under Brute-force protection."}} <a href="/settings/bruteforce">{{.T "Brute-force protection"}}</a></p>
 </section>
 </div>
 </div>

@@ -51,6 +51,7 @@ var writablePrefixes = []string{
 	"/etc/mysql/mariadb.conf.d/90-hostzit.cnf", "/etc/powerdns/pdns.d/hostzit.conf", "/etc/powerdns/pdns.d/hostzit-secondary.conf", "/etc/php/", "/var/spool/hostzit/",
 	"/etc/systemd/network/50-hostzit.network", "/etc/apt/sources.list.d/hostzit-php-sury.list",
 	"/etc/apt/apt.conf.d/52hostzit-auto-upgrades", "/etc/apt/apt.conf.d/53hostzit-php-restart",
+	"/etc/fail2ban/jail.d/hostzit.conf", "/etc/fail2ban/filter.d/hostzit-wordpress.conf",
 }
 
 func allowedWrite(p string) bool {

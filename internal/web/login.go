@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/max-zit/hostzit/internal/auth"
-	"github.com/max-zit/hostzit/internal/netacl"
 	"github.com/max-zit/hostzit/internal/store"
 )
 
@@ -537,11 +536,6 @@ func (g *loginGuard) settings(ctx context.Context) SecuritySettings {
 	return x
 }
 
-func isLoopback(ip string) bool {
-	a, ok := netacl.AddrOf(ip)
-	return ok && a.IsLoopback()
-}
-
 func prune(list []time.Time, since time.Time) []time.Time {
 	out := list[:0]
 	for _, t := range list {
@@ -553,7 +547,7 @@ func prune(list []time.Time, since time.Time) []time.Time {
 }
 
 func (g *loginGuard) blocked(ctx context.Context, ip string) time.Time {
-	if isLoopback(ip) {
+	if g.exempt(ctx, ip) {
 		return time.Time{}
 	}
 	until, err := g.store.BlockedUntil(ctx, ip)
@@ -577,6 +571,7 @@ func (g *loginGuard) userThrottled(username string) bool {
 
 func (g *loginGuard) fail(ctx context.Context, ip, username, reason string) {
 	cfg := g.settings(ctx)
+	exempt := g.exempt(ctx, ip)
 	since := g.now().Add(-time.Duration(cfg.WindowMinutes) * time.Minute)
 	g.mu.Lock()
 	if username != "" {
@@ -584,7 +579,7 @@ func (g *loginGuard) fail(ctx context.Context, ip, username, reason string) {
 		g.users[k] = append(prune(g.users[k], since), g.now())
 	}
 	var block bool
-	if !isLoopback(ip) {
+	if !exempt {
 		g.ips[ip] = append(prune(g.ips[ip], since), g.now())
 		if len(g.ips[ip]) >= cfg.MaxAttempts {
 			block = true

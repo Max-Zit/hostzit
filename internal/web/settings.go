@@ -13,7 +13,6 @@ import (
 
 type securityData struct {
 	X       SecuritySettings
-	Blocks  []store.Block
 	Blocked string
 	Malware MalwareSettings
 	ClamAV  helper.MalwareStatus
@@ -25,12 +24,7 @@ func (s *Server) handleSecurity(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) showSecurity(w http.ResponseWriter, r *http.Request, status int, x SecuritySettings, errMsg string) {
-	blocks, err := s.store.Blocks(r.Context())
-	if err != nil {
-		s.serverError(w, r, err)
-		return
-	}
-	d := &securityData{X: x, Blocks: blocks, Blocked: strings.Join(s.blockedList(r.Context()), "\n"), Malware: s.malwareSettings(r.Context())}
+	d := &securityData{X: x, Blocked: strings.Join(s.blockedList(r.Context()), "\n"), Malware: s.malwareSettings(r.Context())}
 	_ = s.call(r.Context(), "system", "malware.status", struct{}{}, &d.ClamAV)
 	if in, err := s.serverInfo(r.Context()); err == nil {
 		d.WAF = in.WAF
@@ -74,6 +68,8 @@ func (s *Server) handleSecuritySave(w http.ResponseWriter, r *http.Request) {
 	}
 	s.audit(r, "settings.security", "settings", "sessions %dh, idle %dmin; block after %d failures in %dmin for %dmin",
 		x.SessionHours, x.IdleMinutes, x.MaxAttempts, x.WindowMinutes, x.BlockMinutes)
+	// fail2ban (SSH/SFTP, WordPress) uses the same limits
+	_ = s.applyBrute(r.Context(), actor(r))
 	s.redirect(w, r, "/settings/security", "Saved.")
 }
 

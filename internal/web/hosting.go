@@ -473,6 +473,7 @@ func (s *Server) Run(ctx context.Context) {
 		time.Sleep(2 * time.Second)
 		_ = s.applyFirewall(ctx, "system")
 		_ = s.applyRelay(ctx, "system")
+		_ = s.applyBrute(ctx, "system")
 		// zones the DNS server refused before (e.g. records repaired by an update)
 		if zones, err := s.store.Zones(ctx, 0); err == nil {
 			for _, z := range zones {
