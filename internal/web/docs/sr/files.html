@@ -11,4 +11,5 @@
 <p><b>Zakazani poslovi</b> pokreću komande po rasporedu u cron sintaksi (<code>*/15 * * * *</code> na 15 minuta, <code>0 3 * * *</code> svaki dan u 3:00, <code>@hourly</code>). Rade kao vaš nalog, u vašem okruženju i sa vašim ograničenjima; <b>Pokreni sada</b> odmah pokreće posao, a izlaz se čuva u njegovom logu.</p>
 
 <h2 id="backups">Rezervne kopije</h2>
+<p><b>Tačke vraćanja</b>: kada su noćni bekapi servera uključeni, svake noći se čuva vaš nalog (svi fajlovi, svaka baza, DNS zone i zakazani poslovi). Otvorite tačku vraćanja da pregledate fajlove i foldere i vratite nešto <b>na svoje mesto</b> (prepisuje trenutnu verziju) ili <b>u folder</b> <code>~/restored-DATUM</code> (kopija da prvo uporedite); vratite bazu (tabele se zamenjuju; baza mora da postoji), DNS zapise zone ili zakazane poslove. <b>Napravi tačku vraćanja sada</b> odmah čuva nalog (najviše jednom na sat).</p>
 <p><b>Napravi rezervnu kopiju</b> čuva sve fajlove, sve baze i podešavanja sajtova, zona i poslova u <code>~/backups/hostzit-DATUM.tar.gz</code>. Računa se u vaš prostor; preuzmite je SFTP-om i brišite stare.</p>

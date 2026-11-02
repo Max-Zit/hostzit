@@ -1,0 +1,43 @@
+{{template "app" .}}
+{{define "content"}}
+{{$d := .Data}}
+<h1>{{.T "Restore point of %s" (.Time $d.Time)}}</h1>
+<p class="muted small">{{.T "Put back what you need. Restoring into its place overwrites the current version; restoring into a folder puts a copy into restored-DATE in your home, so you can compare first."}}</p>
+<section class="panel">
+  <div class="titlebar"><h2>{{template "icon" "folder"}}{{.T "Files and folders"}}</h2>
+    <details class="pop right"><summary class="btn secondary sm">{{template "icon" "refresh"}}{{if $d.Path}}{{.T "Restore this folder"}}{{else}}{{.T "Restore all files"}}{{end}}</summary><div class="pop-body">
+      <form method="post" action="/backups/points/{{$d.ID}}/files" class="stack"><input type="hidden" name="path" value="{{$d.Path}}"><label class="check"><input type="radio" name="to" value="folder" checked><span>{{$.T "Into a folder restored-DATE (a copy)"}}</span></label><label class="check"><input type="radio" name="to" value="place"><span>{{$.T "Into its place (overwrites the current files)"}}</span></label><div><button class="primary sm">{{$.T "Restore"}}</button></div></form>
+    </div></details></div>
+  <p class="small mono"><a href="/backups/points/{{$d.ID}}">~</a>{{range $d.Crumbs}} / <a href="/backups/points/{{$d.ID}}?path={{.Path}}">{{.Name}}</a>{{end}}</p>
+  {{if $d.Err}}<p class="warn-text small">{{$d.Err}}</p>{{end}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Name"}}</th><th class="num hide-sm">{{.T "Size"}}</th><th class="hide-sm">{{.T "Changed"}}</th><th></th></tr></thead>
+    <tbody>{{range $d.Entries}}{{$p := .Name}}{{if $d.Path}}{{$p = printf "%s/%s" $d.Path .Name}}{{end}}<tr>
+      <td>{{if .Dir}}<a href="/backups/points/{{$d.ID}}?path={{$p}}">{{template "icon" "folder"}} <b>{{.Name}}</b></a>{{else}}{{template "icon" "file"}} {{.Name}}{{end}}</td>
+      <td class="num hide-sm">{{if not .Dir}}{{bytes .Size}}{{end}}</td>
+      <td class="hide-sm small muted">{{$.Time .MTime}}</td>
+      <td class="actions"><details class="pop right"><summary class="btn ghost sm">{{template "icon" "refresh"}}{{$.T "Restore"}}</summary><div class="pop-body">
+        <form method="post" action="/backups/points/{{$d.ID}}/files" class="stack"><input type="hidden" name="path" value="{{$p}}"><label class="check"><input type="radio" name="to" value="folder" checked><span>{{$.T "Into a folder restored-DATE (a copy)"}}</span></label><label class="check"><input type="radio" name="to" value="place"><span>{{$.T "Into its place (overwrites the current files)"}}</span></label><div><button class="primary sm">{{$.T "Restore"}}</button></div></form>
+      </div></details></td>
+    </tr>{{else}}<tr><td colspan="4" class="muted">{{.T "The folder is empty."}}</td></tr>{{end}}</tbody>
+  </table></div>
+</section>
+{{if not $d.Path}}
+<section class="panel">
+  <h2>{{template "icon" "database"}}{{.T "Databases"}}</h2>
+  {{if $d.DBs}}
+  <div class="table-wrap"><table><tbody>{{range $d.DBs}}<tr><td class="mono">{{.Name}}</td>
+    <td class="actions">{{if .Exists}}<form method="post" action="/backups/points/{{$d.ID}}/db" data-confirm="{{$.T "Restore the database %s? Its current tables are replaced by those of the restore point." .Name}}"><input type="hidden" name="db" value="{{.Name}}"><button class="secondary sm">{{template "icon" "refresh"}}{{$.T "Restore"}}</button></form>
+    {{else}}<span class="small muted">{{$.T "create the database again first"}}</span>{{end}}</td></tr>{{end}}</tbody></table></div>
+  {{else}}<p class="muted small">{{.T "No databases in this restore point."}}</p>{{end}}
+</section>
+<section class="panel">
+  <h2>{{template "icon" "network"}}{{.T "DNS zones and scheduled jobs"}}</h2>
+  {{if $d.Zones}}<div class="table-wrap"><table><tbody>{{range $d.Zones}}<tr><td>{{.}}</td>
+    <td class="actions"><form method="post" action="/backups/points/{{$d.ID}}/zone" data-confirm="{{$.T "Restore the DNS records of %s? The current records are replaced." .}}"><input type="hidden" name="zone" value="{{.}}"><button class="secondary sm">{{template "icon" "refresh"}}{{$.T "Restore records"}}</button></form></td></tr>{{end}}</tbody></table></div>{{end}}
+  <div class="row mt"><span>{{.T "Scheduled jobs in this restore point: %d" $d.Cron}}</span>
+    <form method="post" action="/backups/points/{{$d.ID}}/cron" data-confirm="{{.T "Replace your scheduled jobs with those of the restore point?"}}"><button class="secondary sm">{{template "icon" "refresh"}}{{.T "Restore scheduled jobs"}}</button></form></div>
+</section>
+{{end}}
+{{end}}
+

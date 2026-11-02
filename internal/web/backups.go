@@ -111,6 +111,10 @@ func (s *Server) backupRequestFor(ctx context.Context, c *store.Customer, transf
 
 type backupsData struct {
 	Files []helper.FileInfo
+	// the restore points of the server's backups
+	PointsOn  bool
+	Points    []helper.RestorePoint
+	PointsErr string
 }
 
 func (s *Server) handleBackups(w http.ResponseWriter, r *http.Request) {
@@ -125,6 +129,10 @@ func (s *Server) handleBackups(w http.ResponseWriter, r *http.Request) {
 				d.Files = append(d.Files, f)
 			}
 		}
+	}
+	var err error
+	if d.Points, d.PointsOn, err = s.restorePoints(r.Context(), c); err != nil {
+		d.PointsErr = storeErr(err)
 	}
 	s.render(w, r, http.StatusOK, "backups", &Page{Title: "Backups", Nav: "backups", Customer: c, Data: d})
 }

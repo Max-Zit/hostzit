@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -386,7 +387,11 @@ func (s *Server) handleCustomerLoginAs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.audit(r, "customer.login-as", "customer:"+c.Username, "administrator opened the customer panel")
-	http.Redirect(w, r, s.panelURL(r.Context(), r)+"/sso/"+tok, http.StatusSeeOther)
+	dst := s.panelURL(r.Context(), r) + "/sso/" + tok
+	if next := r.FormValue("next"); strings.HasPrefix(next, "/backups") {
+		dst += "?next=" + url.QueryEscape(next)
+	}
+	http.Redirect(w, r, dst, http.StatusSeeOther)
 }
 
 func (s *Server) handleCustomerDelete(w http.ResponseWriter, r *http.Request) {

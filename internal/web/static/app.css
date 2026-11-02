@@ -942,3 +942,4 @@ td.actions > form:first-child, td.actions > a.btn:first-child, td.actions > deta
 td.actions > form + form { display: block; margin-left: 0; margin-top: 4px; }
 td.actions > form + form:not(:only-of-type) { text-align: right; }
 .geo-chips { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+[data-dest][hidden] { display: none; }

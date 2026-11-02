@@ -263,3 +263,15 @@ document.addEventListener("DOMContentLoaded", function () {
     draw();
   });
 });
+
+// Backup destination: only the fields of the chosen kind.
+document.addEventListener("DOMContentLoaded", function () {
+  "use strict";
+  var sel = document.querySelector("select[name=type]");
+  if (!sel || !document.querySelector("[data-dest]")) return;
+  var show = function () {
+    document.querySelectorAll("[data-dest]").forEach(function (el) { el.hidden = el.getAttribute("data-dest") !== sel.value; });
+  };
+  sel.addEventListener("change", show);
+  show();
+});

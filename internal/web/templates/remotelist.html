@@ -1,8 +1,18 @@
 {{template "app" .}}
 {{define "content"}}
 {{$c := .Data.C}}
-<h1>{{.T "Remote backups"}} <span class="mono">{{$c.Username}}</span></h1>
+<h1>{{.T "Restore points"}} <span class="mono">{{$c.Username}}</span></h1>
 <section class="panel">
+  <div class="titlebar"><h2>{{template "icon" "clock"}}{{.T "Restore points"}}</h2>{{if .Data.PointsOn}}<form method="post" action="/customers/{{$c.ID}}/remote-backups/now"><button class="secondary sm">{{template "icon" "plus"}}{{.T "Make a restore point now"}}</button></form>{{end}}</div>
+  {{if not .Data.PointsOn}}<p class="muted small">{{.T "Switch the backups on under Settings → Backups."}}</p>{{else}}
+  {{with .Data.PointsErr}}<p class="warn-text small">{{$.T .}}</p>{{end}}
+  <p class="muted small">{{.T "Restores are made in the customer panel: Open opens the restore point there (signed in as the customer)."}}</p>
+  {{if .Data.Points}}<div class="table-wrap"><table><tbody>{{range .Data.Points}}<tr><td><b>{{$.Time .Time}}</b></td><td class="num hide-sm">{{if .Bytes}}{{bytes .Bytes}}{{end}}</td>
+    <td class="actions"><form method="post" action="/customers/{{$c.ID}}/login"><input type="hidden" name="next" value="/backups/points/{{.ID}}"><button class="secondary sm">{{template "icon" "folder"}}{{$.T "Open"}}</button></form></td></tr>{{end}}</tbody></table></div>
+  {{else}}<p class="muted">{{.T "No restore points yet: the first one is made tonight."}}</p>{{end}}{{end}}
+</section>
+<section class="panel">
+  <h2>{{template "icon" "upload"}}{{.T "Older archives"}}</h2>
   <p class="muted small">{{.T "Restoring fetches the copy into the import folder; then choose it under Import. The account is set up again from the copy (files, databases, settings)."}}</p>
   {{if .Data.Files}}
   <div class="table-wrap"><table>

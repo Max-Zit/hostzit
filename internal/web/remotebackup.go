@@ -33,7 +33,9 @@ type RemoteBackup struct {
 	// in Dest.Key).
 	PublicKey string    `json:"public_key"`
 	Hour      int       `json:"hour"`
-	Keep      int       `json:"keep"`
+	Keep      int       `json:"keep"` // daily restore points
+	KeepWeek  int       `json:"keep_weekly"`
+	KeepMonth int       `json:"keep_monthly"`
 	LastRun   time.Time `json:"last_run"`
 	LastOK    int       `json:"last_ok"`
 	LastFail  int       `json:"last_fail"`
@@ -42,7 +44,7 @@ type RemoteBackup struct {
 }
 
 func (s *Server) remoteBackup(ctx context.Context) RemoteBackup {
-	rb := RemoteBackup{Hour: 2, Keep: 7, Dest: helper.RemoteDest{Type: "sftp", Port: 22, Path: "hostzit"}}
+	rb := RemoteBackup{Hour: 2, Keep: 7, KeepWeek: 4, KeepMonth: 3, Dest: helper.RemoteDest{Type: "local", Port: 22, Path: "/var/backups/hostzit"}}
 	_ = s.store.GetSetting(ctx, settingRemoteBackup, &rb)
 	return rb
 }
@@ -70,8 +72,10 @@ func init() {
 		admin("POST /settings/remote-backup", s.handleRemoteBackupSave)
 		admin("POST /settings/remote-backup/test", s.handleRemoteBackupTest)
 		admin("POST /settings/remote-backup/run", s.handleRemoteBackupRun)
+		admin("POST /settings/remote-backup/key", s.handleRemoteBackupKey)
 		admin("GET /customers/{id}/remote-backups", s.handleRemoteBackupList)
 		admin("POST /customers/{id}/remote-backups/fetch", s.handleRemoteBackupFetch)
+		admin("POST /customers/{id}/remote-backups/now", s.handleAdminPointNow)
 	})
 }
 
@@ -79,13 +83,14 @@ type remoteBackupData struct {
 	R           RemoteBackup
 	HasPassword bool
 	HasSecret   bool
+	Key         string // the repository key, when asked for
 }
 
 func (s *Server) handleRemoteBackup(w http.ResponseWriter, r *http.Request) {
 	rb := s.remoteBackup(r.Context())
 	d := &remoteBackupData{R: rb, HasPassword: rb.Dest.Password != "", HasSecret: rb.Dest.SecretKey != ""}
 	d.R.Dest.Password, d.R.Dest.SecretKey, d.R.Dest.Key = "", "", ""
-	p := &Page{Title: "Remote backups", Nav: "settings", Data: d}
+	p := &Page{Title: "Backups", Nav: "settings", Data: d}
 	if rb.Running {
 		p.Refresh = 20
 	}
@@ -103,9 +108,16 @@ func (s *Server) handleRemoteBackupSave(w http.ResponseWriter, r *http.Request) 
 	if d.Port == 0 {
 		d.Port = 22
 	}
-	if d.Type != "sftp" && d.Type != "s3" {
-		s.redirectErr(w, r, "/settings/remote-backup", "Choose SFTP or S3.")
+	if d.Type != "sftp" && d.Type != "s3" && d.Type != "local" {
+		s.redirectErr(w, r, "/settings/remote-backup", "Choose a folder on this server, SFTP or S3.")
 		return
+	}
+	if d.Type == "local" {
+		d.Path = "/" + d.Path
+		if d.Path == "/" || strings.HasPrefix(d.Path, "/home") {
+			s.redirectErr(w, r, "/settings/remote-backup", "Choose another folder for the backups (not / or /home).")
+			return
+		}
 	}
 	if d.Endpoint != "" && !strings.HasPrefix(d.Endpoint, "https://") && !strings.HasPrefix(d.Endpoint, "http://") {
 		s.redirectErr(w, r, "/settings/remote-backup", "The address must start with https://")
@@ -146,6 +158,8 @@ func (s *Server) handleRemoteBackupSave(w http.ResponseWriter, r *http.Request) 
 	rb.Enabled = r.FormValue("enabled") != ""
 	rb.Hour = min(max(formInt(r, "hour"), 0), 23)
 	rb.Keep = min(max(formInt(r, "keep"), 1), 365)
+	rb.KeepWeek = min(max(formInt(r, "keep_weekly"), 0), 104)
+	rb.KeepMonth = min(max(formInt(r, "keep_monthly"), 0), 120)
 	if err := s.store.SetSetting(r.Context(), settingRemoteBackup, rb); err != nil {
 		s.serverError(w, r, err)
 		return
@@ -161,30 +175,43 @@ func (s *Server) handleRemoteBackupTest(w http.ResponseWriter, r *http.Request) 
 		s.serverError(w, r, err)
 		return
 	}
-	var res struct {
-		HostKey string `json:"host_key"`
-	}
-	err = s.call(r.Context(), actor(r), "backup.remote.test", map[string]any{"dest": d}, &res)
-	if res.HostKey != "" && rb.Dest.HostKey == "" {
-		rb.Dest.HostKey = res.HostKey
-		_ = s.store.SetSetting(r.Context(), settingRemoteBackup, rb)
-	}
-	if err != nil {
+	// installs restic when needed and creates the repository
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Minute)
+	defer cancel()
+	if err := s.call(ctx, actor(r), "rbackup.init", map[string]any{"dest": d}, nil); err != nil {
 		s.redirectErr(w, r, "/settings/remote-backup", storeErr(err))
 		return
 	}
-	s.redirect(w, r, "/settings/remote-backup", "The connection works: a test file was written and deleted.")
+	s.redirect(w, r, "/settings/remote-backup", "The connection works and the backup repository is ready.")
 }
 
 func (s *Server) handleRemoteBackupRun(w http.ResponseWriter, r *http.Request) {
 	go s.remoteBackupRound(context.WithoutCancel(r.Context()), true)
-	s.audit(r, "backup.remote", "server", "remote backup of all accounts started")
+	s.audit(r, "backup.remote", "server", "backup of all accounts started")
 	s.redirect(w, r, "/settings/remote-backup", "The backup was started. It runs in the background; this page shows the result.")
+}
+
+// handleRemoteBackupKey shows the repository key: needed to restore the
+// backups on another server when this one is lost.
+func (s *Server) handleRemoteBackupKey(w http.ResponseWriter, r *http.Request) {
+	var res struct {
+		Key string `json:"key"`
+	}
+	if err := s.call(r.Context(), actor(r), "rbackup.key", nil, &res); err != nil {
+		s.redirectErr(w, r, "/settings/remote-backup", storeErr(err))
+		return
+	}
+	s.audit(r, "backup.key", "settings", "backup repository key shown")
+	rb := s.remoteBackup(r.Context())
+	d := &remoteBackupData{R: rb, HasPassword: rb.Dest.Password != "", HasSecret: rb.Dest.SecretKey != "", Key: res.Key}
+	d.R.Dest.Password, d.R.Dest.SecretKey, d.R.Dest.Key = "", "", ""
+	s.render(w, r, http.StatusOK, "remotebackup", &Page{Title: "Backups", Nav: "settings", Data: d})
 }
 
 var remoteBackupMu sync.Mutex
 
-// remoteBackupRound backs up every active account when it is time (or now).
+// remoteBackupRound makes a restore point of every active account when it
+// is time (or now), then removes the ones beyond the retention.
 func (s *Server) remoteBackupRound(ctx context.Context, now bool) {
 	if !remoteBackupMu.TryLock() {
 		return
@@ -200,37 +227,42 @@ func (s *Server) remoteBackupRound(ctx context.Context, now bool) {
 	}
 	rb.Running, rb.LastRun, rb.LastOK, rb.LastFail, rb.LastError = true, s.now(), 0, 0, ""
 	_ = s.store.SetSetting(ctx, settingRemoteBackup, rb)
+	finish := func() {
+		rb.Running = false
+		_ = s.store.SetSetting(ctx, settingRemoteBackup, rb)
+		_ = s.store.Audit(ctx, "system", "local", "backup.remote", "server", fmt.Sprintf("backups: %d done, %d failed", rb.LastOK, rb.LastFail))
+		if rb.LastFail > 0 {
+			s.notify(ctx, "remote-backup", nil, "Backups failed", fmt.Sprintf("%d of %d accounts could not be backed up. Last error: %s", rb.LastFail, rb.LastOK+rb.LastFail, rb.LastError))
+		}
+	}
+	if err := s.call(ctx, "system", "rbackup.init", map[string]any{"dest": dest}, nil); err != nil {
+		rb.LastFail, rb.LastError = 1, storeErr(err)
+		finish()
+		return
+	}
 	customers, _ := s.store.Customers(ctx, store.CustomerFilter{Status: store.StatusActive})
 	for _, c := range customers {
-		name, dbs, manifest := s.backupRequest(ctx, c)
-		var res struct {
-			HostKey string `json:"host_key"`
-		}
-		cctx, cancel := context.WithTimeout(ctx, 6*time.Hour)
-		err := s.call(cctx, "system", "backup.remote", map[string]any{"account": c.Username, "name": name, "dbs": dbs, "manifest": manifest, "dest": dest, "keep": rb.Keep}, &res)
-		cancel()
-		if res.HostKey != "" && dest.HostKey == "" {
-			dest.HostKey, rb.Dest.HostKey = res.HostKey, res.HostKey
-		}
-		if err != nil {
+		if err := s.backupPoint(ctx, "system", dest, c); err != nil {
 			rb.LastFail++
 			rb.LastError = c.Username + ": " + storeErr(err)
-			_ = s.store.Audit(ctx, "system", "local", "backup.remote", "customer:"+c.Username, "remote backup failed: "+storeErr(err))
+			_ = s.store.Audit(ctx, "system", "local", "backup.remote", "customer:"+c.Username, "backup failed: "+storeErr(err))
 		} else {
 			rb.LastOK++
 		}
 	}
-	rb.Running = false
-	_ = s.store.SetSetting(ctx, settingRemoteBackup, rb)
-	_ = s.store.Audit(ctx, "system", "local", "backup.remote", "server", fmt.Sprintf("remote backups: %d done, %d failed", rb.LastOK, rb.LastFail))
-	if rb.LastFail > 0 {
-		s.notify(ctx, "remote-backup", nil, "Remote backups failed", fmt.Sprintf("%d of %d accounts could not be backed up. Last error: %s", rb.LastFail, rb.LastOK+rb.LastFail, rb.LastError))
+	if err := s.call(ctx, "system", "rbackup.forget", map[string]any{"dest": dest, "daily": rb.Keep, "weekly": rb.KeepWeek, "monthly": rb.KeepMonth}, nil); err != nil {
+		rb.LastError = "retention: " + storeErr(err)
+		rb.LastFail++
 	}
+	finish()
 }
 
 type remoteListData struct {
-	C     *store.Customer
-	Files []remoteFile
+	C         *store.Customer
+	Files     []remoteFile
+	PointsOn  bool
+	Points    []helper.RestorePoint
+	PointsErr string
 }
 
 type remoteFile struct {
@@ -245,6 +277,10 @@ func (s *Server) handleRemoteBackupList(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	d := &remoteListData{C: c}
+	var perr error
+	if d.Points, d.PointsOn, perr = s.restorePoints(r.Context(), c); perr != nil {
+		d.PointsErr = storeErr(perr)
+	}
 	p := &Page{Title: c.Username, Nav: "customers", Crumb: "Customers", CrumbURL: "/customers", Data: d}
 	dest, err := s.openDest(s.remoteBackup(r.Context()))
 	if err == nil {
@@ -278,4 +314,27 @@ func (s *Server) handleRemoteBackupFetch(w http.ResponseWriter, r *http.Request)
 	}
 	s.audit(r, "backup.remote.fetch", "customer:"+c.Username, "fetched %s into the import folder", r.FormValue("key"))
 	s.redirect(w, r, "/import", "The backup was fetched into the import folder; restore it here.")
+}
+
+// handleAdminPointNow makes a restore point of one account now.
+func (s *Server) handleAdminPointNow(w http.ResponseWriter, r *http.Request) {
+	c := s.loadCustomer(w, r)
+	if c == nil {
+		return
+	}
+	back := fmt.Sprintf("/customers/%d/remote-backups", c.ID)
+	d, ok := s.rbDest(r.Context())
+	if !ok {
+		s.redirectErr(w, r, back, "The server's backups are switched off.")
+		return
+	}
+	by := actor(r)
+	if _, err := s.runJob("backup.point", &c.ID, c.Username, func(ctx context.Context) error {
+		return s.backupPoint(ctx, by, d, c)
+	}); err != nil {
+		s.redirectErr(w, r, back, storeErr(err))
+		return
+	}
+	s.audit(r, "backup.point", "customer:"+c.Username, "restore point requested by an administrator")
+	s.redirect(w, r, back, "The restore point is being made; it appears here in a few minutes.")
 }

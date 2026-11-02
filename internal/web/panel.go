@@ -56,7 +56,7 @@ func (s *Server) handleSSO(w http.ResponseWriter, r *http.Request) {
 	s.setSessionCookie(w, r, tok, life)
 	_ = s.store.MarkLogin(r.Context(), u.ID)
 	s.auditAs(r, u.Username, "login.sso", "user:"+u.Username, "signed in with a one-time link from %s", by)
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, safeNext(r.URL.Query().Get("next")), http.StatusSeeOther) // #nosec G710 -- safeNext keeps only local paths
 }
 
 // ---- home

@@ -657,3 +657,38 @@ func truncate(s string, n int) string {
 	}
 	return strings.ToValidUTF8(s[:n], "") + "…"
 }
+
+// ReplaceRecords replaces the customer's own records of a zone (records of
+// other owners, such as EmailZit, stay); a restore of the zone.
+func (s *Store) ReplaceRecords(ctx context.Context, z *Zone, recs []hosting.Record) error {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, `DELETE FROM records WHERE zone_id=$1 AND owner=''`, z.ID); err != nil {
+		return err
+	}
+	seen := map[string]bool{}
+	for _, r := range recs {
+		if r.Owner != "" {
+			continue
+		}
+		c, err := hosting.CleanRecord(r, z.Name)
+		if err != nil {
+			return err
+		}
+		if k := c.Name + " " + c.Type + " " + c.Content; seen[k] {
+			continue
+		} else {
+			seen[k] = true
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO records(zone_id, name, type, ttl, content, owner) VALUES($1,$2,$3,$4,$5,'')`, z.ID, c.Name, c.Type, c.TTL, c.Content); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec(ctx, `UPDATE zones SET changed_at=$2, applied=false WHERE id=$1`, z.ID, s.now()); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}

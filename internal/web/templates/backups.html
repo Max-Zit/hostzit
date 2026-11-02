@@ -1,8 +1,26 @@
 {{template "app" .}}
 {{define "content"}}
-<div class="pagehead"><h1>{{.T "Backups"}}</h1><form method="post" action="/backups"><button class="primary">{{template "icon" "plus"}}{{.T "Make a backup now"}}</button></form></div>
-<p class="muted small">{{.T "A backup holds all files of your account, all databases and the settings of your websites, DNS zones and scheduled jobs. It is stored in the folder backups of your account (it counts against your disk space); download it with SFTP or the file manager."}}</p>
+{{$d := .Data}}
+<h1>{{.T "Backups"}}</h1>
+<section class="panel" id="points">
+  <div class="titlebar"><h2>{{template "icon" "clock"}}{{.T "Restore points"}}</h2>
+    {{if $d.PointsOn}}<form method="post" action="/backups/now"><button class="secondary sm">{{template "icon" "plus"}}{{.T "Make a restore point now"}}</button></form>{{end}}</div>
+  {{if not $d.PointsOn}}<p class="muted small">{{.T "The server's nightly backups are not switched on. Ask your provider, or make a backup to download below."}}</p>
+  {{else}}
+  <p class="muted small">{{.T "Every night the server saves your account: all files, every database, the DNS zones and the scheduled jobs. Open a restore point to put back a single file, a folder, a database or everything."}}</p>
+  {{if $d.PointsErr}}<p class="warn-text small">{{.T $d.PointsErr}}</p>{{end}}
+  {{if $d.Points}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Restore point"}}</th><th class="num hide-sm">{{.T "Size"}}</th><th></th></tr></thead>
+    <tbody>{{range $d.Points}}<tr><td><a href="/backups/points/{{.ID}}"><b>{{$.Time .Time}}</b></a></td><td class="num hide-sm">{{if .Bytes}}{{bytes .Bytes}}{{else}}—{{end}}</td>
+      <td class="actions"><a class="btn ghost sm" href="/backups/points/{{.ID}}">{{template "icon" "folder"}}{{$.T "Open"}}</a></td></tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<p class="muted">{{.T "No restore points yet: the first one is made tonight."}}</p>{{end}}
+  {{end}}
+</section>
 <section class="panel">
+  <div class="titlebar"><h2>{{template "icon" "download"}}{{.T "Backups to download"}}</h2><form method="post" action="/backups"><button class="secondary sm">{{template "icon" "plus"}}{{.T "Make a backup now"}}</button></form></div>
+  <p class="muted small">{{.T "A backup holds all files of your account, all databases and the settings of your websites, DNS zones and scheduled jobs. It is stored in the folder backups of your account (it counts against your disk space); download it with SFTP or the file manager."}}</p>
   {{if .Data.Files}}
   <div class="table-wrap"><table>
     <thead><tr><th>{{.T "File"}}</th><th class="num">{{.T "Size"}}</th><th class="hide-sm">{{.T "Made"}}</th><th></th></tr></thead>
