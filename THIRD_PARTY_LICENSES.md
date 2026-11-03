@@ -15,6 +15,7 @@ Its programs contain the following components under their own licenses, all comp
 | github.com/jackc/puddle/v2 | v2.2.2 | MIT |
 | github.com/kr/fs | v0.1.0 | BSD-3-Clause |
 | github.com/lib/pq | v1.10.9 | MIT |
+| github.com/oschwald/maxminddb-golang/v2 | v2.9.0 | ISC |
 | github.com/pkg/sftp | v1.13.12 | BSD-2-Clause |
 | github.com/xi2/xz | v0.0.0-20171230120015-48954b6210f8 | Public domain |
 | golang.org/x/crypto | v0.58.0 | BSD-3-Clause |
@@ -652,6 +653,26 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+## github.com/oschwald/maxminddb-golang/v2 v2.9.0 (ISC)
+
+```
+ISC License
+
+Copyright (c) 2015, Gregory J. Oschwald <oschwald@gmail.com>
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
 ```
 
 ## github.com/pkg/sftp v1.13.12 (BSD-2-Clause)
