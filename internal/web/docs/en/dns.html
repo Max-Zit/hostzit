@@ -17,7 +17,7 @@
 192.0.2.10</pre>
 <p>Only these addresses may transfer the zones (AXFR), and each of them is notified of every change. Add every name server's name under <b>Name servers</b> as well (<code>ns1</code>, <code>ns2</code>, <code>ns3</code> …) with glue records at the registrar.</p>
 <h2 id="dns-only">DNS-only servers</h2>
-<p>Like cPanel's DNSOnly, the other name servers can be small Debian 12 or 13 servers that run only PowerDNS (1 CPU, 512 MB are enough). Adding one:</p>
+<p>The other name servers can be small Debian 12 or 13 servers that run only PowerDNS (1 CPU, 512 MB are enough). Adding one:</p>
 <ol>
   <li>Enter its IP address under Secondary name servers (one per line) and save.</li>
   <li>Run the command the page then shows on the new server as root — the same command on every DNS-only server, for example:</li>

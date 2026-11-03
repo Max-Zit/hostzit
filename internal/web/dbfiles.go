@@ -52,7 +52,7 @@ func (s *Server) handleDatabases(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleDatabaseCreate makes a database and, by default, a user of the
-// same name with a generated password (shown once), like cPanel's wizard.
+// same name with a generated password (shown once).
 func (s *Server) handleDatabaseCreate(w http.ResponseWriter, r *http.Request) {
 	c := s.me(w, r)
 	if c == nil {

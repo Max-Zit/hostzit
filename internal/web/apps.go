@@ -13,8 +13,7 @@ import (
 	"github.com/max-zit/hostzit/internal/store"
 )
 
-// Node.js and Python applications in the customer panel (like cPanel's
-// "Setup Node.js App" / "Setup Python App").
+// Node.js and Python applications in the customer panel.
 
 func init() {
 	customerExtra = append(customerExtra, func(s *Server, mux *http.ServeMux, c func(string, http.HandlerFunc)) {

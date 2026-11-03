@@ -12,7 +12,7 @@ import (
 	"github.com/max-zit/hostzit/internal/store"
 )
 
-// Settings → Brute-force protection (like cPanel's cPHulk): one list of
+// Settings → Brute-force protection: one list of
 // every blocked address — the panels' own sign-in blocks and fail2ban's
 // SSH/SFTP and WordPress bans — and addresses that are never blocked.
 

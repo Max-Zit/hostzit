@@ -14,7 +14,7 @@ import (
 	"github.com/max-zit/hostzit/internal/store"
 )
 
-// Restore points (like JetBackup): the nightly backups of the server are
+// Restore points: the nightly backups of the server are
 // restic snapshots per account. Customers (and administrators through the
 // customer panel) list them, browse the files and put back files and
 // folders, databases, DNS zones and scheduled jobs.

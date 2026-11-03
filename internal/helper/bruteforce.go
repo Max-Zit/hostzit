@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// Brute-force protection like cPanel's cPHulk: the panels block addresses
+// Brute-force protection: the panels block addresses
 // themselves (web package); fail2ban blocks SSH/SFTP and WordPress sign-in
 // floods with the same limits. The panel writes the jails here and lists
 // and lifts fail2ban's bans.

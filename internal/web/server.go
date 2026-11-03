@@ -1,6 +1,5 @@
 // Package web serves the two HostZit panels: the admin panel (server
-// administrators, like WHM) and the customer panel (one hosting account,
-// like cPanel), plus the REST API for billing systems. Both panels run in
+// administrators) and the customer panel (one hosting account), plus the REST API for billing systems. Both panels run in
 // one process on separate listeners, so the admin panel can be kept behind
 // its own allow-list or firewall.
 package web

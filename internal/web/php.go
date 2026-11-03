@@ -7,7 +7,7 @@ import (
 	"github.com/max-zit/hostzit/internal/helper"
 )
 
-// Settings → PHP: the PHP versions of the server (like cPanel's MultiPHP).
+// Settings → PHP: the PHP versions of the server.
 // Every installed version can be chosen per website (and per package).
 
 func init() {

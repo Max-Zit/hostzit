@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Git deployment (like cPanel's Git Version Control): bare repositories in
+// Git deployment: bare repositories in
 // ~/repos/<name>.git; a push over SSH or a pull from a remote address
 // checks the branch out into a folder of a website and runs the optional
 // script .hostzit-deploy there, as the account inside its cage.

@@ -9,8 +9,7 @@ import (
 	"strings"
 )
 
-// PHP options of an account for one PHP version (like cPanel's "Select PHP
-// Extensions" and "MultiPHP INI Editor"): extensions the account switches
+// PHP options of an account for one PHP version: extensions the account switches
 // off and php.ini values from an allow-list. Limits of the package
 // (memory, upload size) can only be lowered.
 

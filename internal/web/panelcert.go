@@ -15,8 +15,7 @@ import (
 )
 
 // The panels get a certificate from the CA (Let's Encrypt) for the server
-// name and the host of the customer panel address, like cPanel's
-// hostname certificate, so customers see no browser warning. Until then,
+// name and the host of the customer panel address, so customers see no browser warning. Until then,
 // and for any other name (an IP address), the self-signed one answers.
 
 const settingPanelCert = "panelcert"

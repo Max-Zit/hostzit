@@ -33,7 +33,7 @@ case "$VERSION_ID" in 12|13) ;; *) echo "Debian 12 or 13 is required (found $PRE
 export DEBIAN_FRONTEND=noninteractive
 say() { printf '\n==> %s\n' "$*"; }
 
-# DNS-only server (like cPanel's DNSOnly): only PowerDNS, as secondary of
+# DNS-only server: only PowerDNS, as secondary of
 # one or more HostZit servers. Each primary publishes a catalog zone (RFC
 # 9432) listing its zones; this server consumes it, so zones are added and
 # removed here by themselves. Run again with another --primary/--catalog to

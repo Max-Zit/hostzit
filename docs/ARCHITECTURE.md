@@ -4,9 +4,9 @@ Status: **proposal, waiting for approval.** Nothing here is built yet. Decisions
 shared with EmailZit live in the (local) integration notes and are summarised in
 section 11.
 
-HostZit is a self-hosted web hosting control panel in the scope of cPanel/WHM:
-an **admin panel** for the server (WHM's role) and a **customer panel** for each
-hosting account (cPanel's role). One code base installs either as **shared
+HostZit is a self-hosted web hosting control panel:
+an **admin panel** for the server and a **customer panel** for each
+hosting account. One code base installs either as **shared
 hosting** (up to ~500 accounts per server, maximum isolation between them) or as
 a **dedicated server** (one account, no sharing, limits off).
 
@@ -89,7 +89,7 @@ Layers, all on by default in shared mode:
    bandwidth), processes (`TasksMax`). Everything the account runs — PHP-FPM,
    cron, SSH, WP-CLI, the file manager — lands in this slice, so limits and
    usage graphs cover all of it.
-3. **Private mount namespace ("cage", like CloudLinux CageFS)**: the system is
+3. **Private mount namespace ("cage")**: the system is
    read-only; `/home` contains only the account's own home; private `/tmp` and
    `/var/tmp`; minimal `/dev`; `/proc` mounted with `hidepid=invisible`, so
    processes of others are invisible; no other accounts' PHP sockets or
@@ -100,8 +100,8 @@ Layers, all on by default in shared mode:
    applied by `hostzit-cage` through `systemd-run` into the account's slice.
    One mechanism for everything, maintained by systemd.
 4. **Disk quotas** (user quotas on the `/home` file system, ext4 or XFS) for
-   files; database size counted from MariaDB and added to the account's usage
-   (like cPanel); inode limits.
+   files; database size counted from MariaDB and added to the account's usage;
+   inode limits.
 5. **Network**: outbound SMTP (25/465/587) blocked for account processes
    except through HostZit's sendmail (rate-limited per account, relays to
    EmailZit or a smarthost) — the classic spam-from-a-hacked-WordPress
@@ -147,15 +147,14 @@ frameworks), CSP without inline scripts or styles, works at 375 px. 14
 languages (en de fr es it pt nl pl cs sr tr ru zh ja) from catalogs; built-in
 user guide (en + sr first, the rest falls back to English, like PassZit).
 
-- **Admin panel** on its own listener (default `:8442`, IP allow-list,
-  WHM's 2087): server overview, accounts, packages, DNS servers and templates,
+- **Admin panel** on its own listener (default `:8442`, IP allow-list): server overview, accounts, packages, DNS servers and templates,
   PHP versions, services, security, updates, backups, audit, settings.
 - **Customer panel** (default `:8443` and `https://panel.<server name>/` on
-  443, cPanel's 2083): sites, domains, DNS, databases, files, WordPress, cron,
+  443): sites, domains, DNS, databases, files, WordPress, cron,
   SSH/SFTP keys, logs and statistics, usage, security, account settings.
 - Admins can open a customer's panel ("log in as", audited, banner shown).
 - Users inside an account (e.g. a developer with access only to files and one
-  site) — later, like cPanel's "manage team".
+  site) — later.
 
 Security of the panels, as in the other products: HTTPS only, argon2id,
 TOTP 2FA with recovery codes (WebAuthn as in PassZit), 2FA mandatory for
@@ -182,8 +181,7 @@ actions (terminate account, change server settings), signed self-update with
   correct WordPress rules (permalinks, wp-config/xmlrpc protection, uploads)
   and recognise the common caching/security plugins. If customers need
   `.htaccess` for other apps, the option is "Apache behind nginx" per site
-  later — **question for Stefan** (cPanel uses Apache; Plesk uses nginx +
-  optional Apache).
+  later.
 - Staging and clone (WordPress-aware), suspended-site page, maintenance page.
 
 ## 6. WordPress toolkit (first application)
@@ -217,8 +215,7 @@ account; WordPress itself is downloaded from wordpress.org at install time.
   CNAME, MX, TXT, SRV, CAA, NS (delegation), TLSA, HTTPS/SVCB; DNSSEC with
   one click (KSK/ZSK in PowerDNS, DS shown to put at the registrar).
 - Nameservers: `ns1/ns2.<provider domain>`; second nameserver = a second
-  HostZit server or a "DNS only" install, kept in sync with NOTIFY/AXFR
-  (cPanel's DNS cluster in simple form). Domain ownership check before a zone
+  HostZit server or a "DNS only" install, kept in sync with NOTIFY/AXFR. Domain ownership check before a zone
   for a domain that exists elsewhere on the server is accepted.
 
 ## 8. Billing REST API
@@ -238,31 +235,6 @@ with EmailZit (section 11).
   job id; `GET /jobs/{id}` and optional signed webhook to the portal.
 - `Idempotency-Key` on POST, so a retry from the portal never makes two
   accounts.
-
-## 9. cPanel/WHM comparison (checklist)
-
-| cPanel/WHM area | HostZit plan |
-|---|---|
-| WHM: create/modify/suspend/terminate accounts, packages, feature lists | 0.1 (packages carry limits and feature switches) |
-| WHM: reseller accounts | **Not planned** (Stefan's decision) |
-| WHM: DNS functions, DNS cluster, zone templates | 0.2; cluster = secondary NS later |
-| WHM: SSL/TLS, AutoSSL | 0.2 (own ACME, wildcard via own DNS) |
-| WHM: MultiPHP manager, PHP-FPM, EasyApache | 0.4 (several PHP versions, extensions by package) |
-| WHM: service manager, server status, process manager | 0.1 basic, 0.4 more |
-| WHM: security center (cPHulk, ModSecurity, 2FA, shell fork bomb protection, compiler access) | 2FA 0.1; brute force, WAF, compilers 0.5; fork bombs → `TasksMax` 0.1 |
-| WHM: backup configuration, transfer tool, restore | 0.7 (own backups + BackupZit; cPanel import) |
-| WHM: CageFS/CloudLinux LVE (third party) | **built in**: cage + slices from 0.1 |
-| WHM: update preferences, tiers | 0.8 (signed self-update, testing/official) |
-| cPanel: domains, subdomains, aliases, redirects, zone editor | 0.2 |
-| cPanel: file manager, disk usage, directory privacy, FTP | 0.4 (SFTP instead of FTP; FTP only if asked) |
-| cPanel: MySQL databases, phpMyAdmin, remote MySQL | 0.3 (phpMyAdmin or Adminer with single sign-on — to choose) |
-| cPanel: SSL/TLS status, SSH access, cron jobs | 0.2 / 0.4 |
-| cPanel: metrics (visitors, errors, bandwidth, AWStats, raw logs, resource usage) | 0.4 (own log parser, usage graphs from cgroups) |
-| cPanel: email accounts, forwarders, spam filters, webmail | **EmailZit** |
-| cPanel: WordPress Toolkit / WP Toolkit (Plesk) | 0.3 basic, 0.6 staging/snapshots |
-| cPanel: Softaculous, Git version control, Application Manager (Node/Python/Ruby) | later (Git deploy, Node.js/Python apps) |
-| cPanel: ImunifyAV/360 (third party) | ClamAV + own WordPress checks 0.5 |
-| cPanel: WHMCS integration (API) | REST API from 0.1 |
 
 ## 10. Version order (proposal)
 

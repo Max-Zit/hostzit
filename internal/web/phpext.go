@@ -12,10 +12,9 @@ import (
 	"github.com/max-zit/hostzit/internal/store"
 )
 
-// PHP extensions (admin: which extension packages a PHP version has, like
-// EasyApache) and the account's own PHP options (customer: extensions
-// switched off and php.ini values per version, like "Select PHP
-// Extensions" and the "MultiPHP INI Editor").
+// PHP extensions (admin: which extension packages a PHP version has)
+// and the account's own PHP options (customer: extensions switched off
+// and php.ini values per version).
 
 func init() {
 	adminExtra = append(adminExtra, func(s *Server, mux *http.ServeMux, app, write, admin func(string, http.HandlerFunc)) {

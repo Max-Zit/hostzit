@@ -9,7 +9,7 @@ import (
 	"github.com/max-zit/hostzit/internal/store"
 )
 
-// Resource usage of all accounts (like CloudLinux's LVE manager): what each
+// Resource usage of all accounts: what each
 // account uses now and in the last day, and how often its package limits
 // held it back.
 

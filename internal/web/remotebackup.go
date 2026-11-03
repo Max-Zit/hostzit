@@ -18,7 +18,7 @@ import (
 	"github.com/max-zit/hostzit/internal/store"
 )
 
-// Remote backups (like cPanel's Backup Configuration): every night each
+// Remote backups: every night each
 // active account is archived (files, databases, settings) and uploaded to
 // an SFTP server or an S3 bucket; the newest N per account are kept. A
 // backup is restored by fetching it into the import folder (Import page).

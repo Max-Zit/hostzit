@@ -10,7 +10,7 @@ import (
 	"github.com/max-zit/hostzit/internal/hosting"
 )
 
-// Several PHP versions side by side (like cPanel's MultiPHP): Debian has
+// Several PHP versions side by side: Debian has
 // one; the others come from the packages.sury.org repository (the
 // maintainer of Debian's PHP packages). Every account runs its own PHP-FPM
 // master per version, so a version is usable by all sites once installed.

@@ -2,9 +2,9 @@
 
 # HostZit
 
-**Free, open-source, self-hosted web hosting control panel** — a modern alternative to cPanel/WHM for shared hosting with strong isolation between accounts, or for a single dedicated server.
+**Free, open-source, self-hosted web hosting control panel** — for shared hosting with strong isolation between accounts, or for a single dedicated server.
 
-> **Status:** in development on the `develop` branch; there is no release yet. Follow the repository or [Discussions](https://github.com/Max-Zit/hostzit/discussions) for news.
+> **Releases:** see [Releases](https://github.com/Max-Zit/hostzit/releases); development happens on the `develop` branch. News in [Discussions](https://github.com/Max-Zit/hostzit/discussions).
 
 ## What it does
 

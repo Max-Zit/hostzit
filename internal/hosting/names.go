@@ -107,7 +107,7 @@ func IsSubdomainOf(d, parent string) bool {
 var dbSuffixRE = regexp.MustCompile(`^[a-z0-9_]{1,32}$`)
 
 // DatabaseName builds the name of a customer database or database user:
-// <account>_<suffix>, like cPanel. Only lowercase letters, digits and _.
+// <account>_<suffix>. Only lowercase letters, digits and _.
 func DatabaseName(account, suffix string) (string, error) {
 	if err := ValidAccount(account); err != nil {
 		return "", err

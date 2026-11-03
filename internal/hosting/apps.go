@@ -8,8 +8,7 @@ import (
 	"strings"
 )
 
-// Node.js and Python applications of an account (like cPanel's "Setup
-// Node.js App" and "Setup Python App"): a long-running process in the
+// Node.js and Python applications of an account: a long-running process in the
 // account's cage and slice that listens on a Unix socket. Its address is
 // in the environment variable PORT (Node.js: app.listen(process.env.PORT);
 // Python: gunicorn --bind unix:$PORT app:app); nginx sends the requests of

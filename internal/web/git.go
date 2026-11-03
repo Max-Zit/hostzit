@@ -15,7 +15,7 @@ import (
 	"github.com/max-zit/hostzit/internal/store"
 )
 
-// Git deployment in the customer panel (like cPanel's Git Version
+// Git deployment in the customer panel
 // Control): repositories in ~/repos, deployed into a folder of a website
 // after a push over SSH, a click or a webhook from GitHub, GitLab, Gitea …
 

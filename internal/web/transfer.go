@@ -25,7 +25,7 @@ import (
 	"github.com/max-zit/hostzit/internal/store"
 )
 
-// Moving accounts between HostZit servers (like WHM's Transfer Tool) and
+// Moving accounts between HostZit servers and
 // restoring HostZit archives (own backups, remote backups): the source
 // sends the account's archive to the target's REST API, the target
 // creates the account from it with the same name, passwords, websites,

@@ -22,7 +22,7 @@ import (
 	"github.com/max-zit/hostzit/internal/hosting"
 )
 
-// Backups like JetBackup: every account goes each night into one restic
+// Backups: every account goes each night into one restic
 // repository (incremental, deduplicated, compressed, encrypted) on a local
 // folder, an SFTP server or an S3 bucket. Each run is a restore point of
 // the account (tag acct:<name>): its home, a dump of each database and the
