@@ -1,10 +1,20 @@
-<p align="center"><img src="brand/hostzit-logo-on-light.svg" alt="HostZit" height="64"></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/hostzit-logo-on-dark.svg">
+    <img src="brand/hostzit-logo-on-light.svg" alt="HostZit" height="64">
+  </picture>
+</p>
 
 # HostZit
 
-**Free, open-source, self-hosted web hosting control panel** — a modern alternative to cPanel/WHM for shared hosting with strong isolation between accounts, or for a single dedicated server.
+[![Latest release](https://img.shields.io/github/v/release/Max-Zit/hostzit?label=release)](https://github.com/Max-Zit/hostzit/releases/latest)
+[![License: AGPL v3](https://img.shields.io/badge/license-AGPLv3-blue)](LICENSE)
+[![CI](https://github.com/Max-Zit/hostzit/actions/workflows/ci.yml/badge.svg)](https://github.com/Max-Zit/hostzit/actions/workflows/ci.yml)
+[![Security scan](https://github.com/Max-Zit/hostzit/actions/workflows/security.yml/badge.svg)](https://github.com/Max-Zit/hostzit/actions/workflows/security.yml)
 
-> **Status:** in development on the `develop` branch; there is no release yet. Follow the repository or [Discussions](https://github.com/Max-Zit/hostzit/discussions) for news.
+**Free, open-source, self-hosted web hosting control panel** — for shared hosting with strong isolation between accounts, or for a single dedicated server.
+
+> **Status:** under active development; releases with VM images are on [Releases](https://github.com/Max-Zit/hostzit/releases) and new versions come out often. Development happens on the `develop` branch. News in [Discussions](https://github.com/Max-Zit/hostzit/discussions).
 
 ## What it does
 
@@ -20,13 +30,19 @@
 - **Billing:** REST API for customers, packages, suspension, usage and single sign-on links.
 - **Security of the panel:** root work only through a small helper with a strict list of operations, two-factor sign-in, roles, hash-chained audit log, signed self-updates.
 
-## Install (Debian 12 or 13)
+## Install
+
+| Way | Best for |
+|---|---|
+| **VM image** — [OVA](https://github.com/Max-Zit/hostzit/releases/latest/download/hostzit-appliance.ova) (VMware, VirtualBox), [qcow2](https://github.com/Max-Zit/hostzit/releases/latest/download/hostzit-appliance.qcow2) (Proxmox/KVM), [VHDX](https://github.com/Max-Zit/hostzit/releases/latest/download/hostzit-appliance-vhdx.zip) (Hyper-V) | import and start; Debian with HostZit ready |
+| **Appliance ISO** — [hostzit-appliance.iso](https://github.com/Max-Zit/hostzit/releases/latest/download/hostzit-appliance.iso) | a new VM or a physical server |
+| **Install script** | an existing Debian 12 or 13 server (amd64, arm64) |
 
 ```sh
 curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash
 ```
 
-The installer sets up nginx, PHP-FPM, MariaDB, PowerDNS, PostgreSQL and the HostZit services, checks the signature of the release and prints the address of the admin panel with the one-time setup token.
+The installer sets up nginx, PHP-FPM, MariaDB, PowerDNS, PostgreSQL and the HostZit services, checks the signature of the release and prints the address of the admin panel with the one-time setup token. The VM images show the panel addresses and the setup token on the VM screen after the first start; sign in there as `hzadmin` (first password `hostzit`, which must be changed) for network, server name and time zone.
 
 HostZit is made by [MaxZit](https://maxzit.com), like [BackupZit](https://github.com/Max-Zit/backupzit), [RMMZit](https://github.com/Max-Zit/rmmzit), [WatchZit](https://github.com/Max-Zit/watchzit) and [PassZit](https://github.com/Max-Zit/passzit).
 
