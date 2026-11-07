@@ -1,3 +1,7 @@
+# All checks in one workflow on every push and pull request: a newer push
+# to the same branch cancels the older run, so a quick series of pushes
+# gives one result (and at most one failure mail). security.yml repeats
+# the security checks weekly for new CVEs.
 name: CI
 
 on:
@@ -5,9 +9,14 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -29,3 +38,66 @@ jobs:
         env:
           GOARCH: arm64
         run: go build -o /dev/null ./cmd/...
+
+  go:
+    name: go
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # gitleaks reads the whole history
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: staticcheck
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@v0.8.2
+          staticcheck ./...
+      - name: gosec
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.30.0
+          gosec -quiet ./...
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          govulncheck ./...
+      - name: gitleaks (secrets in the history)
+        run: |
+          go install github.com/zricethezav/gitleaks/v8@v8.30.1
+          gitleaks git --redact --no-banner .
+
+  race:
+    name: Race detector (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Fetch the test PostgreSQL once (parallel test binaries would all download it)
+        run: go test -race -count=1 -run '^TestMain$' ./internal/web
+      - name: Tests with -race
+        run: go test -race -count=1 -timeout 50m ./...
+
+  fuzz:
+    name: Fuzz parsers of untrusted input (short)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Fuzz each target for 20 s
+        run: |
+          set -e
+          # every Fuzz* function in the tests, so new targets run without
+          # touching this file
+          grep -rHo --include='*_test.go' '^func Fuzz[A-Za-z0-9_]*' internal cmd tools | sed 's/:func /:/' | sort -u |
+          while IFS=: read -r file name; do
+            echo "::group::$name ($(dirname "$file"))"
+            go test "./$(dirname "$file")" -run '^$' -fuzz "^$name\$" -fuzztime 20s
+            echo "::endgroup::"
+          done

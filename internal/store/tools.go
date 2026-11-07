@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/max-zit/hostzit/internal/hosting"
 )
 
 // CronJob is a scheduled job of a customer.
@@ -38,6 +40,15 @@ func (s *Store) CronJobs(ctx context.Context, customerID int64) ([]*CronJob, err
 
 // AddCronJob stores a job (checked by the caller).
 func (s *Store) AddCronJob(ctx context.Context, j *CronJob) error {
+	// every way in (form, API, imports, restore points) is checked here: one
+	// bad job would stop all jobs of the account from being written
+	j.Schedule, j.Command = strings.TrimSpace(j.Schedule), strings.TrimSpace(j.Command)
+	if _, err := hosting.OnCalendar(j.Schedule); err != nil {
+		return err
+	}
+	if err := hosting.CheckCommand(j.Command); err != nil {
+		return err
+	}
 	var n int
 	if err := s.db.QueryRow(ctx, `SELECT count(*) FROM cron_jobs WHERE customer_id=$1`, j.CustomerID).Scan(&n); err != nil {
 		return err

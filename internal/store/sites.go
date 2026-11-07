@@ -357,6 +357,9 @@ func (s *Store) CreateZone(ctx context.Context, customerID int64, name string, r
 	}
 	seen := map[string]bool{}
 	for _, r := range recs {
+		if r.Owner != "emailzit" {
+			r.Owner = "" // imported archives cannot invent owners
+		}
 		c, err := hosting.CleanRecord(r, name)
 		if err != nil {
 			return nil, err

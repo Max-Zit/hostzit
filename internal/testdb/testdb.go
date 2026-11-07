@@ -4,6 +4,7 @@ package testdb
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -23,6 +24,12 @@ var (
 
 // Main starts PostgreSQL, runs the tests and stops it. Call it from TestMain.
 func Main(m *testing.M) int {
+	// fuzzing runs only the parsers: no database (each fuzz worker would
+	// start its own PostgreSQL)
+	flag.Parse()
+	if f := flag.Lookup("test.fuzz"); f != nil && f.Value.String() != "" {
+		return m.Run()
+	}
 	dir, err := os.MkdirTemp("", "czpg")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)

@@ -65,27 +65,67 @@ func quoteTXT(s string) (string, error) {
 		return "", errors.New("the TXT record is too long")
 	}
 	s = strings.TrimSpace(s)
+	if quotedChunks(s) {
+		return s, nil // already quoted (by the user, or a stored record)
+	}
 	if strings.HasPrefix(s, `"`) && strings.HasSuffix(s, `"`) && len(s) >= 2 {
-		// already quoted by the user: check that quotes are balanced chunks
-		inner := s[1 : len(s)-1]
-		if !strings.Contains(strings.ReplaceAll(inner, `" "`, ""), `"`) {
-			return s, nil
-		}
-		s = inner
+		s = s[1 : len(s)-1]
 	}
 	s = strings.ReplaceAll(strings.ReplaceAll(s, `\`, `\\`), `"`, `\"`)
-	// split into 255-byte strings
+	// split into strings of at most 250 bytes, never inside an escape
 	var parts []string
 	for len(s) > 250 {
-		cut := 250
-		for cut > 0 && s[cut-1] == '\\' {
-			cut--
+		cut := 0
+		for i := 0; i < len(s); {
+			n := 1
+			if s[i] == '\\' && i+1 < len(s) {
+				n = 2
+			}
+			if i+n > 250 {
+				break
+			}
+			i += n
+			cut = i
 		}
 		parts = append(parts, `"`+s[:cut]+`"`)
 		s = s[cut:]
 	}
 	parts = append(parts, `"`+s+`"`)
 	return strings.Join(parts, " "), nil
+}
+
+// quotedChunks reports whether s is a list of "…" strings of at most 255
+// bytes, separated by single spaces, with \ escapes inside.
+func quotedChunks(s string) bool {
+	if s == "" {
+		return false
+	}
+	for s != "" {
+		if s[0] != '"' {
+			return false
+		}
+		i, n := 1, 0
+		for ; i < len(s) && s[i] != '"'; i++ {
+			if s[i] == '\\' {
+				if i+1 >= len(s) {
+					return false
+				}
+				i++
+			}
+			n++
+		}
+		if i >= len(s) || n > 255 {
+			return false
+		}
+		s = s[i+1:]
+		if s != "" {
+			if len(s) < 2 || s[0] != ' ' {
+				return false
+			}
+			s = s[1:]
+		}
+	}
+	return true
 }
 
 // CleanRecord checks a record for a zone and returns it in the form the
@@ -107,6 +147,9 @@ func CleanRecord(r Record, zone string) (Record, error) {
 		return r, errors.New("TTL must be 60–604800 seconds")
 	}
 	c := strings.TrimSpace(r.Content)
+	if strings.IndexFunc(c, func(r rune) bool { return (r < 0x20 && r != '\t') || r == 0x7f }) >= 0 {
+		return r, errors.New("the record cannot contain line breaks or control characters")
+	}
 	var err error
 	switch r.Type {
 	case "A":
