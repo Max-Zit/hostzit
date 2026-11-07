@@ -1,6 +1,7 @@
 package hosting
 
 import (
+	"slices"
 	"strings"
 	"testing"
 )
@@ -110,6 +111,8 @@ func FuzzNginxSite(f *testing.F) {
 func FuzzGitRepo(f *testing.F) {
 	f.Add("site", "main", "sites/example.com/public", "https://github.com/acme/site.git")
 	f.Add("app.v2", "release/1.0", "sites/a/b", "https://user:token@git.example.com/x.git")
+	f.Add("site", "main", "sites/0..", "")
+	f.Add("site", "main", "sites/../etc", "")
 	f.Fuzz(func(t *testing.T, name, branch, target, remote string) {
 		g := GitRepo{Name: name, Branch: branch, Target: target, Remote: remote}
 		if g.Validate() != nil {
@@ -125,7 +128,8 @@ func FuzzGitRepo(f *testing.F) {
 				t.Fatalf("option-like value %q", v)
 			}
 		}
-		if strings.Contains(g.Target, "..") || !strings.HasPrefix(g.Target, "sites/") {
+		// a ".." path element leaves sites/; a name like "0.." is a folder
+		if slices.Contains(strings.Split(g.Target, "/"), "..") || !strings.HasPrefix(g.Target, "sites/") {
 			t.Fatalf("target %q outside sites/", g.Target)
 		}
 		if g.Remote != "" && (!strings.HasPrefix(g.Remote, "https://") || strings.ContainsAny(g.Remote, " \t\r\n\x00")) {
