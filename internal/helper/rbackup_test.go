@@ -39,3 +39,27 @@ func TestResticCmd(t *testing.T) {
 		}
 	}
 }
+
+// A restore point made before the first nightly round or test installs restic
+// and prepares the repository first (0.9.2 candidate: "restic: No such file").
+func TestRestorePointPreparesRestic(t *testing.T) {
+	h, fr, _, _ := newTest(t)
+	dest := RemoteDest{Type: "local", Path: "/var/backups/hostzit"}
+	if r := call(t, h, "rbackup.points", map[string]any{"dest": dest, "account": "shop"}); !r.OK || fr.has("restic") {
+		t.Fatalf("points without restic: %+v %v", r, fr.calls)
+	}
+	fr.fail["--tag"] = true // stop at the backup itself
+	call(t, h, "rbackup.run", map[string]any{"dest": dest, "account": "shop"})
+	apt, first := -1, -1
+	for i, c := range fr.calls {
+		if apt < 0 && strings.Contains(c, "apt-get") && strings.HasSuffix(c, "install restic") {
+			apt = i
+		}
+		if first < 0 && strings.Contains(c, "restic --repo") {
+			first = i
+		}
+	}
+	if apt < 0 || first < 0 || apt > first {
+		t.Fatalf("restic not installed before use (apt %d, first restic %d): %v", apt, first, fr.calls)
+	}
+}

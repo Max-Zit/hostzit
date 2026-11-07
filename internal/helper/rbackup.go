@@ -196,6 +196,11 @@ func (h *Helper) rbackupRun(ctx context.Context, a rbRunArgs) (any, error) {
 	if len(a.Manifest) > 4<<20 {
 		return nil, userErr("manifest too large")
 	}
+	// "restore point now" can come before the first nightly round or test:
+	// restic, its password and the repository must exist first
+	if _, err := h.rbackupInit(ctx, rbDestArgs{Dest: a.Dest}); err != nil {
+		return nil, err
+	}
 	stage := stageDir(a.Account)
 	_ = h.Sys.Mkdir(backupStage, 0o700, 0, 0)
 	_ = h.Sys.RemoveAll(stage)
@@ -299,6 +304,9 @@ type rbAccountArgs struct {
 func (h *Helper) rbPoints(ctx context.Context, d RemoteDest, account string) ([]RestorePoint, error) {
 	if err := hosting.ValidAccount(account); err != nil {
 		return nil, userErr(err.Error())
+	}
+	if !h.Sys.Exists("/usr/bin/restic") {
+		return nil, nil // no backup made on this server yet
 	}
 	out, err := h.restic(ctx, d, "snapshots", "--json", "--host", resticHost, "--tag", "acct:"+account)
 	if err != nil {
