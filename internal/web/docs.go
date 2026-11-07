@@ -84,6 +84,9 @@ func (s *Server) handleDocs(w http.ResponseWriter, r *http.Request) {
 	}
 	lang := s.lang(r, userFrom(r))
 	d.Body = docHTML(lang, slug)
+	if panelOf(r) != PanelAdmin {
+		d.Body = unlinkAdmin(d.Body)
+	}
 	s.render(w, r, http.StatusOK, "docs", &Page{Title: title, Nav: "docs", Lang: lang, Data: d})
 }
 
@@ -270,4 +273,13 @@ func filterHits(h []docHit, panel string) []docHit {
 		}
 	}
 	return out
+}
+
+// adminLinkRE finds links of the guide to pages only the admin panel has.
+var adminLinkRE = regexp.MustCompile(`<a href="/(?:audit|packages|customers|settings|users|import|approvals|resources|server)(?:[/?#][^"]*)?">(.*?)</a>`)
+
+// unlinkAdmin keeps the text of those links in the customer panel (there
+// they would lead to "not found").
+func unlinkAdmin(h template.HTML) template.HTML {
+	return template.HTML(adminLinkRE.ReplaceAllString(string(h), "$1")) // #nosec G203 -- our own embedded guide, only links removed
 }

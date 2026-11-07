@@ -334,6 +334,7 @@
   "Empty: no link.": "Leeg: geen koppeling.",
   "Empty: the official releases on GitHub. A mirror must hold the same signed files.": "Leeg: de officiële releases op GitHub. Een mirror moet dezelfde ondertekende bestanden bevatten.",
   "Engine": "Engine",
+  "The password of a protected folder can have at most 72 characters.": "Het wachtwoord van een beveiligde map mag maximaal 72 tekens hebben.",
   "Enter a folder of the website, e.g. /private": "Voer een map van de website in, bijv. /private",
   "Enter at least one administrator address.": "Voer minstens één beheerdersadres in.",
   "Enter the 6-digit code from your authenticator app, or one of your recovery codes.": "Voer de 6-cijferige code uit uw authenticator-app of een van uw herstelcodes in.",

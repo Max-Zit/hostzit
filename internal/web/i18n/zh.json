@@ -334,6 +334,7 @@
   "Empty: no link.": "留空：不关联。",
   "Empty: the official releases on GitHub. A mirror must hold the same signed files.": "留空：使用 GitHub 上的官方版本。镜像必须包含相同的已签名文件。",
   "Engine": "引擎",
+  "The password of a protected folder can have at most 72 characters.": "受保护文件夹的密码最多 72 个字符。",
   "Enter a folder of the website, e.g. /private": "请输入网站的一个文件夹，例如 /private",
   "Enter at least one administrator address.": "请至少输入一个管理员地址。",
   "Enter the 6-digit code from your authenticator app, or one of your recovery codes.": "输入身份验证器应用中的 6 位验证码，或您的一个恢复码。",

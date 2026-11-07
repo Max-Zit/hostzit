@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"html/template"
 	"net/http/httptest"
 	"net/url"
 	"strings"
@@ -181,4 +182,13 @@ func FuzzAPIBodies(f *testing.F) {
 			}
 		}
 	})
+}
+
+// Found by the crawl: the customer panel's guide linked admin pages.
+func TestUnlinkAdmin(t *testing.T) {
+	in := `see the <a href="/audit">audit log</a> and <a href="/sites">websites</a>, <a href="/settings/php">PHP</a>`
+	want := `see the audit log and <a href="/sites">websites</a>, PHP`
+	if got := string(unlinkAdmin(template.HTML(in))); got != want {
+		t.Fatalf("got %s", got)
+	}
 }

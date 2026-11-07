@@ -294,6 +294,20 @@ func TestPanels(t *testing.T) {
 	if !e.hp.called("site.cache.purge") {
 		t.Fatal("purge not called")
 	}
+	// protected folder: a password longer than bcrypt takes and a user name
+	// that would add a line to the password file are refused, not a 500
+	c.ok(sid+"/protect", url.Values{"path": {"/private"}, "user": {"anna"}, "password": {"folder password 1"}})
+	for _, f := range []url.Values{
+		{"path": {"/private"}, "user": {"anna"}, "password": {strings.Repeat("p", 73)}},
+		{"path": {"/private"}, "user": {"eve:x\nroot"}, "password": {"folder password 1"}},
+	} {
+		if st, _, loc := c.post(sid+"/protect", f); st != http.StatusSeeOther || !strings.HasPrefix(loc, sid) {
+			t.Fatalf("protect %q: %d %s", f.Get("user"), st, loc)
+		}
+	}
+	if x, err := e.st.SiteByID(context.Background(), sites[0].ID); err != nil || len(x.Protected) != 1 || len(x.Protected[0].Users) != 1 {
+		t.Fatalf("protected folders after bad input: %+v", x.Protected)
+	}
 	// DNS record, database, file
 	c.ok(zid+"/records", url.Values{"name": {"mail"}, "type": {"A"}, "content": {"192.0.2.20"}, "ttl": {"3600"}})
 	if st, body, _ := c.post(zid+"/records", url.Values{"name": {"x"}, "type": {"A"}, "content": {"not-an-ip"}, "ttl": {"3600"}}); st != http.StatusSeeOther || strings.Contains(body, "error") {

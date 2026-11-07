@@ -334,6 +334,7 @@
   "Empty: no link.": "空欄：連携なし。",
   "Empty: the official releases on GitHub. A mirror must hold the same signed files.": "空欄：GitHub の公式リリース。ミラーには同じ署名済みファイルが必要です。",
   "Engine": "エンジン",
+  "The password of a protected folder can have at most 72 characters.": "保護されたフォルダーのパスワードは最大 72 文字です。",
   "Enter a folder of the website, e.g. /private": "サイトのフォルダーを入力（例：/private）",
   "Enter at least one administrator address.": "管理者のアドレスを 1 つ以上入力してください。",
   "Enter the 6-digit code from your authenticator app, or one of your recovery codes.": "認証アプリの 6 桁のコード、または回復コードのいずれかを入力してください。",

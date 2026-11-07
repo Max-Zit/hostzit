@@ -334,6 +334,7 @@
   "Empty: no link.": "Vide : pas de liaison.",
   "Empty: the official releases on GitHub. A mirror must hold the same signed files.": "Vide : les versions officielles sur GitHub. Un miroir doit contenir les mêmes fichiers signés.",
   "Engine": "Moteur",
+  "The password of a protected folder can have at most 72 characters.": "Le mot de passe d’un dossier protégé peut comporter au plus 72 caractères.",
   "Enter a folder of the website, e.g. /private": "Saisissez un dossier du site, p. ex. /private",
   "Enter at least one administrator address.": "Saisissez au moins une adresse d'administrateur.",
   "Enter the 6-digit code from your authenticator app, or one of your recovery codes.": "Saisissez le code à 6 chiffres de votre application d'authentification, ou l'un de vos codes de récupération.",

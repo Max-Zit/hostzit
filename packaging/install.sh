@@ -70,7 +70,7 @@ EOF
 	chmod 644 /etc/powerdns/pdns.d/hostzit-dnsonly.conf
 	if systemctl is-active -q systemd-resolved; then
 		install -d /etc/systemd/resolved.conf.d
-		printf '[Resolve]\nDNSStubListener=no\n' > /etc/systemd/resolved.conf.d/hostzit.conf
+		printf '[Resolve]\nDNSStubListener=no\nLLMNR=no\nMulticastDNS=no\n' > /etc/systemd/resolved.conf.d/hostzit.conf
 		ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
 		systemctl restart systemd-resolved
 	fi
@@ -150,10 +150,12 @@ local-address=0.0.0.0, ::
 EOF
 	chmod 640 /etc/powerdns/pdns.d/hostzit.conf; chgrp pdns /etc/powerdns/pdns.d/hostzit.conf
 	# systemd-resolved's stub listener holds 127.0.0.53:53; the server's own
-	# lookups keep working through /run/systemd/resolve/resolv.conf.
+	# lookups keep working through /run/systemd/resolve/resolv.conf. LLMNR
+	# and multicast DNS (5355, 5353) are for home networks, not for a server
+	# on the internet.
 	if systemctl is-active -q systemd-resolved; then
 		install -d /etc/systemd/resolved.conf.d
-		printf '[Resolve]\nDNSStubListener=no\n' > /etc/systemd/resolved.conf.d/hostzit.conf
+		printf '[Resolve]\nDNSStubListener=no\nLLMNR=no\nMulticastDNS=no\n' > /etc/systemd/resolved.conf.d/hostzit.conf
 		ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
 		systemctl restart systemd-resolved
 	fi

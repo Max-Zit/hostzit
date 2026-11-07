@@ -334,6 +334,7 @@
   "Empty: no link.": "Boş: bağlantı yok.",
   "Empty: the official releases on GitHub. A mirror must hold the same signed files.": "Boş: GitHub'daki resmî sürümler. Bir yansı aynı imzalı dosyaları içermelidir.",
   "Engine": "Motor",
+  "The password of a protected folder can have at most 72 characters.": "Korumalı bir klasörün parolası en fazla 72 karakter olabilir.",
   "Enter a folder of the website, e.g. /private": "Sitenin bir klasörünü girin, örn. /private",
   "Enter at least one administrator address.": "En az bir yönetici adresi girin.",
   "Enter the 6-digit code from your authenticator app, or one of your recovery codes.": "Kimlik doğrulama uygulamanızdaki 6 haneli kodu veya kurtarma kodlarınızdan birini girin.",

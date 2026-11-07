@@ -99,6 +99,10 @@ func (s *Server) handleSiteProtect(w http.ResponseWriter, r *http.Request) {
 		s.redirectErr(w, r, back, err.Error())
 		return
 	}
+	if len(r.FormValue("password")) > 72 { // bcrypt (what nginx reads) takes at most 72 bytes
+		s.redirectErr(w, r, back, "The password of a protected folder can have at most 72 characters.")
+		return
+	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(r.FormValue("password")), 11)
 	if err != nil {
 		s.serverError(w, r, err)

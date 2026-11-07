@@ -2,6 +2,7 @@ package hosting
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -303,6 +304,16 @@ func TestNginxSecurity(t *testing.T) {
 	}
 	if !strings.Contains(NginxBase(), "limit_req_zone $binary_remote_addr zone=hz_login") {
 		t.Fatal("base without the login limit")
+	}
+	// websites: TLS 1.2 only with AEAD ciphers (testssl: no CBC, no SHA-1)
+	m := regexp.MustCompile(`(?m)^ssl_ciphers ([^;]+);$`).FindStringSubmatch(NginxBase())
+	if m == nil {
+		t.Fatal("base without ssl_ciphers")
+	}
+	for _, c := range strings.Split(m[1], ":") {
+		if !strings.HasPrefix(c, "ECDHE-") || !(strings.Contains(c, "-GCM-") || strings.HasSuffix(c, "-CHACHA20-POLY1305")) {
+			t.Fatal("weak cipher in the base:", c)
+		}
 	}
 }
 

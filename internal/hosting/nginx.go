@@ -248,6 +248,9 @@ fastcgi_buffer_size 32k;
 gzip_vary on;
 gzip_proxied any;
 gzip_types text/plain text/css application/javascript application/json image/svg+xml application/xml text/xml;
+# TLS 1.2 only with forward secrecy and AEAD (no CBC: LUCKY13, no SHA-1);
+# TLS 1.3 keeps its own ciphers. The protocols come from nginx.conf.
+ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
 include /etc/nginx/zit.d/hostzit/cache/*.conf;
 include /etc/nginx/zit.d/hostzit/http/*.conf;
 include /etc/nginx/zit.d/hostzit/sites/*/*.conf;

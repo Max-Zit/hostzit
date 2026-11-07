@@ -28,6 +28,14 @@ install -m 0644 SOURCE-CODE.txt /usr/share/doc/hostzit-appliance/SOURCE-CODE.txt
 dpkg-query -W -f '${Package} ${Version}\n' > /usr/share/doc/hostzit-appliance/debian-packages.txt
 # The administrator chooses its own password at the first sign-in.
 chage -d 0 hzadmin
+# ... and until then no SSH password sign-in for hzadmin (the first password
+# is the same in every image); the package's hostzit-ssh-guard lifts it.
+cat > /etc/ssh/sshd_config.d/05-hostzit-hzadmin-first.conf <<'SSHD'
+# Written by HostZit: removed when hzadmin has chosen its own password.
+Match User hzadmin
+	PasswordAuthentication no
+	KbdInteractiveAuthentication no
+SSHD
 usermod -aG sudo hzadmin
 # systemd-networkd with DHCP on whatever adapter the machine has (the same
 # on a server and in every copy of a VM image). Settings → System changes it.

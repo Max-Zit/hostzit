@@ -45,6 +45,16 @@ contents:
     dst: /usr/lib/systemd/system/hostzit-helper.service
   - src: ./packaging/linux/hostzit-firewall.service
     dst: /usr/lib/systemd/system/hostzit-firewall.service
+  - src: ./packaging/linux/appliance-ssh-guard
+    dst: /usr/lib/hostzit/appliance-ssh-guard
+    file_info:
+      mode: 0755
+  - src: ./packaging/linux/hostzit-ssh-guard.service
+    dst: /usr/lib/systemd/system/hostzit-ssh-guard.service
+  - src: ./packaging/linux/hostzit-ssh-guard.path
+    dst: /usr/lib/systemd/system/hostzit-ssh-guard.path
+  - src: ./packaging/appliance/sshd-hostzit-appliance.conf
+    dst: /usr/lib/hostzit/sshd-hostzit-appliance.conf
   - src: ./packaging/linux/hostzit.logrotate
     dst: /etc/logrotate.d/hostzit
     type: config

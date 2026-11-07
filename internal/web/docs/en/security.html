@@ -21,6 +21,13 @@
   <li>Hash-chained <a href="/audit">audit log</a>, secrets encrypted at rest, signed updates, four-eyes approval.</li>
 </ul>
 
+<h2 id="network">Encryption and network</h2>
+<ul>
+  <li>Websites over HTTPS: TLS 1.3, and TLS 1.2 only with forward secrecy and AEAD ciphers (no CBC or SHA-1 ciphers).</li>
+  <li>The HostZit appliance offers SSH and SFTP only with strong algorithms: post-quantum key exchange (mlkem768, sntrup761) next to curve25519, Ed25519 and RSA host keys, AES-GCM/CTR, encrypt-then-MAC. Root cannot sign in over SSH.</li>
+  <li>LLMNR and multicast DNS (ports 5355 and 5353), meant for home networks, are switched off.</li>
+</ul>
+
 <h2 id="bruteforce">Brute-force protection</h2>
 <p>An address that fails to sign in too often is blocked: in the panels (by the panel itself), for SSH and SFTP and for the sign-in of every WordPress website (both by fail2ban, which the panel sets up). The limits are the ones under <b>Settings → Sign-in and security</b> (failed sign-ins, counting period, block length; a repeated block doubles, up to 7 days). For WordPress a failure is a sign-in request over the limit of 10 a minute from one address.</p>
 <p><b>Settings → Brute-force protection</b> lists every blocked address with where it was blocked and until when, and lifts a block with <b>Unblock</b>. Under <b>Never blocked</b> enter your own addresses or networks (one per line, for example your office): they are never blocked; the server itself never is.</p>

@@ -1,0 +1,7 @@
+[Unit]
+Description=HostZit appliance: no SSH password sign-in for hzadmin with the first password
+ConditionPathExists=/var/lib/hostzit/.appliance
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/hostzit/appliance-ssh-guard

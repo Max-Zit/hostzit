@@ -334,6 +334,7 @@
   "Empty: no link.": "Leer: keine Verknüpfung.",
   "Empty: the official releases on GitHub. A mirror must hold the same signed files.": "Leer: die offiziellen Releases auf GitHub. Ein Mirror muss dieselben signierten Dateien enthalten.",
   "Engine": "Engine",
+  "The password of a protected folder can have at most 72 characters.": "Das Passwort eines geschützten Ordners darf höchstens 72 Zeichen haben.",
   "Enter a folder of the website, e.g. /private": "Geben Sie einen Ordner der Website ein, z. B. /private",
   "Enter at least one administrator address.": "Geben Sie mindestens eine Administratoradresse ein.",
   "Enter the 6-digit code from your authenticator app, or one of your recovery codes.": "Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App oder einen Ihrer Wiederherstellungscodes ein.",

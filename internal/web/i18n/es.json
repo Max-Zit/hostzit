@@ -334,6 +334,7 @@
   "Empty: no link.": "Vacío: sin vínculo.",
   "Empty: the official releases on GitHub. A mirror must hold the same signed files.": "Vacío: las versiones oficiales en GitHub. Un espejo debe contener los mismos archivos firmados.",
   "Engine": "Motor",
+  "The password of a protected folder can have at most 72 characters.": "La contraseña de una carpeta protegida puede tener como máximo 72 caracteres.",
   "Enter a folder of the website, e.g. /private": "Introduzca una carpeta del sitio, p. ej. /private",
   "Enter at least one administrator address.": "Introduzca al menos una dirección de administrador.",
   "Enter the 6-digit code from your authenticator app, or one of your recovery codes.": "Introduzca el código de 6 dígitos de su aplicación de autenticación o uno de sus códigos de recuperación.",

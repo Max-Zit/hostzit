@@ -69,6 +69,7 @@ HostZit hosting appliance - \n
 
   Setup menu:      sign in here as hzadmin (first password: hostzit,
                    must be changed) - network, host name, time zone.
+                   SSH with a password works for hzadmin after the change.
 
 ISSUE
 }

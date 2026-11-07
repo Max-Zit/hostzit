@@ -1,0 +1,19 @@
+#!/bin/sh
+# HostZit appliance: hzadmin may not sign in over SSH with a password while
+# it still has the first password of the image (anyone who reaches the
+# server first could take it over). Signing in on the server's own screen
+# and choosing a new password lifts the block; keys work all the time.
+# Runs at boot and whenever /etc/shadow changes (hostzit-ssh-guard.path).
+set -e
+[ -f /var/lib/hostzit/.appliance ] || exit 0
+f=/etc/ssh/sshd_config.d/05-hostzit-hzadmin-first.conf
+last=$(getent shadow hzadmin | cut -d: -f3)
+reload() { systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || true; }
+if [ "$last" = 0 ]; then
+    [ -f "$f" ] && exit 0
+    printf '# Written by HostZit: removed when hzadmin has chosen its own password.\nMatch User hzadmin\n\tPasswordAuthentication no\n\tKbdInteractiveAuthentication no\n' > "$f"
+    reload
+elif [ -f "$f" ]; then
+    rm -f "$f"
+    reload
+fi

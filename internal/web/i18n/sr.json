@@ -334,6 +334,7 @@
   "Empty: no link.": "Prazno: bez veze.",
   "Empty: the official releases on GitHub. A mirror must hold the same signed files.": "Prazno: zvanična izdanja na GitHub-u. Mirror mora imati iste potpisane fajlove.",
   "Engine": "Engine",
+  "The password of a protected folder can have at most 72 characters.": "Lozinka zaštićenog foldera može imati najviše 72 znaka.",
   "Enter a folder of the website, e.g. /private": "Unesite folder sajta, npr. /private",
   "Enter at least one administrator address.": "Unesite bar jednu adresu administratora.",
   "Enter the 6-digit code from your authenticator app, or one of your recovery codes.": "Unesite šestocifreni kod iz aplikacije za autentifikaciju ili jedan od rezervnih kodova.",

@@ -1,0 +1,9 @@
+[Unit]
+Description=HostZit appliance: watch for the first password change of hzadmin
+ConditionPathExists=/var/lib/hostzit/.appliance
+
+[Path]
+PathChanged=/etc/shadow
+
+[Install]
+WantedBy=multi-user.target

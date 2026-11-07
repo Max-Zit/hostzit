@@ -334,6 +334,7 @@
   "Empty: no link.": "Puste: brak połączenia.",
   "Empty: the official releases on GitHub. A mirror must hold the same signed files.": "Puste: oficjalne wydania na GitHub. Mirror musi zawierać te same podpisane pliki.",
   "Engine": "Silnik",
+  "The password of a protected folder can have at most 72 characters.": "Hasło chronionego folderu może mieć najwyżej 72 znaki.",
   "Enter a folder of the website, e.g. /private": "Podaj folder witryny, np. /private",
   "Enter at least one administrator address.": "Podaj co najmniej jeden adres administratora.",
   "Enter the 6-digit code from your authenticator app, or one of your recovery codes.": "Wpisz 6-cyfrowy kod z aplikacji uwierzytelniającej lub jeden z kodów odzyskiwania.",

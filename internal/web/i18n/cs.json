@@ -334,6 +334,7 @@
   "Empty: no link.": "Prázdné: bez propojení.",
   "Empty: the official releases on GitHub. A mirror must hold the same signed files.": "Prázdné: oficiální vydání na GitHubu. Zrcadlo musí obsahovat stejné podepsané soubory.",
   "Engine": "Engine",
+  "The password of a protected folder can have at most 72 characters.": "Heslo chráněné složky může mít nejvýše 72 znaků.",
   "Enter a folder of the website, e.g. /private": "Zadejte složku webu, např. /private",
   "Enter at least one administrator address.": "Zadejte alespoň jednu adresu administrátora.",
   "Enter the 6-digit code from your authenticator app, or one of your recovery codes.": "Zadejte šestimístný kód z ověřovací aplikace nebo jeden ze záložních kódů.",

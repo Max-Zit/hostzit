@@ -21,6 +21,13 @@
   <li><a href="/audit">Audit log</a> sa lancem hash-eva, tajne šifrovane na disku, potpisana ažuriranja, odobrenje u četiri oka.</li>
 </ul>
 
+<h2 id="network">Šifrovanje i mreža</h2>
+<ul>
+  <li>Sajtovi preko HTTPS-a: TLS 1.3, a TLS 1.2 samo sa forward secrecy i AEAD šiframa (bez CBC i SHA-1 šifara).</li>
+  <li>HostZit appliance nudi SSH i SFTP samo sa jakim algoritmima: post-kvantna razmena ključeva (mlkem768, sntrup761) uz curve25519, Ed25519 i RSA ključevi servera, AES-GCM/CTR, encrypt-then-MAC. Root ne može da se prijavi preko SSH-a.</li>
+  <li>LLMNR i multicast DNS (portovi 5355 i 5353), namenjeni kućnim mrežama, su isključeni.</li>
+</ul>
+
 <h2 id="bruteforce">Zaštita od brute-force napada</h2>
 <p>Adresa koja se previše puta neuspešno prijavi biva blokirana: u panelima (to radi sam panel), za SSH i SFTP i za prijavu na svaki WordPress sajt (oba radi fail2ban, koji panel podešava). Ograničenja su ona iz <b>Podešavanja → Prijava i bezbednost</b> (broj neuspelih prijava, period brojanja, trajanje blokade; ponovljena blokada se duplira, do 7 dana). Za WordPress neuspeh je zahtev za prijavu preko ograničenja od 10 u minuti sa jedne adrese.</p>
 <p><b>Podešavanja → Zaštita od brute-force napada</b> prikazuje svaku blokiranu adresu, gde je blokirana i do kada, a dugme <b>Odblokiraj</b> uklanja blokadu. U <b>Nikad blokirane</b> unesite svoje adrese ili mreže (jednu po redu, npr. kancelariju): one se nikad ne blokiraju; ni sam server se ne blokira.</p>

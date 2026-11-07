@@ -334,6 +334,7 @@
   "Empty: no link.": "Пусто: без связки.",
   "Empty: the official releases on GitHub. A mirror must hold the same signed files.": "Пусто: официальные выпуски на GitHub. Зеркало должно содержать те же подписанные файлы.",
   "Engine": "Движок",
+  "The password of a protected folder can have at most 72 characters.": "Пароль защищённой папки может содержать не более 72 символов.",
   "Enter a folder of the website, e.g. /private": "Введите папку сайта, например /private",
   "Enter at least one administrator address.": "Введите хотя бы один адрес администратора.",
   "Enter the 6-digit code from your authenticator app, or one of your recovery codes.": "Введите 6-значный код из приложения-аутентификатора или один из резервных кодов.",
