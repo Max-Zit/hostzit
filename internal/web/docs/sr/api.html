@@ -26,7 +26,7 @@ POST   /api/v1/customers/{id}/terminate
 GET    /api/v1/customers/{id}/usage
 POST   /api/v1/customers/{id}/sso       → {"url": "…"} jednokratni link za prijavu, 60 s
 POST   /api/v1/customers/{id}/export    → posao: rezervna kopija naloga u ~/backups
-GET    /api/v1/customers/{id}/backups
+GET    /api/v1/customers/{id}/backups   → arhive u ~/backups (tačke vraćanja nisu u API-ju)
 GET    /api/v1/jobs/{id}
 PUT    /api/v1/transfers/{name}         telo: HostZit arhiva (hostzit-….tar.gz)
 POST   /api/v1/transfers/{name}/import  {"username","package"} → {"job_id"}

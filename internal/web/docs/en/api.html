@@ -26,7 +26,7 @@ POST   /api/v1/customers/{id}/terminate
 GET    /api/v1/customers/{id}/usage
 POST   /api/v1/customers/{id}/sso       → {"url": "…"} one-time sign-in link, 60 s
 POST   /api/v1/customers/{id}/export    → job: account backup in ~/backups
-GET    /api/v1/customers/{id}/backups
+GET    /api/v1/customers/{id}/backups   → archives in ~/backups (restore points are not in the API)
 GET    /api/v1/jobs/{id}
 PUT    /api/v1/transfers/{name}         body: HostZit archive (hostzit-….tar.gz)
 POST   /api/v1/transfers/{name}/import  {"username","package"} → {"job_id"}
