@@ -1306,5 +1306,6 @@
   "More file types": "Ek dosya türleri",
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Her satıra bir tane: kod (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) ve site klasöründeki bir sayfa.",
   "One per line: the extension and the type the browser gets.": "Her satıra bir tane: uzantı ve tarayıcının aldığı tür.",
-  "Own error pages": "Kendi hata sayfaları"
+  "Own error pages": "Kendi hata sayfaları",
+  "the website showed an error after the update, so the snapshot from before was restored": "site güncellemeden sonra hata gösterdi, bu yüzden güncelleme öncesi anlık görüntü geri yüklendi"
 }

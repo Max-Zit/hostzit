@@ -399,24 +399,43 @@ func (s *Server) handleWPCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 // snapshotWP saves a copy before a risky change.
-func (s *Server) snapshotWP(ctx context.Context, by string, c *store.Customer, in *store.WPInstall, note string) error {
+func (s *Server) snapshotWP(ctx context.Context, by string, c *store.Customer, in *store.WPInstall, note string) (string, error) {
 	name := fmt.Sprintf("wp-%d-%s", in.ID, s.now().UTC().Format("20060102-150405"))
 	var res struct {
 		File string `json:"file"`
 		Size int64  `json:"size"`
 	}
 	if err := s.call(ctx, by, "wp.snapshot", map[string]string{"account": c.Username, "path": in.Path, "name": name}, &res); err != nil {
-		return err
+		return "", err
 	}
-	return s.store.AddWPSnapshot(ctx, &store.WPSnapshot{InstallID: in.ID, File: res.File, SizeB: res.Size, Note: note})
+	return name, s.store.AddWPSnapshot(ctx, &store.WPSnapshot{InstallID: in.ID, File: res.File, SizeB: res.Size, Note: note})
 }
 
 // updateWP makes a snapshot and updates core (minor or all), plugins and
 // themes; the page cache is cleared afterwards.
-func (s *Server) updateWP(ctx context.Context, by string, c *store.Customer, in *store.WPInstall, minorOnly bool) error {
-	if err := s.snapshotWP(ctx, by, c, in, "before update"); err != nil {
+func (s *Server) updateWP(ctx context.Context, by string, c *store.Customer, in *store.WPInstall, minorOnly bool) (result error) {
+	healthyBefore := s.siteHealthy(ctx, in.Domain)
+	snap, err := s.snapshotWP(ctx, by, c, in, "before update")
+	if err != nil {
 		return fmt.Errorf("snapshot: %w", err)
 	}
+	defer func() {
+		// a site that worked before and fails after the update gets the
+		// snapshot back (a plugin update that breaks the site)
+		if !healthyBefore || s.siteHealthy(ctx, in.Domain) {
+			return
+		}
+		if rerr := s.call(ctx, by, "wp.restore", map[string]string{"account": c.Username, "path": in.Path, "name": snap}, nil); rerr != nil {
+			s.log.Warn("restore after a failed update", "site", in.Domain, "err", rerr)
+			return
+		}
+		_ = s.call(ctx, by, "site.cache.purge", map[string]any{"account": c.Username, "id": in.SiteID}, nil)
+		_ = s.checkWP(ctx, by, c.Username, in)
+		_ = s.store.Audit(ctx, by, "local", "wp.rollback", "site:"+in.Domain, "the site failed after the update; the snapshot from before was restored")
+		result = errors.Join(result, errors.New("the website showed an error after the update, so the snapshot from before was restored"))
+		s.notify(ctx, "wp:"+in.Domain, c, "WordPress update of "+in.Domain+" was undone",
+			"After the update of WordPress on "+in.Domain+" the website showed an error, so the snapshot from before the update was restored.\nTry the updates on a staging copy first (WordPress in the panel).\n")
+	}()
 	args := []string{"core", "update"}
 	if minorOnly {
 		args = append(args, "--minor")
@@ -433,6 +452,9 @@ func (s *Server) updateWP(ctx context.Context, by string, c *store.Customer, in 
 		if _, err := s.wpcli(ctx, by, c.Username, in.Path, "", "theme", "update", "--all"); err != nil {
 			errs = append(errs, err)
 		}
+	}
+	if s.wpAfterUpdate != nil {
+		s.wpAfterUpdate()
 	}
 	_ = s.store.MarkWPUpdated(ctx, in.ID)
 	_ = s.call(ctx, by, "site.cache.purge", map[string]any{"account": c.Username, "id": in.SiteID}, nil)
@@ -611,7 +633,7 @@ func (s *Server) handleWPSnapshot(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	back := "/wordpress/" + strconv.FormatInt(in.ID, 10)
-	if err := s.snapshotWP(r.Context(), actor(r), c, in, "by hand"); err != nil {
+	if _, err := s.snapshotWP(r.Context(), actor(r), c, in, "by hand"); err != nil {
 		s.redirectErr(w, r, back, storeErr(err))
 		return
 	}

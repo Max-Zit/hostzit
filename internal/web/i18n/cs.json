@@ -1306,5 +1306,6 @@
   "More file types": "Další typy souborů",
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Jedna na řádek: kód (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) a stránka ve složce webu.",
   "One per line: the extension and the type the browser gets.": "Jeden na řádek: přípona a typ, který prohlížeč dostane.",
-  "Own error pages": "Vlastní chybové stránky"
+  "Own error pages": "Vlastní chybové stránky",
+  "the website showed an error after the update, so the snapshot from before was restored": "web po aktualizaci ukázal chybu, proto byl obnoven snímek z doby před ní"
 }

@@ -8,7 +8,7 @@
 <p><b>Open wp-admin</b> signs you in as the administrator with a one-time link (valid 60 seconds, once).</p>
 
 <h2 id="updates">Updates and snapshots</h2>
-<p><b>Check now</b> lists new versions of WordPress, plugins and themes; <b>Update everything</b> first makes a <b>snapshot</b> (files and database in <code>~/backups</code>), then updates and clears the page cache. <b>Restore</b> puts a snapshot back. Automatic updates run every night with a snapshot first: security updates of WordPress (default), everything, or off.</p>
+<p><b>Check now</b> lists new versions of WordPress, plugins and themes; <b>Update everything</b> first makes a <b>snapshot</b> (files and database in <code>~/backups</code>), then updates and clears the page cache. <b>Restore</b> puts a snapshot back. Automatic updates run every night with a snapshot first: security updates of WordPress (default), everything, or off. If the home page worked before an update and shows a server error or WordPress's “critical error” page afterwards, the snapshot is put back by itself and the customer and administrators get a notice.</p>
 
 <h2 id="staging">Staging</h2>
 <p><b>Create a staging copy</b> copies the site to <code>staging.DOMAIN</code> with its own database; search engines are told to stay away. Try updates and changes there; <b>Push to live</b> copies the staging site over the live one (after a snapshot of the live site), keeping the live <code>wp-config.php</code>.</p>

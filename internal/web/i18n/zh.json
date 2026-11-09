@@ -1306,5 +1306,6 @@
   "More file types": "更多文件类型",
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "每行一个：状态码（400、401、403、404、410、429、500、502、503、504）和网站文件夹中的页面。",
   "One per line: the extension and the type the browser gets.": "每行一个：扩展名和浏览器收到的类型。",
-  "Own error pages": "自定义错误页面"
+  "Own error pages": "自定义错误页面",
+  "the website showed an error after the update, so the snapshot from before was restored": "更新后网站显示错误，因此已恢复更新前的快照"
 }

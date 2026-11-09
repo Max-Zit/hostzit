@@ -1306,5 +1306,6 @@
   "More file types": "Дополнительные типы файлов",
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "По одной в строке: код (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) и страница в папке сайта.",
   "One per line: the extension and the type the browser gets.": "По одному в строке: расширение и тип, который получает браузер.",
-  "Own error pages": "Свои страницы ошибок"
+  "Own error pages": "Свои страницы ошибок",
+  "the website showed an error after the update, so the snapshot from before was restored": "после обновления сайт показал ошибку, поэтому восстановлен снимок, сделанный до обновления"
 }

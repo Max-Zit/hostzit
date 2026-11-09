@@ -1306,5 +1306,6 @@
   "More file types": "追加のファイルタイプ",
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "1 行に 1 つ: コード (400、401、403、404、410、429、500、502、503、504) と Web サイトのフォルダー内のページ。",
   "One per line: the extension and the type the browser gets.": "1 行に 1 つ: 拡張子とブラウザーが受け取るタイプ。",
-  "Own error pages": "独自のエラーページ"
+  "Own error pages": "独自のエラーページ",
+  "the website showed an error after the update, so the snapshot from before was restored": "更新後に Web サイトがエラーを表示したため、更新前のスナップショットを復元しました"
 }

@@ -1306,5 +1306,6 @@
   "More file types": "Meer bestandstypen",
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Eén per regel: de code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) en een pagina in de map van de website.",
   "One per line: the extension and the type the browser gets.": "Eén per regel: de extensie en het type dat de browser krijgt.",
-  "Own error pages": "Eigen foutpagina’s"
+  "Own error pages": "Eigen foutpagina’s",
+  "the website showed an error after the update, so the snapshot from before was restored": "de website gaf na de update een fout, daarom is de snapshot van daarvoor teruggezet"
 }

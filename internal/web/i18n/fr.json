@@ -1306,5 +1306,6 @@
   "More file types": "Autres types de fichiers",
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Une par ligne : le code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) et une page du dossier du site.",
   "One per line: the extension and the type the browser gets.": "Un par ligne : l’extension et le type que reçoit le navigateur.",
-  "Own error pages": "Pages d’erreur personnalisées"
+  "Own error pages": "Pages d’erreur personnalisées",
+  "the website showed an error after the update, so the snapshot from before was restored": "le site a affiché une erreur après la mise à jour, l’instantané d’avant a donc été restauré"
 }

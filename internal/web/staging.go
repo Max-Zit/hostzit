@@ -144,7 +144,7 @@ func (s *Server) pushStaging(ctx context.Context, by string, c *store.Customer, 
 	if err != nil {
 		return err
 	}
-	if err := s.snapshotWP(ctx, by, c, live, "before push from staging"); err != nil {
+	if _, err := s.snapshotWP(ctx, by, c, live, "before push from staging"); err != nil {
 		return fmt.Errorf("snapshot: %w", err)
 	}
 	liveSite, err := s.store.SiteByID(ctx, live.SiteID)

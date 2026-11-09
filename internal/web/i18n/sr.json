@@ -1306,5 +1306,6 @@
   "More file types": "Dodatni tipovi fajlova",
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Jedna po redu: kod (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) i stranica u folderu sajta.",
   "One per line: the extension and the type the browser gets.": "Jedan po redu: ekstenzija i tip koji pregledač dobija.",
-  "Own error pages": "Sopstvene stranice grešaka"
+  "Own error pages": "Sopstvene stranice grešaka",
+  "the website showed an error after the update, so the snapshot from before was restored": "sajt je posle ažuriranja prikazao grešku, pa je vraćen snapshot od pre ažuriranja"
 }
