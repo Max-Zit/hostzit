@@ -3,6 +3,7 @@ package helper
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -71,14 +72,26 @@ func (h *Helper) cronApply(ctx context.Context, a cronArgs) (any, error) {
 	if err := h.systemctl(ctx, "daemon-reload"); err != nil {
 		return nil, err
 	}
-	for name, on := range want {
-		if on {
-			if err := h.systemctl(ctx, "enable", "--now", name+".timer"); err != nil {
-				return nil, err
-			}
+	// one systemctl call for all timers to start and one for all to stop:
+	// each call reloads systemd, one per job made an account with many
+	// jobs hold the helper for a minute on every change
+	var on, off []string
+	for name, enabled := range want {
+		if enabled {
+			on = append(on, name+".timer")
 		} else {
-			_ = h.systemctl(ctx, "disable", "--now", name+".timer")
+			off = append(off, name+".timer")
 		}
+	}
+	slices.Sort(on)
+	slices.Sort(off)
+	if len(on) > 0 {
+		if err := h.systemctl(ctx, append([]string{"enable", "--now"}, on...)...); err != nil {
+			return nil, err
+		}
+	}
+	if len(off) > 0 {
+		_ = h.systemctl(ctx, append([]string{"disable", "--now"}, off...)...)
 	}
 	return map[string]int{"jobs": len(want)}, nil
 }
