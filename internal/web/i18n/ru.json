@@ -1300,5 +1300,11 @@
   "A port is a number from 1 to 65535.": "Порт — это число от 1 до 65535.",
   "Customers on this package must use two-factor sign-in": "Клиенты с этим пакетом должны использовать двухфакторный вход",
   "Customers must show that a domain is theirs (DNS record) before they add it": "Клиенты должны подтвердить, что домен принадлежит им (запись DNS), прежде чем добавить его",
-  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "Чтобы добавить %s, подтвердите, что он ваш: направьте его на этот сервер (%s), укажите серверы имён %s или добавьте TXT-запись _hostzit-verify.%s со значением %s и попробуйте снова."
+  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "Чтобы добавить %s, подтвердите, что он ваш: направьте его на этот сервер (%s), укажите серверы имён %s или добавьте TXT-запись _hostzit-verify.%s со значением %s и попробуйте снова.",
+  "Error pages, folder listings and file types": "Страницы ошибок, списки папок и типы файлов",
+  "List the files of folders that have no index page": "Показывать список файлов в папках без индексной страницы",
+  "More file types": "Дополнительные типы файлов",
+  "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "По одной в строке: код (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) и страница в папке сайта.",
+  "One per line: the extension and the type the browser gets.": "По одному в строке: расширение и тип, который получает браузер.",
+  "Own error pages": "Свои страницы ошибок"
 }

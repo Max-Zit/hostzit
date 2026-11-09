@@ -42,6 +42,7 @@ type Site struct {
 	GeoMode      string   // "", "block" or "allow" (only these)
 	GeoList      []string // country codes and @continents
 	App          string
+	Extras       hosting.SiteExtras // error pages, folder listings, file types
 	Protected    []hosting.Protected
 	CertStatus   string // "", "ok", "pending", "failed", "uploaded"
 	CertError    string
@@ -63,23 +64,24 @@ func (s *Site) Spec(suspended bool, maxUpload int) hosting.Site {
 		Canonical: s.Canonical, TLS: s.CertStatus == "ok" || s.CertStatus == "uploaded", ForceHTTPS: s.ForceHTTPS, HSTS: s.HSTS, Cache: s.Cache,
 		CacheMinutes: s.CacheMinutes, WordPress: s.WordPress, BlockXMLRPC: s.BlockXMLRPC, Redirects: s.Redirects, Suspended: suspended, UploadMB: up,
 		IPAllow: s.IPAllow, IPDeny: s.IPDeny, Hotlink: s.Hotlink, WAF: s.WAF, WAFDetect: s.WAFDetect, WAFExclude: s.WAFExclude, App: s.App, Protected: s.Protected,
-		GeoMode: s.GeoMode, GeoList: s.GeoList}
+		GeoMode: s.GeoMode, GeoList: s.GeoList, Extras: s.Extras}
 }
 
 const siteCols = `s.id, s.customer_id, c.username, s.domain, s.aliases, s.doc_root, s.php_version, s.www, s.canonical, s.force_https, s.hsts, s.cache, s.cache_minutes,
-	s.wordpress, s.block_xmlrpc, s.redirects, s.upload_mb, s.auto_tls, s.cert_status, s.cert_error, s.cert_not_after, s.cert_names, s.cert_tried_at, s.applied, s.apply_error, s.created_at, s.ip_allow, s.ip_deny, s.hotlink, s.waf, s.protected, s.waf_detect, s.waf_exclude, s.app, s.geo_mode, s.geo_list`
+	s.wordpress, s.block_xmlrpc, s.redirects, s.upload_mb, s.auto_tls, s.cert_status, s.cert_error, s.cert_not_after, s.cert_names, s.cert_tried_at, s.applied, s.apply_error, s.created_at, s.ip_allow, s.ip_deny, s.hotlink, s.waf, s.protected, s.waf_detect, s.waf_exclude, s.app, s.geo_mode, s.geo_list, s.extras`
 
 const siteFrom = ` FROM sites s JOIN customers c ON c.id=s.customer_id`
 
 func scanSite(row pgx.Row) (*Site, error) {
 	s := &Site{}
-	var red, prot []byte
+	var red, prot, ext []byte
 	err := row.Scan(&s.ID, &s.CustomerID, &s.Account, &s.Domain, &s.Aliases, &s.DocRoot, &s.PHPVersion, &s.WWW, &s.Canonical, &s.ForceHTTPS, &s.HSTS, &s.Cache, &s.CacheMinutes,
-		&s.WordPress, &s.BlockXMLRPC, &red, &s.UploadMB, &s.AutoTLS, &s.CertStatus, &s.CertError, &s.CertNotAfter, &s.CertNames, &s.CertTriedAt, &s.Applied, &s.ApplyError, &s.CreatedAt, &s.IPAllow, &s.IPDeny, &s.Hotlink, &s.WAF, &prot, &s.WAFDetect, &s.WAFExclude, &s.App, &s.GeoMode, &s.GeoList)
+		&s.WordPress, &s.BlockXMLRPC, &red, &s.UploadMB, &s.AutoTLS, &s.CertStatus, &s.CertError, &s.CertNotAfter, &s.CertNames, &s.CertTriedAt, &s.Applied, &s.ApplyError, &s.CreatedAt, &s.IPAllow, &s.IPDeny, &s.Hotlink, &s.WAF, &prot, &s.WAFDetect, &s.WAFExclude, &s.App, &s.GeoMode, &s.GeoList, &ext)
 	if err != nil {
 		return nil, err
 	}
 	_ = json.Unmarshal(prot, &s.Protected)
+	_ = json.Unmarshal(ext, &s.Extras)
 	return s, json.Unmarshal(red, &s.Redirects)
 }
 
@@ -164,6 +166,7 @@ func (s *Store) SaveSite(ctx context.Context, x *Site) error {
 		x.GeoList = []string{}
 	}
 	prot, _ := json.Marshal(x.Protected)
+	ext, _ := json.Marshal(x.Extras)
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
 		return err
@@ -178,9 +181,9 @@ func (s *Store) SaveSite(ctx context.Context, x *Site) error {
 	if err == nil {
 		_, err = tx.Exec(ctx, `UPDATE sites SET aliases=$2, doc_root=$3, php_version=$4, www=$5, canonical=$6, force_https=$7, hsts=$8, cache=$9, cache_minutes=$10, wordpress=$11,
 			block_xmlrpc=$12, redirects=$13, upload_mb=$14, auto_tls=$15, ip_allow=$16, ip_deny=$17, hotlink=$18, waf=$19, protected=$20, waf_detect=$21, waf_exclude=$22,
-			geo_mode=$23, geo_list=$24, applied=false WHERE id=$1`,
+			geo_mode=$23, geo_list=$24, extras=$25, applied=false WHERE id=$1`,
 			x.ID, x.Aliases, x.DocRoot, x.PHPVersion, x.WWW, x.Canonical, x.ForceHTTPS, x.HSTS, x.Cache, x.CacheMinutes, x.WordPress, x.BlockXMLRPC, red, x.UploadMB, x.AutoTLS,
-			x.IPAllow, x.IPDeny, x.Hotlink, x.WAF, prot, x.WAFDetect, x.WAFExclude, x.GeoMode, x.GeoList)
+			x.IPAllow, x.IPDeny, x.Hotlink, x.WAF, prot, x.WAFDetect, x.WAFExclude, x.GeoMode, x.GeoList, ext)
 	}
 	if isUnique(err) {
 		return fmt.Errorf("%s is already used on this server", x.Domain)

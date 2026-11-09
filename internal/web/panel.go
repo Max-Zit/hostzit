@@ -189,10 +189,13 @@ type siteData struct {
 	PHP      []string
 	Aliases  string
 	Redirect string
-	MaxUp    int
-	Zone     *store.Zone
-	WAF      []helper.WAFEvent
-	Exclude  string
+	// ErrorPages and MimeTypes are the "key value" lines of the extras
+	ErrorPages string
+	MimeTypes  string
+	MaxUp      int
+	Zone       *store.Zone
+	WAF        []helper.WAFEvent
+	Exclude    string
 	// ACME: free certificates are on; CertValid: a certificate is still in use
 	ACME, CertValid bool
 	// the website's country rule
@@ -216,6 +219,7 @@ func (s *Server) showSite(w http.ResponseWriter, r *http.Request, status int, c 
 		lines = append(lines, rd.From+" "+rd.To+" "+strconv.Itoa(rd.Code))
 	}
 	d.Redirect = strings.Join(lines, "\n")
+	d.ErrorPages, d.MimeTypes = pairsText(x.Extras.ErrorPages), pairsText(x.Extras.MimeTypes)
 	d.Zone, _ = s.store.ZoneFor(r.Context(), x.Domain)
 	if x.WAF {
 		names := append([]string{x.Domain}, x.Aliases...)
@@ -299,6 +303,11 @@ func (s *Server) handleSiteUpdate(w http.ResponseWriter, r *http.Request) {
 		s.showSite(w, r, http.StatusBadRequest, c, x, err.Error())
 		return
 	}
+	extras, err := parseExtras(r.FormValue("error_pages"), r.FormValue("mime_types"), r.FormValue("indexes") != "")
+	if err != nil {
+		s.showSite(w, r, http.StatusBadRequest, c, x, err.Error())
+		return
+	}
 	docRoot, err := hosting.CleanRelPath(r.FormValue("doc_root"))
 	if err != nil {
 		s.showSite(w, r, http.StatusBadRequest, c, x, err.Error())
@@ -310,7 +319,7 @@ func (s *Server) handleSiteUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	oldPHP := x.PHPVersion
-	x.Aliases, x.Redirects, x.DocRoot, x.PHPVersion = aliases, red, docRoot, php
+	x.Aliases, x.Redirects, x.DocRoot, x.PHPVersion, x.Extras = aliases, red, docRoot, php, extras
 	x.WWW = r.FormValue("www") != ""
 	x.Canonical = r.FormValue("canonical")
 	if x.Canonical == "www" && !x.WWW {

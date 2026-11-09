@@ -1300,5 +1300,11 @@
   "A port is a number from 1 to 65535.": "Un puerto es un número del 1 al 65535.",
   "Customers on this package must use two-factor sign-in": "Los clientes de este paquete deben usar el inicio de sesión en dos pasos",
   "Customers must show that a domain is theirs (DNS record) before they add it": "Los clientes deben demostrar que un dominio es suyo (registro DNS) antes de añadirlo",
-  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "Para añadir %s, demuestre que es suyo: apúntelo a este servidor (%s), ponga sus servidores de nombres en %s o añada el registro TXT _hostzit-verify.%s con el valor %s, y vuelva a intentarlo."
+  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "Para añadir %s, demuestre que es suyo: apúntelo a este servidor (%s), ponga sus servidores de nombres en %s o añada el registro TXT _hostzit-verify.%s con el valor %s, y vuelva a intentarlo.",
+  "Error pages, folder listings and file types": "Páginas de error, listados de carpetas y tipos de archivo",
+  "List the files of folders that have no index page": "Listar los archivos de las carpetas sin página de inicio",
+  "More file types": "Más tipos de archivo",
+  "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Una por línea: el código (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) y una página de la carpeta del sitio.",
+  "One per line: the extension and the type the browser gets.": "Uno por línea: la extensión y el tipo que recibe el navegador.",
+  "Own error pages": "Páginas de error propias"
 }

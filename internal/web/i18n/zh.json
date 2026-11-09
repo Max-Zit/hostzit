@@ -1300,5 +1300,11 @@
   "A port is a number from 1 to 65535.": "端口是 1 到 65535 之间的数字。",
   "Customers on this package must use two-factor sign-in": "此套餐的客户必须使用两步验证登录",
   "Customers must show that a domain is theirs (DNS record) before they add it": "客户在添加域名之前必须证明该域名属于自己（DNS 记录）",
-  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "要添加 %s，请证明它属于您：将其指向本服务器（%s），将其名称服务器设为 %s，或添加 TXT 记录 _hostzit-verify.%s，值为 %s，然后重试。"
+  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "要添加 %s，请证明它属于您：将其指向本服务器（%s），将其名称服务器设为 %s，或添加 TXT 记录 _hostzit-verify.%s，值为 %s，然后重试。",
+  "Error pages, folder listings and file types": "错误页面、文件夹列表和文件类型",
+  "List the files of folders that have no index page": "列出没有索引页的文件夹中的文件",
+  "More file types": "更多文件类型",
+  "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "每行一个：状态码（400、401、403、404、410、429、500、502、503、504）和网站文件夹中的页面。",
+  "One per line: the extension and the type the browser gets.": "每行一个：扩展名和浏览器收到的类型。",
+  "Own error pages": "自定义错误页面"
 }

@@ -1300,5 +1300,11 @@
   "A port is a number from 1 to 65535.": "ポートは 1 から 65535 までの数字です。",
   "Customers on this package must use two-factor sign-in": "このパッケージの顧客は 2 段階認証でのサインインが必須です",
   "Customers must show that a domain is theirs (DNS record) before they add it": "顧客はドメインを追加する前に、自分のものであることを (DNS レコードで) 示す必要があります",
-  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "%s を追加するには、あなたのドメインであることを示してください: このサーバー (%s) に向けるか、ネームサーバーを %s にするか、TXT レコード _hostzit-verify.%s を値 %s で追加してから、もう一度お試しください。"
+  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "%s を追加するには、あなたのドメインであることを示してください: このサーバー (%s) に向けるか、ネームサーバーを %s にするか、TXT レコード _hostzit-verify.%s を値 %s で追加してから、もう一度お試しください。",
+  "Error pages, folder listings and file types": "エラーページ、フォルダー一覧、ファイルタイプ",
+  "List the files of folders that have no index page": "インデックスページのないフォルダーのファイルを一覧表示する",
+  "More file types": "追加のファイルタイプ",
+  "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "1 行に 1 つ: コード (400、401、403、404、410、429、500、502、503、504) と Web サイトのフォルダー内のページ。",
+  "One per line: the extension and the type the browser gets.": "1 行に 1 つ: 拡張子とブラウザーが受け取るタイプ。",
+  "Own error pages": "独自のエラーページ"
 }

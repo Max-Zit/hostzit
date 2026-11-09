@@ -1300,5 +1300,11 @@
   "A port is a number from 1 to 65535.": "Port je číslo od 1 do 65535.",
   "Customers on this package must use two-factor sign-in": "Zákazníci s tímto balíčkem musí používat dvoufázové přihlášení",
   "Customers must show that a domain is theirs (DNS record) before they add it": "Zákazníci musí ukázat, že doména je jejich (záznam DNS), než ji přidají",
-  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "Chcete-li přidat %s, ukažte, že je vaše: nasměrujte ji na tento server (%s), nastavte jí jmenné servery %s nebo přidejte záznam TXT _hostzit-verify.%s s hodnotou %s a zkuste to znovu."
+  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "Chcete-li přidat %s, ukažte, že je vaše: nasměrujte ji na tento server (%s), nastavte jí jmenné servery %s nebo přidejte záznam TXT _hostzit-verify.%s s hodnotou %s a zkuste to znovu.",
+  "Error pages, folder listings and file types": "Chybové stránky, výpisy složek a typy souborů",
+  "List the files of folders that have no index page": "Vypisovat soubory složek bez úvodní stránky",
+  "More file types": "Další typy souborů",
+  "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Jedna na řádek: kód (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) a stránka ve složce webu.",
+  "One per line: the extension and the type the browser gets.": "Jeden na řádek: přípona a typ, který prohlížeč dostane.",
+  "Own error pages": "Vlastní chybové stránky"
 }

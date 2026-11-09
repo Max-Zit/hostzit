@@ -179,6 +179,8 @@ type Site struct {
 	GeoList []string `json:"geo_list,omitempty"`
 	// GeoReady: the server has the country database and nginx module (set by the helper).
 	GeoReady bool `json:"geo_ready,omitempty"`
+	// Extras: own error pages, folder listings and file types.
+	Extras SiteExtras `json:"extras,omitempty"`
 }
 
 // Names lists every host name of the site.
@@ -273,7 +275,7 @@ func (s Site) Validate() error {
 			return errors.New("redirect: the code must be 301 or 302")
 		}
 	}
-	return nil
+	return s.Extras.Validate()
 }
 
 // Protected is a folder of a site behind a password (HTTP basic auth).

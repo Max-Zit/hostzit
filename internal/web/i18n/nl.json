@@ -1300,5 +1300,11 @@
   "A port is a number from 1 to 65535.": "Een poort is een getal van 1 tot 65535.",
   "Customers on this package must use two-factor sign-in": "Klanten met dit pakket moeten inloggen in twee stappen gebruiken",
   "Customers must show that a domain is theirs (DNS record) before they add it": "Klanten moeten laten zien dat een domein van hen is (DNS-record) voordat ze het toevoegen",
-  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "Om %s toe te voegen, laat zien dat het van u is: laat het naar deze server wijzen (%s), stel de nameservers in op %s of voeg het TXT-record _hostzit-verify.%s toe met de waarde %s, en probeer het opnieuw."
+  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "Om %s toe te voegen, laat zien dat het van u is: laat het naar deze server wijzen (%s), stel de nameservers in op %s of voeg het TXT-record _hostzit-verify.%s toe met de waarde %s, en probeer het opnieuw.",
+  "Error pages, folder listings and file types": "Foutpagina’s, maplijsten en bestandstypen",
+  "List the files of folders that have no index page": "De bestanden tonen van mappen zonder indexpagina",
+  "More file types": "Meer bestandstypen",
+  "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Eén per regel: de code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) en een pagina in de map van de website.",
+  "One per line: the extension and the type the browser gets.": "Eén per regel: de extensie en het type dat de browser krijgt.",
+  "Own error pages": "Eigen foutpagina’s"
 }

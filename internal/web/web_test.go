@@ -303,6 +303,34 @@ func TestPanels(t *testing.T) {
 	if err != nil || !strings.Contains(string(conf), "fastcgi_cache hz") || !strings.Contains(string(conf), "location = /old") {
 		t.Fatalf("nginx config: %v\n%s", err, conf)
 	}
+	// own error pages, folder listings and file types
+	extra := url.Values{"php": {"8.4"}, "doc_root": {"sites/shop.example.com/public"}, "upload_mb": {"64"}, "auto_tls": {"on"},
+		"error_pages": {"404 /404.html\n503  /maintenance.html"}, "indexes": {"on"}, "mime_types": {".WebManifest application/manifest+json"}}
+	c.ok(sid, extra)
+	conf, _ = os.ReadFile(filepath.Join(e.root, "etc/nginx/zit.d/hostzit/sites/shop", itoa(sites[0].ID)+".conf"))
+	for _, want := range []string{"error_page 404 /404.html;", "error_page 503 /maintenance.html;", "autoindex on;", "default_type application/manifest+json;"} {
+		if !strings.Contains(string(conf), want) {
+			t.Errorf("site extras: %q missing in\n%s", want, conf)
+		}
+	}
+	if pg := c.page(sid); !strings.Contains(pg, "404 /404.html\n503 /maintenance.html") || !strings.Contains(pg, "webmanifest application/manifest+json") {
+		t.Error("site page does not show the extras")
+	}
+	for _, bad := range []url.Values{{"error_pages": {"404"}}, {"error_pages": {"200 /x.html"}}, {"mime_types": {"php text/plain"}}, {"mime_types": {"x text/plain;y"}}} {
+		v := url.Values{}
+		for k, x := range extra {
+			v[k] = x
+		}
+		for k, x := range bad {
+			v[k] = x
+		}
+		if st, _, _ := c.post(sid, v); st != http.StatusBadRequest {
+			t.Errorf("bad extras %v: %d", bad, st)
+		}
+	}
+	if x, _ := e.st.SiteByID(context.Background(), sites[0].ID); x.Extras.MimeTypes["webmanifest"] != "application/manifest+json" || x.Extras.MimeTypes["php"] != "" {
+		t.Errorf("stored extras %+v", x.Extras)
+	}
 	c.ok(sid+"/cache/purge", url.Values{})
 	if !e.hp.called("site.cache.purge") {
 		t.Fatal("purge not called")

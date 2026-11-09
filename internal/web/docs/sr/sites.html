@@ -10,6 +10,7 @@
   <li><b>Glavna adresa</b>: sa ili bez www; druga se preusmerava.</li>
   <li><b>Preusmeri HTTP na HTTPS</b> i <b>HSTS</b>.</li>
   <li><b>Preusmeravanja</b>: jedno po redu, npr. <code>/staro /novo 301</code>.</li>
+  <li><b>Stranice grešaka, spisak fajlova u folderu i tipovi fajlova</b>: sopstvene stranice za greške (jedna po redu, npr. <code>404 /404.html</code>; kodovi 400, 401, 403, 404, 410, 429, 500, 502, 503, 504), spisak fajlova u folderima bez početne stranice i dodatni tipovi fajlova (npr. <code>webmanifest application/manifest+json</code>; tip PHP fajlova se ne može menjati). Preusmeravanje <code>/</code> na drugu adresu šalje ceo domen tamo.</li>
   <li><b>Aliasi</b>: drugi domeni koji prikazuju isti sajt.</li>
   <li><b>Zatraži sertifikat ponovo</b> / <b>Obnovi sada</b>: odmah pita Let's Encrypt, npr. posle ispravke DNS-a (najviše jednom u 15 minuta po sajtu; Let's Encrypt blokira ime posle nekoliko neuspelih pokušaja na sat). Inače se neuspeo zahtev ponavlja na svakih nekoliko sati, a sertifikati se obnavljaju 30 dana pre isteka.</li>
   <li><b>Sopstveni sertifikat</b>: nalepite sertifikat i ključ umesto Let's Encrypt-a.</li>

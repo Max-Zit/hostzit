@@ -145,12 +145,14 @@ func siteBody(b *strings.Builder, s Site, root, sock string) {
 	for _, r := range s.Redirects {
 		w("    location = %s {\n        return %d %s;\n    }\n", r.From, r.Code, r.To)
 	}
+	extrasServer(w, s.Extras)
 	// Hidden files (.git, .env, .htaccess) are never served.
 	w("    location ~ /\\.(?!well-known/) {\n        deny all;\n    }\n")
 	if s.App != "" {
 		appLocations(b, s)
 		return
 	}
+	extrasTypes(w, s.Extras)
 	if s.WordPress {
 		w("    location ~* ^/wp-config\\.php|/(?:uploads|files)/.*\\.php$ {\n        deny all;\n    }\n")
 		if s.BlockXMLRPC {

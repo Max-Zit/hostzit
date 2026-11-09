@@ -10,6 +10,7 @@
   <li><b>Main address</b>: with or without www; the other one redirects.</li>
   <li><b>Redirect HTTP to HTTPS</b> and <b>HSTS</b>.</li>
   <li><b>Redirects</b>: one per line, e.g. <code>/old /new 301</code>.</li>
+  <li><b>Error pages, folder listings and file types</b>: own pages for errors (one per line, e.g. <code>404 /404.html</code>; codes 400, 401, 403, 404, 410, 429, 500, 502, 503, 504), a list of the files of folders without an index page, and more file types (e.g. <code>webmanifest application/manifest+json</code>; the type of PHP files cannot be changed). A redirect of <code>/</code> to another address sends the whole domain there.</li>
   <li><b>Aliases</b>: more domains that show the same website.</li>
   <li><b>Request the certificate again</b> / <b>Renew now</b>: asks Let's Encrypt right away, for example after the DNS was fixed (at most once per 15 minutes per website; Let's Encrypt blocks a name after a few failed tries an hour). Otherwise a failed request is retried every few hours and certificates renew 30 days before they expire.</li>
   <li><b>Own certificate</b>: paste a certificate and its key instead of Let's Encrypt.</li>
