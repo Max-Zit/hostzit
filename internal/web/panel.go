@@ -135,7 +135,7 @@ func (s *Server) handleSiteCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.domainAllowed(r.Context(), c, dom); err != nil {
-		fail(err.Error())
+		fail(pageErr(s.lang(r, userFrom(r)), err))
 		return
 	}
 	x, err := s.addSite(r.Context(), actor(r), c, dom, d.DNS)
@@ -167,7 +167,7 @@ func (s *Server) domainAllowed(ctx context.Context, c *store.Customer, dom strin
 	if z, err := s.store.ZoneFor(ctx, dom); err == nil && z.CustomerID != c.ID {
 		return errors.New("this domain belongs to another account on this server")
 	}
-	return nil
+	return s.checkOwnership(ctx, c, dom)
 }
 
 func (s *Server) mySite(w http.ResponseWriter, r *http.Request, c *store.Customer) *store.Site {
@@ -289,7 +289,7 @@ func (s *Server) handleSiteUpdate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := s.domainAllowed(r.Context(), c, n); err != nil {
-			s.showSite(w, r, http.StatusBadRequest, c, x, n+": "+err.Error())
+			s.showSite(w, r, http.StatusBadRequest, c, x, n+": "+pageErr(s.lang(r, userFrom(r)), err))
 			return
 		}
 		aliases = append(aliases, n)

@@ -1298,5 +1298,7 @@
   "More TCP ports": "Meer TCP-poorten",
   "More UDP ports": "Meer UDP-poorten",
   "A port is a number from 1 to 65535.": "Een poort is een getal van 1 tot 65535.",
-  "Customers on this package must use two-factor sign-in": "Klanten met dit pakket moeten inloggen in twee stappen gebruiken"
+  "Customers on this package must use two-factor sign-in": "Klanten met dit pakket moeten inloggen in twee stappen gebruiken",
+  "Customers must show that a domain is theirs (DNS record) before they add it": "Klanten moeten laten zien dat een domein van hen is (DNS-record) voordat ze het toevoegen",
+  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "Om %s toe te voegen, laat zien dat het van u is: laat het naar deze server wijzen (%s), stel de nameservers in op %s of voeg het TXT-record _hostzit-verify.%s toe met de waarde %s, en probeer het opnieuw."
 }

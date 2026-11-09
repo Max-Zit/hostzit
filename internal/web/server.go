@@ -209,6 +209,8 @@ type SecuritySettings struct {
 	Customer2FA   bool `json:"customer_2fa"` // customers must use two-factor sign-in too
 	// FourEyes: deleting/terminating customers and deleting packages need a second administrator.
 	FourEyes bool `json:"four_eyes"`
+	// DomainCheck: customers prove that a domain is theirs (DNS) before adding it.
+	DomainCheck bool `json:"domain_check"`
 }
 
 // DefaultSecurity: short admin sessions, customers may choose 2FA.

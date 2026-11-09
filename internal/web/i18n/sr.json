@@ -1298,5 +1298,7 @@
   "More TCP ports": "Dodatni TCP portovi",
   "More UDP ports": "Dodatni UDP portovi",
   "A port is a number from 1 to 65535.": "Port je broj od 1 do 65535.",
-  "Customers on this package must use two-factor sign-in": "Korisnici na ovom paketu moraju koristiti prijavu u dva koraka"
+  "Customers on this package must use two-factor sign-in": "Korisnici na ovom paketu moraju koristiti prijavu u dva koraka",
+  "Customers must show that a domain is theirs (DNS record) before they add it": "Korisnici moraju da pokažu da je domen njihov (DNS zapis) pre nego što ga dodaju",
+  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "Da biste dodali %s, pokažite da je vaš: usmerite ga na ovaj server (%s), postavite mu name servere %s ili dodajte TXT zapis _hostzit-verify.%s sa vrednošću %s, pa pokušajte ponovo."
 }

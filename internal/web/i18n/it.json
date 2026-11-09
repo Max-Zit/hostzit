@@ -1298,5 +1298,7 @@
   "More TCP ports": "Altre porte TCP",
   "More UDP ports": "Altre porte UDP",
   "A port is a number from 1 to 65535.": "Una porta è un numero da 1 a 65535.",
-  "Customers on this package must use two-factor sign-in": "I clienti di questo pacchetto devono usare l’accesso a due fattori"
+  "Customers on this package must use two-factor sign-in": "I clienti di questo pacchetto devono usare l’accesso a due fattori",
+  "Customers must show that a domain is theirs (DNS record) before they add it": "I clienti devono dimostrare che un dominio è loro (record DNS) prima di aggiungerlo",
+  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "Per aggiungere %s, dimostra che è tuo: puntalo a questo server (%s), imposta i suoi name server su %s oppure aggiungi il record TXT _hostzit-verify.%s con il valore %s, poi riprova."
 }

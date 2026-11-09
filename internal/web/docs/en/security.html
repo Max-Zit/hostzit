@@ -14,6 +14,7 @@
 <h2 id="mail">Mail from websites</h2>
 <p>Accounts cannot send mail directly (the firewall rejects outgoing SMTP for them). PHP's <code>mail()</code> puts messages into a queue; HostZit sends them through the relay set under Settings → Notifications, with the hourly limit of the package. Customers see their queue under <b>Security</b>.</p>
 
+<h2 id="domains">Whose domain is it?</h2><p>Like in cPanel, customers can add any domain by default. With <b>Customers must show that a domain is theirs</b> (Settings → Sign-in and security) a customer adds a website, an alias or a DNS zone only when DNS shows that the domain is theirs: it already points at this server (A/AAAA record), its name servers are this server's name servers, or the TXT record <code>_hostzit-verify.DOMAIN</code> holds the value the panel shows (it stays the same for that customer and domain). Names below a zone the customer already has need no proof, and administrators (and the REST API) can always add a domain for a customer.</p>
 <h2 id="panel">The panel</h2>
 <ul>
   <li>Root work only through <b>hostzit-helper</b>, with a fixed list of checked operations; configuration is written from templates, never from customer text.</li>

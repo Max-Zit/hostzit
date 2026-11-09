@@ -1298,5 +1298,7 @@
   "More TCP ports": "Ek TCP portları",
   "More UDP ports": "Ek UDP portları",
   "A port is a number from 1 to 65535.": "Port, 1 ile 65535 arasında bir sayıdır.",
-  "Customers on this package must use two-factor sign-in": "Bu paketteki müşteriler iki adımlı oturum açma kullanmalıdır"
+  "Customers on this package must use two-factor sign-in": "Bu paketteki müşteriler iki adımlı oturum açma kullanmalıdır",
+  "Customers must show that a domain is theirs (DNS record) before they add it": "Müşteriler bir alan adını eklemeden önce kendilerine ait olduğunu (DNS kaydı) göstermelidir",
+  "To add %s, show that it is yours: point it at this server (%s), set its name servers to %s, or add the TXT record _hostzit-verify.%s with the value %s, then try again.": "%s eklemek için size ait olduğunu gösterin: bu sunucuya yönlendirin (%s), ad sunucularını %s yapın veya _hostzit-verify.%s TXT kaydını %s değeriyle ekleyin, sonra tekrar deneyin."
 }

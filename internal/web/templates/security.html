@@ -18,6 +18,7 @@
     </div>
     <label class="check"><input type="checkbox" name="four_eyes" {{if .Data.X.FourEyes}}checked{{end}}><span>{{.T "Four-eyes approval: a second administrator must approve deleting or terminating customers and deleting packages"}}</span></label>
     <label class="check"><input type="checkbox" name="customer_2fa" {{if .Data.X.Customer2FA}}checked{{end}}><span>{{.T "Customers must use two-factor sign-in too"}}</span></label>
+    <label class="check"><input type="checkbox" name="domain_check" {{if .Data.X.DomainCheck}}checked{{end}}><span>{{.T "Customers must show that a domain is theirs (DNS record) before they add it"}}</span></label>
     <p class="small muted">{{.T "Administrators always need two-factor sign-in; customers can switch it on in their panel. Sign-ins from the server itself (127.0.0.1) are never blocked."}}</p>
     <div><button class="primary">{{.T "Save"}}</button></div>
   </form>

@@ -44,7 +44,7 @@ func formInt(r *http.Request, k string) int {
 
 func (s *Server) handleSecuritySave(w http.ResponseWriter, r *http.Request) {
 	x := SecuritySettings{SessionHours: formInt(r, "session_hours"), IdleMinutes: formInt(r, "idle_minutes"), MaxAttempts: formInt(r, "max_attempts"),
-		WindowMinutes: formInt(r, "window_minutes"), BlockMinutes: formInt(r, "block_minutes"), Customer2FA: r.FormValue("customer_2fa") != "", FourEyes: r.FormValue("four_eyes") != ""}
+		WindowMinutes: formInt(r, "window_minutes"), BlockMinutes: formInt(r, "block_minutes"), Customer2FA: r.FormValue("customer_2fa") != "", FourEyes: r.FormValue("four_eyes") != "", DomainCheck: r.FormValue("domain_check") != ""}
 	if err := x.Validate(); err != nil {
 		s.showSecurity(w, r, http.StatusBadRequest, x, err.Error())
 		return
