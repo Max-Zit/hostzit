@@ -1297,5 +1297,6 @@
   "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel.": "Sempre abertas: %s (SSH, DNS, sites, os painéis), as portas do servidor SSH e, com o EmailZit neste servidor, as suas portas de e-mail e o seu painel.",
   "More TCP ports": "Mais portas TCP",
   "More UDP ports": "Mais portas UDP",
-  "A port is a number from 1 to 65535.": "Uma porta é um número de 1 a 65535."
+  "A port is a number from 1 to 65535.": "Uma porta é um número de 1 a 65535.",
+  "Customers on this package must use two-factor sign-in": "Os clientes deste pacote têm de usar o início de sessão em dois passos"
 }

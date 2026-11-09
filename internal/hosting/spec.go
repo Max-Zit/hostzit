@@ -26,6 +26,7 @@ type Limits struct {
 	AllowExec   bool `json:"allow_exec"`    // PHP may start programs (exec, proc_open …)
 	SSH         bool `json:"ssh"`           // shell access (SFTP is always allowed)
 	MailPerHour int  `json:"mail_per_hour"` // mails from websites per hour (0 = none allowed)
+	TwoFactor   bool `json:"two_factor"`    // the customer must use two-factor sign-in
 }
 
 // DedicatedLimits are used on a dedicated server: no sharing, so only

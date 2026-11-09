@@ -1297,5 +1297,6 @@
   "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel.": "Her zaman açık: %s (SSH, DNS, web siteleri, paneller), SSH sunucusunun portları ve EmailZit bu sunucudaysa onun posta portları ile paneli.",
   "More TCP ports": "Ek TCP portları",
   "More UDP ports": "Ek UDP portları",
-  "A port is a number from 1 to 65535.": "Port, 1 ile 65535 arasında bir sayıdır."
+  "A port is a number from 1 to 65535.": "Port, 1 ile 65535 arasında bir sayıdır.",
+  "Customers on this package must use two-factor sign-in": "Bu paketteki müşteriler iki adımlı oturum açma kullanmalıdır"
 }

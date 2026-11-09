@@ -629,7 +629,7 @@ func (s *Server) handleAccount2FA(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleAccount2FAOff(w http.ResponseWriter, r *http.Request) {
 	u := userFrom(r)
-	if s.security(r.Context()).Customer2FA {
+	if s.customer2FARequired(r.Context(), u) {
 		s.redirectErr(w, r, "/account", "Two-factor sign-in is required on this server.")
 		return
 	}

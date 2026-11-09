@@ -1297,5 +1297,6 @@
   "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel.": "常に開いているポート: %s (SSH、DNS、Web サイト、パネル)、SSH サーバーのポート、およびこのサーバーに EmailZit がある場合はそのメールポートとパネル。",
   "More TCP ports": "追加の TCP ポート",
   "More UDP ports": "追加の UDP ポート",
-  "A port is a number from 1 to 65535.": "ポートは 1 から 65535 までの数字です。"
+  "A port is a number from 1 to 65535.": "ポートは 1 から 65535 までの数字です。",
+  "Customers on this package must use two-factor sign-in": "このパッケージの顧客は 2 段階認証でのサインインが必須です"
 }

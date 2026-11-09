@@ -306,7 +306,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 		s.render(w, r, http.StatusUnauthorized, "login", p)
 		return
 	}
-	if s.DevNo2FA || (u.IsCustomer() && !u.TOTPEnabled && !s.security(r.Context()).Customer2FA) {
+	if s.DevNo2FA || (u.IsCustomer() && !u.TOTPEnabled && !s.customer2FARequired(r.Context(), u)) {
 		x := &store.Session{UserID: u.ID, IP: ip, UserAgent: r.UserAgent()}
 		how := "password only"
 		if s.DevNo2FA {

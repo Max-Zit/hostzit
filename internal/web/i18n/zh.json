@@ -1297,5 +1297,6 @@
   "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel.": "始终开放：%s（SSH、DNS、网站、面板）、SSH 服务器的端口，以及本服务器上装有 EmailZit 时其邮件端口和面板。",
   "More TCP ports": "更多 TCP 端口",
   "More UDP ports": "更多 UDP 端口",
-  "A port is a number from 1 to 65535.": "端口是 1 到 65535 之间的数字。"
+  "A port is a number from 1 to 65535.": "端口是 1 到 65535 之间的数字。",
+  "Customers on this package must use two-factor sign-in": "此套餐的客户必须使用两步验证登录"
 }

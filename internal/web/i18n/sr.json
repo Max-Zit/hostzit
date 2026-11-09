@@ -1297,5 +1297,6 @@
   "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel.": "Uvek otvoreni: %s (SSH, DNS, sajtovi, paneli), portovi SSH servera i, kada je EmailZit na ovom serveru, njegovi portovi za poštu i panel.",
   "More TCP ports": "Dodatni TCP portovi",
   "More UDP ports": "Dodatni UDP portovi",
-  "A port is a number from 1 to 65535.": "Port je broj od 1 do 65535."
+  "A port is a number from 1 to 65535.": "Port je broj od 1 do 65535.",
+  "Customers on this package must use two-factor sign-in": "Korisnici na ovom paketu moraju koristiti prijavu u dva koraka"
 }

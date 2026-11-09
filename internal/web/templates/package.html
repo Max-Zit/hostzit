@@ -42,6 +42,7 @@
   </div>
   <label class="check"><input type="checkbox" name="allow_exec" {{if $l.AllowExec}}checked{{end}}><span>{{.T "PHP may start programs (exec, shell_exec, proc_open …). Off is safer; some backup plugins need it."}}</span></label>
   <label class="check"><input type="checkbox" name="ssh" {{if $l.SSH}}checked{{end}}><span>{{.T "SSH shell access (SFTP is always included). The shell runs in the account's private file system view."}}</span></label>
+  <label class="check"><input type="checkbox" name="two_factor" {{if $l.TwoFactor}}checked{{end}}><span>{{.T "Customers on this package must use two-factor sign-in"}}</span></label>
 </section>
 <div class="row"><button class="primary">{{.T "Save"}}</button>
 {{if $p.ID}}</div></form>
