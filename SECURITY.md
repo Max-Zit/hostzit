@@ -19,6 +19,7 @@ We confirm reports within a few working days, fix confirmed problems in a new re
 
 - build for amd64 and arm64, gofmt, `go vet` and the full test suite (against an embedded PostgreSQL), and the whole suite again with the Go **race detector**;
 - **fuzzing** of every parser that reads outside data — cPanel and HostZit archives (account import and moves between servers: metadata, MySQL grants, BIND zones, manifests), DNS records, the generated web server, cron and PHP configuration, Git repositories and addresses, file manager paths and uploads, uploaded panel backups and database dumps, restore point paths, the ModSecurity audit log, fail2ban, MariaDB and GoAccess output, DNS answers, network allow-lists, sign-in redirects and REST API request bodies;
+- an **upgrade test**: the newest release is installed with its own `install.sh` on Debian 13 (systemd in a container), updated to the commit the way Settings → Updates does it, and the services, both panels and the database migrations are checked;
 - staticcheck, gosec, govulncheck, Gitleaks, CodeQL, Dependabot, secret scanning with push protection and the [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/Max-Zit/hostzit); the security checks run again every week for new CVEs.
 
 **Before every release**, in a test lab:
