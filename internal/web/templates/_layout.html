@@ -51,6 +51,7 @@
     <span class="navlabel">{{.T "Server and tasks"}}</span>
     <a href="/resources" class="{{if eq .Nav "resources"}}on{{end}}">{{template "icon" "cpu"}}{{.T "Resource usage"}}</a>
     <a href="/server" class="{{if eq .Nav "server"}}on{{end}}">{{template "icon" "rack"}}{{.T "Server"}}</a>
+    <a href="/servers" class="{{if eq .Nav "servers"}}on{{end}}">{{template "icon" "layers"}}{{.T "Servers"}}</a>
     <a href="/jobs" class="{{if eq .Nav "jobs"}}on{{end}}">{{template "icon" "clock"}}{{.T "Jobs"}}</a>
     {{if .User.IsAdmin}}<a href="/import" class="{{if eq .Nav "import"}}on{{end}}">{{template "icon" "upload"}}{{.T "Import"}}</a>{{end}}
     {{if .User.IsAdmin}}

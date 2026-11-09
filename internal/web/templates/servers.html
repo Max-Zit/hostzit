@@ -1,0 +1,45 @@
+{{template "app" .}}
+{{define "content"}}
+<h1>{{.T "Servers"}}</h1>
+<p class="muted">{{.T "This server and other HostZit servers at a glance. Each server keeps its own administrators; the overview only reads their status through the REST API."}}</p>
+{{$d := .Data}}
+<section class="panel">
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th>{{.T "Server"}}</th>
+      <th>{{.T "Status"}}</th>
+      <th class="hide-sm">{{.T "Version"}}</th>
+      <th class="num">{{.T "Customers"}}</th>
+      <th class="num hide-sm">{{.T "Load"}}</th>
+      <th class="num">{{.T "Memory"}}</th>
+      <th class="num">{{.T "Disk"}}</th>
+      <th></th>
+    </tr></thead>
+    <tbody>{{range $d.Rows}}<tr>
+      <td>{{if .Local}}<b>{{.S.Name}}</b> <small class="muted">{{$.T "this server"}}</small>{{else}}<a href="{{.S.URL}}/" target="_blank" rel="noopener">{{.S.Name}}</a>{{if .Pinned}} <small class="muted" title="{{$.T "Certificate pinned by its fingerprint"}}">{{template "icon" "lock"}}</small>{{end}}{{end}}</td>
+      <td>{{if .Error}}<span class="badge err"><i></i>{{$.T "not reachable"}}</span> <small class="err-text">{{.Error}}</small>{{else if .Down}}<span class="badge warn"><i></i>{{$.T "services stopped"}}</span> <small class="muted">{{range .Down}}{{.}} {{end}}</small>{{else}}<span class="badge ok"><i></i>{{$.T "ok"}}</span>{{end}}</td>
+      <td class="hide-sm muted">{{.Version}}</td>
+      <td class="num">{{with .Customers}}{{index . "active"}}{{with index . "suspended"}} <small class="muted">+{{.}} {{$.T "suspended"}}</small>{{end}}{{end}}</td>
+      <td class="num hide-sm">{{.Load}}</td>
+      <td class="num">{{if .MemTotal}}{{.MemPct}} %{{end}}</td>
+      <td class="num">{{if .DiskPct}}{{if ge .DiskPct 90}}<span class="badge warn"><i></i>{{.DiskPct}} %</span>{{else}}{{.DiskPct}} %{{end}}{{end}}</td>
+      <td class="actions">{{if and $d.CanEdit (not .Local)}}<form method="post" action="/servers/{{.S.ID}}/delete" data-confirm="{{$.T "Remove this server from the overview?"}}"><button class="ghost sm" title="{{$.T "Remove"}}">{{template "icon" "trash"}}</button></form>{{end}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+</section>
+{{if $d.CanEdit}}
+<section class="panel">
+  <h2>{{template "icon" "plus"}}{{.T "Add a server"}}</h2>
+  {{if $d.Confirm}}<div class="flash warn" role="status">{{template "icon" "alert"}}<span>{{.T "The certificate of this server is not publicly trusted. Compare its fingerprint with the server (there: openssl x509 -in /var/lib/hostzit/panel/tls/panel.crt -noout -fingerprint -sha256) and save again with the token to trust it:"}} <code class="ds">{{$d.Confirm}}</code></span></div>{{end}}
+  <form method="post" action="/servers" class="stack">
+    <div class="cols">
+      <label><span>{{.T "Name"}} <small>{{.T "optional"}}</small></span><input name="name" value="{{$d.Name}}" maxlength="60"></label>
+      <label>{{.T "Address of its admin panel"}}<input name="url" value="{{$d.URL}}" required spellcheck="false" class="mono" placeholder="https://host2.example.com:8442"></label>
+    </div>
+    <label>{{.T "API token"}}<input type="password" name="token" required autocomplete="off" spellcheck="false" class="mono"><small>{{.T "On that server: My account → API tokens, with the scope customers:read. Its admin panel must allow this server under Settings → Network."}}</small></label>
+    {{if $d.Confirm}}<input type="hidden" name="fingerprint" value="{{$d.Confirm}}">{{end}}
+    <div><button class="primary">{{if $d.Confirm}}{{.T "Trust and add"}}{{else}}{{.T "Add"}}{{end}}</button></div>
+  </form>
+</section>
+{{end}}
+{{end}}
