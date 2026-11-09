@@ -1333,5 +1333,14 @@
   "now": "ahora",
   "A package slug has lower-case letters, digits and dashes.": "El identificador de un paquete tiene minúsculas, dígitos y guiones.",
   "EmailZit package for cPanel imports": "Paquete de EmailZit para importaciones de cPanel",
-  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "Con un paquete (su identificador en EmailZit), una importación de cPanel también lleva los buzones, el correo y los reenvíos a EmailZit."
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "Con un paquete (su identificador en EmailZit), una importación de cPanel también lleva los buzones, el correo y los reenvíos a EmailZit.",
+  "As EmailZit shows it in its settings for HostZit sign-in.": "Tal como EmailZit la muestra en sus ajustes de inicio de sesión con HostZit.",
+  "Customers open their mail panel with one click, without a second password: HostZit is the OpenID Connect provider, EmailZit the client.": "Los clientes abren su panel de correo con un clic, sin una segunda contraseña: HostZit es el proveedor OpenID Connect y EmailZit el cliente.",
+  "Discovery": "Discovery",
+  "Make a new client secret (EmailZit then needs the new one)": "Crear un nuevo secreto de cliente (EmailZit necesitará el nuevo)",
+  "Redirect address of EmailZit": "Dirección de redirección de EmailZit",
+  "Saved. The client secret for EmailZit (shown only now): %s": "Guardado. El secreto de cliente para EmailZit (solo se muestra ahora): %s",
+  "Sign in to EmailZit with HostZit": "Iniciar sesión en EmailZit con HostZit",
+  "Switch the sign-in off": "Desactivar el inicio de sesión",
+  "The redirect address must be an https:// address of EmailZit.": "La dirección de redirección debe ser una dirección https:// de EmailZit."
 }

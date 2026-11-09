@@ -1333,5 +1333,14 @@
   "now": "当前",
   "A package slug has lower-case letters, digits and dashes.": "套餐标识由小写字母、数字和连字符组成。",
   "EmailZit package for cPanel imports": "用于 cPanel 导入的 EmailZit 套餐",
-  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "指定套餐（其在 EmailZit 中的标识）后，cPanel 导入还会把邮箱、邮件和转发迁移到 EmailZit。"
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "指定套餐（其在 EmailZit 中的标识）后，cPanel 导入还会把邮箱、邮件和转发迁移到 EmailZit。",
+  "As EmailZit shows it in its settings for HostZit sign-in.": "按 EmailZit 在其“通过 HostZit 登录”设置中显示的地址填写。",
+  "Customers open their mail panel with one click, without a second password: HostZit is the OpenID Connect provider, EmailZit the client.": "客户一键打开邮件面板，无需第二个密码：HostZit 是 OpenID Connect 提供方，EmailZit 是客户端。",
+  "Discovery": "Discovery",
+  "Make a new client secret (EmailZit then needs the new one)": "生成新的客户端密钥（EmailZit 随后需要新密钥）",
+  "Redirect address of EmailZit": "EmailZit 的重定向地址",
+  "Saved. The client secret for EmailZit (shown only now): %s": "已保存。EmailZit 的客户端密钥（仅此时显示）：%s",
+  "Sign in to EmailZit with HostZit": "通过 HostZit 登录 EmailZit",
+  "Switch the sign-in off": "关闭登录",
+  "The redirect address must be an https:// address of EmailZit.": "重定向地址必须是 EmailZit 的 https:// 地址。"
 }

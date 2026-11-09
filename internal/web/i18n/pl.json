@@ -1333,5 +1333,14 @@
   "now": "teraz",
   "A package slug has lower-case letters, digits and dashes.": "Identyfikator pakietu składa się z małych liter, cyfr i myślników.",
   "EmailZit package for cPanel imports": "Pakiet EmailZit dla importów z cPanel",
-  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "Z pakietem (jego identyfikatorem w EmailZit) import z cPanel przenosi też skrzynki, pocztę i przekierowania do EmailZit."
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "Z pakietem (jego identyfikatorem w EmailZit) import z cPanel przenosi też skrzynki, pocztę i przekierowania do EmailZit.",
+  "As EmailZit shows it in its settings for HostZit sign-in.": "Tak, jak EmailZit pokazuje go w ustawieniach logowania przez HostZit.",
+  "Customers open their mail panel with one click, without a second password: HostZit is the OpenID Connect provider, EmailZit the client.": "Klienci otwierają panel poczty jednym kliknięciem, bez drugiego hasła: HostZit jest dostawcą OpenID Connect, a EmailZit klientem.",
+  "Discovery": "Discovery",
+  "Make a new client secret (EmailZit then needs the new one)": "Utwórz nowy sekret klienta (EmailZit będzie potrzebował nowego)",
+  "Redirect address of EmailZit": "Adres przekierowania EmailZit",
+  "Saved. The client secret for EmailZit (shown only now): %s": "Zapisano. Sekret klienta dla EmailZit (pokazywany tylko teraz): %s",
+  "Sign in to EmailZit with HostZit": "Logowanie do EmailZit przez HostZit",
+  "Switch the sign-in off": "Wyłącz logowanie",
+  "The redirect address must be an https:// address of EmailZit.": "Adres przekierowania musi być adresem https:// EmailZit."
 }

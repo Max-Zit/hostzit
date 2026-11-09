@@ -97,11 +97,15 @@ func (s *Server) syncWebUIDs(ctx context.Context, c *store.Customer) {
 type emailzitData struct {
 	L        EmailZitLink
 	HasToken bool
+	// Client is the sign-in for EmailZit (OpenID Connect); Issuer the
+	// address EmailZit uses.
+	Client OIDCClient
+	Issuer string
 }
 
 func (s *Server) handleEmailZit(w http.ResponseWriter, r *http.Request) {
 	l := s.emailzitLink(r.Context())
-	s.render(w, r, http.StatusOK, "emailzit", &Page{Title: "EmailZit", Nav: "settings", Data: &emailzitData{L: l, HasToken: l.Token != ""}})
+	s.render(w, r, http.StatusOK, "emailzit", &Page{Title: "EmailZit", Nav: "settings", Data: &emailzitData{L: l, HasToken: l.Token != "", Client: s.oidcClient(r.Context()), Issuer: s.issuer(r.Context(), r)}})
 }
 
 func (s *Server) handleEmailZitSave(w http.ResponseWriter, r *http.Request) {

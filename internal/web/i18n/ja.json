@@ -1333,5 +1333,14 @@
   "now": "現在",
   "A package slug has lower-case letters, digits and dashes.": "パッケージのスラッグは小文字、数字、ハイフンで構成されます。",
   "EmailZit package for cPanel imports": "cPanel インポート用の EmailZit パッケージ",
-  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "パッケージ (EmailZit でのスラッグ) を指定すると、cPanel インポートでメールボックス、メール、転送も EmailZit に移します。"
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "パッケージ (EmailZit でのスラッグ) を指定すると、cPanel インポートでメールボックス、メール、転送も EmailZit に移します。",
+  "As EmailZit shows it in its settings for HostZit sign-in.": "EmailZit の HostZit サインイン設定に表示されているとおりに入力します。",
+  "Customers open their mail panel with one click, without a second password: HostZit is the OpenID Connect provider, EmailZit the client.": "顧客は 2 つ目のパスワードなしでワンクリックでメールパネルを開けます: HostZit が OpenID Connect プロバイダー、EmailZit がクライアントです。",
+  "Discovery": "Discovery",
+  "Make a new client secret (EmailZit then needs the new one)": "新しいクライアントシークレットを作成 (EmailZit には新しいものが必要になります)",
+  "Redirect address of EmailZit": "EmailZit のリダイレクトアドレス",
+  "Saved. The client secret for EmailZit (shown only now): %s": "保存しました。EmailZit 用のクライアントシークレット (今だけ表示): %s",
+  "Sign in to EmailZit with HostZit": "HostZit で EmailZit にサインイン",
+  "Switch the sign-in off": "サインインをオフにする",
+  "The redirect address must be an https:// address of EmailZit.": "リダイレクトアドレスは EmailZit の https:// アドレスでなければなりません。"
 }

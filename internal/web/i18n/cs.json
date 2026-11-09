@@ -1333,5 +1333,14 @@
   "now": "nyní",
   "A package slug has lower-case letters, digits and dashes.": "Označení balíčku má malá písmena, číslice a pomlčky.",
   "EmailZit package for cPanel imports": "Balíček EmailZit pro importy z cPanelu",
-  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "S balíčkem (jeho označením v EmailZit) přenese import z cPanelu do EmailZit i schránky, poštu a přesměrování."
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "S balíčkem (jeho označením v EmailZit) přenese import z cPanelu do EmailZit i schránky, poštu a přesměrování.",
+  "As EmailZit shows it in its settings for HostZit sign-in.": "Tak, jak ji EmailZit ukazuje v nastavení přihlášení přes HostZit.",
+  "Customers open their mail panel with one click, without a second password: HostZit is the OpenID Connect provider, EmailZit the client.": "Zákazníci otevřou svůj poštovní panel jedním kliknutím, bez druhého hesla: HostZit je poskytovatel OpenID Connect, EmailZit klient.",
+  "Discovery": "Discovery",
+  "Make a new client secret (EmailZit then needs the new one)": "Vytvořit nové tajemství klienta (EmailZit pak potřebuje nové)",
+  "Redirect address of EmailZit": "Adresa přesměrování EmailZit",
+  "Saved. The client secret for EmailZit (shown only now): %s": "Uloženo. Tajemství klienta pro EmailZit (zobrazí se jen teď): %s",
+  "Sign in to EmailZit with HostZit": "Přihlášení do EmailZit přes HostZit",
+  "Switch the sign-in off": "Vypnout přihlášení",
+  "The redirect address must be an https:// address of EmailZit.": "Adresa přesměrování musí být adresa https:// EmailZit."
 }

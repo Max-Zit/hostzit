@@ -1333,5 +1333,14 @@
   "now": "şimdi",
   "A package slug has lower-case letters, digits and dashes.": "Paket kısa adı küçük harf, rakam ve tirelerden oluşur.",
   "EmailZit package for cPanel imports": "cPanel içe aktarmaları için EmailZit paketi",
-  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "Bir paketle (EmailZit'teki kısa adı), cPanel içe aktarma posta kutularını, postaları ve yönlendirmeleri de EmailZit'e taşır."
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "Bir paketle (EmailZit'teki kısa adı), cPanel içe aktarma posta kutularını, postaları ve yönlendirmeleri de EmailZit'e taşır.",
+  "As EmailZit shows it in its settings for HostZit sign-in.": "EmailZit'in HostZit ile oturum açma ayarlarında gösterdiği şekilde.",
+  "Customers open their mail panel with one click, without a second password: HostZit is the OpenID Connect provider, EmailZit the client.": "Müşteriler posta panellerini ikinci bir parola olmadan tek tıkla açar: HostZit OpenID Connect sağlayıcısı, EmailZit istemcidir.",
+  "Discovery": "Discovery",
+  "Make a new client secret (EmailZit then needs the new one)": "Yeni bir istemci sırrı oluştur (EmailZit'in yenisine ihtiyacı olur)",
+  "Redirect address of EmailZit": "EmailZit yönlendirme adresi",
+  "Saved. The client secret for EmailZit (shown only now): %s": "Kaydedildi. EmailZit için istemci sırrı (yalnızca şimdi gösterilir): %s",
+  "Sign in to EmailZit with HostZit": "HostZit ile EmailZit'e oturum açma",
+  "Switch the sign-in off": "Oturum açmayı kapat",
+  "The redirect address must be an https:// address of EmailZit.": "Yönlendirme adresi EmailZit'in bir https:// adresi olmalıdır."
 }

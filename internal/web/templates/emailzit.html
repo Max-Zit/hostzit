@@ -15,6 +15,22 @@
     <div><button class="primary">{{.T "Save"}}</button></div>
   </form>
 </section>
+<section class="panel">
+  <h2>{{template "icon" "key"}}{{.T "Sign in to EmailZit with HostZit"}}</h2>
+  <p class="muted small">{{.T "Customers open their mail panel with one click, without a second password: HostZit is the OpenID Connect provider, EmailZit the client."}}</p>
+  {{$c := .Data.Client}}
+  <dl class="kv small">
+    <dt>{{.T "Issuer"}}</dt><dd class="mono">{{.Data.Issuer}}</dd>
+    <dt>{{.T "Discovery"}}</dt><dd class="mono">{{.Data.Issuer}}/.well-known/openid-configuration</dd>
+    {{if $c.ID}}<dt>{{.T "Client ID"}}</dt><dd class="mono">{{$c.ID}}</dd>{{end}}
+  </dl>
+  <form method="post" action="/settings/emailzit/sso" class="stack">
+    <label>{{.T "Redirect address of EmailZit"}}<input name="redirect_uri" value="{{$c.RedirectURI}}" class="mono" spellcheck="false" placeholder="https://mail.example.com:8444/sso/oidc/callback"><small>{{.T "As EmailZit shows it in its settings for HostZit sign-in."}}</small></label>
+    {{if $c.ID}}<label class="check"><input type="checkbox" name="new_secret"><span>{{.T "Make a new client secret (EmailZit then needs the new one)"}}</span></label>
+    <label class="check"><input type="checkbox" name="off"><span>{{.T "Switch the sign-in off"}}</span></label>{{end}}
+    <div><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+</section>
 </div>
 </div>
 {{end}}

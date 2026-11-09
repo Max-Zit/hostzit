@@ -1333,5 +1333,14 @@
   "now": "nu",
   "A package slug has lower-case letters, digits and dashes.": "Een pakketcode bestaat uit kleine letters, cijfers en streepjes.",
   "EmailZit package for cPanel imports": "EmailZit-pakket voor cPanel-imports",
-  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "Met een pakket (de code in EmailZit) zet een cPanel-import ook de mailboxen, mail en doorstuuradressen over naar EmailZit."
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "Met een pakket (de code in EmailZit) zet een cPanel-import ook de mailboxen, mail en doorstuuradressen over naar EmailZit.",
+  "As EmailZit shows it in its settings for HostZit sign-in.": "Zoals EmailZit het toont in zijn instellingen voor inloggen met HostZit.",
+  "Customers open their mail panel with one click, without a second password: HostZit is the OpenID Connect provider, EmailZit the client.": "Klanten openen hun mailpaneel met één klik, zonder tweede wachtwoord: HostZit is de OpenID Connect-provider, EmailZit de client.",
+  "Discovery": "Discovery",
+  "Make a new client secret (EmailZit then needs the new one)": "Nieuw clientgeheim maken (EmailZit heeft dan het nieuwe nodig)",
+  "Redirect address of EmailZit": "Doorverwijsadres van EmailZit",
+  "Saved. The client secret for EmailZit (shown only now): %s": "Opgeslagen. Het clientgeheim voor EmailZit (alleen nu getoond): %s",
+  "Sign in to EmailZit with HostZit": "Inloggen bij EmailZit met HostZit",
+  "Switch the sign-in off": "Inloggen uitzetten",
+  "The redirect address must be an https:// address of EmailZit.": "Het doorverwijsadres moet een https://-adres van EmailZit zijn."
 }
