@@ -1307,5 +1307,18 @@
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Jedna po redu: kod (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) i stranica u folderu sajta.",
   "One per line: the extension and the type the browser gets.": "Jedan po redu: ekstenzija i tip koji pregledač dobija.",
   "Own error pages": "Sopstvene stranice grešaka",
-  "the website showed an error after the update, so the snapshot from before was restored": "sajt je posle ažuriranja prikazao grešku, pa je vraćen snapshot od pre ažuriranja"
+  "the website showed an error after the update, so the snapshot from before was restored": "sajt je posle ažuriranja prikazao grešku, pa je vraćen snapshot od pre ažuriranja",
+  "Enter a webhook or a Telegram bot first.": "Prvo unesite webhook ili Telegram bota.",
+  "From @BotFather.": "Od @BotFather-a.",
+  "Gets a JSON POST with server, kind, customer, subject and text.": "Dobija JSON POST sa serverom, vrstom, korisnikom, naslovom i tekstom.",
+  "Remove the Telegram bot": "Ukloni Telegram bota",
+  "Send a test to the webhook and Telegram": "Pošalji test na webhook i Telegram",
+  "Telegram bot token": "Token Telegram bota",
+  "Telegram chat": "Telegram čet",
+  "The Telegram chat is a number (like -1001234567890) or @channel.": "Telegram čet je broj (npr. -1001234567890) ili @kanal.",
+  "The same notices as the administrators get by e-mail, also without an SMTP server. Customers are told by e-mail only.": "Ista obaveštenja koja administratori dobijaju e-poštom, i bez SMTP servera. Korisnici dobijaju obaveštenja samo e-poštom.",
+  "The test message was sent.": "Test poruka je poslata.",
+  "The webhook must be an http(s) address.": "Webhook mora biti http(s) adresa.",
+  "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "Ovo nije token Telegram bota (od @BotFather-a, npr. 123456:ABC…).",
+  "Webhook and Telegram": "Webhook i Telegram"
 }

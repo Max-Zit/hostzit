@@ -1307,5 +1307,18 @@
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Una per riga: il codice (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) e una pagina nella cartella del sito.",
   "One per line: the extension and the type the browser gets.": "Uno per riga: l’estensione e il tipo che riceve il browser.",
   "Own error pages": "Pagine di errore proprie",
-  "the website showed an error after the update, so the snapshot from before was restored": "il sito ha mostrato un errore dopo l’aggiornamento, quindi è stato ripristinato lo snapshot di prima"
+  "the website showed an error after the update, so the snapshot from before was restored": "il sito ha mostrato un errore dopo l’aggiornamento, quindi è stato ripristinato lo snapshot di prima",
+  "Enter a webhook or a Telegram bot first.": "Inserisci prima un webhook o un bot Telegram.",
+  "From @BotFather.": "Da @BotFather.",
+  "Gets a JSON POST with server, kind, customer, subject and text.": "Riceve un POST JSON con server, tipo, cliente, oggetto e testo.",
+  "Remove the Telegram bot": "Rimuovi il bot Telegram",
+  "Send a test to the webhook and Telegram": "Invia un test al webhook e a Telegram",
+  "Telegram bot token": "Token del bot Telegram",
+  "Telegram chat": "Chat Telegram",
+  "The Telegram chat is a number (like -1001234567890) or @channel.": "La chat Telegram è un numero (come -1001234567890) o @canale.",
+  "The same notices as the administrators get by e-mail, also without an SMTP server. Customers are told by e-mail only.": "Gli stessi avvisi che gli amministratori ricevono via e-mail, anche senza server SMTP. I clienti vengono avvisati solo via e-mail.",
+  "The test message was sent.": "Il messaggio di prova è stato inviato.",
+  "The webhook must be an http(s) address.": "Il webhook deve essere un indirizzo http(s).",
+  "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "Questo non è un token di bot Telegram (da @BotFather, come 123456:ABC…).",
+  "Webhook and Telegram": "Webhook e Telegram"
 }

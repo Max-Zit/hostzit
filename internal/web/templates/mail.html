@@ -34,6 +34,21 @@
 </section>
 </form>
 <form method="post" action="/settings/mail/test"><button class="secondary">{{template "icon" "mail"}}{{.T "Send a test message"}}</button></form>
+<form method="post" action="/settings/mail/channels" class="stack mt">
+<section class="panel">
+  <h2>{{template "icon" "bell"}}{{.T "Webhook and Telegram"}}</h2>
+  <p class="muted small">{{.T "The same notices as the administrators get by e-mail, also without an SMTP server. Customers are told by e-mail only."}}</p>
+  {{$c := .Data.Channels}}
+  <label><span>{{.T "Webhook"}} <small>{{.T "optional"}}</small></span><input name="webhook" value="{{$c.Webhook}}" spellcheck="false" class="mono" placeholder="https://hooks.example.com/hostzit"><small>{{.T "Gets a JSON POST with server, kind, customer, subject and text."}}</small></label>
+  <div class="cols">
+    <label><span>{{.T "Telegram bot token"}} <small>{{if $c.TelegramToken}}{{.T "saved; empty keeps it"}}{{else}}{{.T "optional"}}{{end}}</small></span><input type="password" name="telegram_token" autocomplete="off" spellcheck="false" class="mono"><small>{{.T "From @BotFather."}}</small></label>
+    <label><span>{{.T "Telegram chat"}} <small>{{.T "optional"}}</small></span><input name="telegram_chat" value="{{$c.TelegramChat}}" spellcheck="false" class="mono" placeholder="-1001234567890"></label>
+  </div>
+  {{if $c.TelegramToken}}<label class="check"><input type="checkbox" name="telegram_off"><span>{{.T "Remove the Telegram bot"}}</span></label>{{end}}
+  <div><button class="primary">{{.T "Save"}}</button></div>
+</section>
+</form>
+<form method="post" action="/settings/mail/channels/test"><button class="secondary">{{template "icon" "bell"}}{{.T "Send a test to the webhook and Telegram"}}</button></form>
 </div>
 </div>
 {{end}}

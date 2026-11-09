@@ -12,7 +12,7 @@
   <li><b>Updates</b>: check and install signed new versions; release channel official or testing. If Debian is installing its own updates at that moment, the update waits for them (up to 30 minutes) and then installs.</li>
   <li><b>Panel backup</b>: nightly encrypted backups of the panel database and keys.</li>
   <li><b>EmailZit</b>: link to the mail hosting.</li>
-  <li><b>Notifications</b>: SMTP server for notices and for mail from websites, and which notices to send: disk space of an account, certificates, malware, accounts held back by their limits, failed backups, failed WordPress updates, stopped services, a server disk almost full, a needed restart, waiting security updates and approvals. Each notice is sent at most once a day.</li>
+  <li><b>Notifications</b>: SMTP server for notices and for mail from websites, and which notices to send: disk space of an account, certificates, malware, accounts held back by their limits, failed backups, failed WordPress updates, stopped services, a server disk almost full, a needed restart, waiting security updates and approvals. Each notice is sent at most once a day. The same notices can also go to a <b>webhook</b> (JSON POST with <code>product</code>, <code>server</code>, <code>kind</code>, <code>key</code>, <code>customer</code>, <code>subject</code>, <code>text</code>, <code>time</code>) and to a <b>Telegram</b> chat (a bot from @BotFather; the token is stored encrypted), also without an SMTP server; customers are told by e-mail only.</li>
 </ul>
 
 

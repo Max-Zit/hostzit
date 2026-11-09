@@ -1307,5 +1307,18 @@
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Her satıra bir tane: kod (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) ve site klasöründeki bir sayfa.",
   "One per line: the extension and the type the browser gets.": "Her satıra bir tane: uzantı ve tarayıcının aldığı tür.",
   "Own error pages": "Kendi hata sayfaları",
-  "the website showed an error after the update, so the snapshot from before was restored": "site güncellemeden sonra hata gösterdi, bu yüzden güncelleme öncesi anlık görüntü geri yüklendi"
+  "the website showed an error after the update, so the snapshot from before was restored": "site güncellemeden sonra hata gösterdi, bu yüzden güncelleme öncesi anlık görüntü geri yüklendi",
+  "Enter a webhook or a Telegram bot first.": "Önce bir webhook veya Telegram botu girin.",
+  "From @BotFather.": "@BotFather'dan.",
+  "Gets a JSON POST with server, kind, customer, subject and text.": "Sunucu, tür, müşteri, konu ve metin içeren bir JSON POST alır.",
+  "Remove the Telegram bot": "Telegram botunu kaldır",
+  "Send a test to the webhook and Telegram": "Webhook'a ve Telegram'a test gönder",
+  "Telegram bot token": "Telegram bot belirteci",
+  "Telegram chat": "Telegram sohbeti",
+  "The Telegram chat is a number (like -1001234567890) or @channel.": "Telegram sohbeti bir sayı (örn. -1001234567890) veya @kanaldır.",
+  "The same notices as the administrators get by e-mail, also without an SMTP server. Customers are told by e-mail only.": "Yöneticilerin e-postayla aldığı bildirimlerin aynısı, SMTP sunucusu olmadan da. Müşteriler yalnızca e-postayla bilgilendirilir.",
+  "The test message was sent.": "Test mesajı gönderildi.",
+  "The webhook must be an http(s) address.": "Webhook bir http(s) adresi olmalıdır.",
+  "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "Bu bir Telegram bot belirteci değil (@BotFather'dan, örn. 123456:ABC…).",
+  "Webhook and Telegram": "Webhook ve Telegram"
 }

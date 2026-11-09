@@ -1307,5 +1307,18 @@
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Uma por linha: o código (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) e uma página na pasta do site.",
   "One per line: the extension and the type the browser gets.": "Um por linha: a extensão e o tipo que o navegador recebe.",
   "Own error pages": "Páginas de erro próprias",
-  "the website showed an error after the update, so the snapshot from before was restored": "o site mostrou um erro após a atualização, por isso foi reposta a cópia de antes"
+  "the website showed an error after the update, so the snapshot from before was restored": "o site mostrou um erro após a atualização, por isso foi reposta a cópia de antes",
+  "Enter a webhook or a Telegram bot first.": "Indique primeiro um webhook ou um bot do Telegram.",
+  "From @BotFather.": "Do @BotFather.",
+  "Gets a JSON POST with server, kind, customer, subject and text.": "Recebe um POST JSON com servidor, tipo, cliente, assunto e texto.",
+  "Remove the Telegram bot": "Remover o bot do Telegram",
+  "Send a test to the webhook and Telegram": "Enviar um teste para o webhook e o Telegram",
+  "Telegram bot token": "Token do bot do Telegram",
+  "Telegram chat": "Chat do Telegram",
+  "The Telegram chat is a number (like -1001234567890) or @channel.": "O chat do Telegram é um número (como -1001234567890) ou @canal.",
+  "The same notices as the administrators get by e-mail, also without an SMTP server. Customers are told by e-mail only.": "Os mesmos avisos que os administradores recebem por e-mail, também sem servidor SMTP. Os clientes só recebem avisos por e-mail.",
+  "The test message was sent.": "A mensagem de teste foi enviada.",
+  "The webhook must be an http(s) address.": "O webhook tem de ser um endereço http(s).",
+  "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "Isto não é um token de bot do Telegram (do @BotFather, como 123456:ABC…).",
+  "Webhook and Telegram": "Webhook e Telegram"
 }

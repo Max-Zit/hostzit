@@ -142,15 +142,28 @@ func (s *Server) notify(ctx context.Context, key string, c *store.Customer, subj
 	if slices.Contains(m.Off, noticeKind(key)) {
 		return
 	}
-	if m.Host == "" || !s.store.NoticeDue(ctx, key, 24*time.Hour) {
+	ch := s.channelSettings(ctx)
+	channels := ch.Webhook != "" || (ch.TelegramToken != "" && ch.TelegramChat != "")
+	if (m.Host == "" && !channels) || !s.store.NoticeDue(ctx, key, 24*time.Hour) {
 		return
 	}
-	to := append([]string(nil), m.Admins...)
-	if c != nil && m.Customer && c.Email != "" {
-		to = append(to, c.Email)
+	if m.Host != "" {
+		to := append([]string(nil), m.Admins...)
+		if c != nil && m.Customer && c.Email != "" {
+			to = append(to, c.Email)
+		}
+		if err := s.sendMail(ctx, to, subject, body); err != nil {
+			s.log.Warn("notification not sent", "subject", subject, "err", err)
+		}
 	}
-	if err := s.sendMail(ctx, to, subject, body); err != nil {
-		s.log.Warn("notification not sent", "subject", subject, "err", err)
+	if channels {
+		customer := ""
+		if c != nil {
+			customer = c.Username
+		}
+		if err := s.sendChannels(ctx, key, customer, subject, body); err != nil {
+			s.log.Warn("notification not sent to a channel", "subject", subject, "err", err)
+		}
 	}
 }
 
@@ -195,15 +208,16 @@ func init() {
 }
 
 type mailData struct {
-	M      MailSettings
-	Admins string
-	HasPW  bool
-	Kinds  []noticeChoice
+	M        MailSettings
+	Admins   string
+	HasPW    bool
+	Kinds    []noticeChoice
+	Channels ChannelSettings
 }
 
 func (s *Server) handleMailSettings(w http.ResponseWriter, r *http.Request) {
 	m := s.mailSettings(r.Context())
-	s.render(w, r, http.StatusOK, "mail", &Page{Title: "Notifications", Nav: "settings", Data: &mailData{M: m, Admins: strings.Join(m.Admins, "\n"), HasPW: m.Password != "", Kinds: noticeChoices(m)}})
+	s.render(w, r, http.StatusOK, "mail", &Page{Title: "Notifications", Nav: "settings", Data: &mailData{M: m, Admins: strings.Join(m.Admins, "\n"), HasPW: m.Password != "", Kinds: noticeChoices(m), Channels: s.channelSettings(r.Context())}})
 }
 
 func (s *Server) handleMailSettingsSave(w http.ResponseWriter, r *http.Request) {
@@ -219,7 +233,7 @@ func (s *Server) handleMailSettingsSave(w http.ResponseWriter, r *http.Request) 
 		m.Password = s.store.SealSecret("mail.password", pw)
 	}
 	if err := m.Validate(); err != nil {
-		p := &Page{Title: "Notifications", Nav: "settings", Data: &mailData{M: m, Admins: strings.Join(m.Admins, "\n"), HasPW: m.Password != "", Kinds: noticeChoices(m)}}
+		p := &Page{Title: "Notifications", Nav: "settings", Data: &mailData{M: m, Admins: strings.Join(m.Admins, "\n"), HasPW: m.Password != "", Kinds: noticeChoices(m), Channels: s.channelSettings(r.Context())}}
 		p.Error = translate(s.lang(r, userFrom(r)), err.Error())
 		s.render(w, r, http.StatusBadRequest, "mail", p)
 		return

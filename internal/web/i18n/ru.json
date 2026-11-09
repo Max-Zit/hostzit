@@ -1307,5 +1307,18 @@
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "По одной в строке: код (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) и страница в папке сайта.",
   "One per line: the extension and the type the browser gets.": "По одному в строке: расширение и тип, который получает браузер.",
   "Own error pages": "Свои страницы ошибок",
-  "the website showed an error after the update, so the snapshot from before was restored": "после обновления сайт показал ошибку, поэтому восстановлен снимок, сделанный до обновления"
+  "the website showed an error after the update, so the snapshot from before was restored": "после обновления сайт показал ошибку, поэтому восстановлен снимок, сделанный до обновления",
+  "Enter a webhook or a Telegram bot first.": "Сначала укажите вебхук или бота Telegram.",
+  "From @BotFather.": "От @BotFather.",
+  "Gets a JSON POST with server, kind, customer, subject and text.": "Получает JSON POST с сервером, видом, клиентом, темой и текстом.",
+  "Remove the Telegram bot": "Удалить бота Telegram",
+  "Send a test to the webhook and Telegram": "Отправить тест на вебхук и в Telegram",
+  "Telegram bot token": "Токен бота Telegram",
+  "Telegram chat": "Чат Telegram",
+  "The Telegram chat is a number (like -1001234567890) or @channel.": "Чат Telegram — это число (например, -1001234567890) или @канал.",
+  "The same notices as the administrators get by e-mail, also without an SMTP server. Customers are told by e-mail only.": "Те же уведомления, что администраторы получают по почте, даже без SMTP-сервера. Клиенты получают уведомления только по почте.",
+  "The test message was sent.": "Тестовое сообщение отправлено.",
+  "The webhook must be an http(s) address.": "Вебхук должен быть адресом http(s).",
+  "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "Это не токен бота Telegram (от @BotFather, вида 123456:ABC…).",
+  "Webhook and Telegram": "Вебхук и Telegram"
 }

@@ -1307,5 +1307,18 @@
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "Eén per regel: de code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) en een pagina in de map van de website.",
   "One per line: the extension and the type the browser gets.": "Eén per regel: de extensie en het type dat de browser krijgt.",
   "Own error pages": "Eigen foutpagina’s",
-  "the website showed an error after the update, so the snapshot from before was restored": "de website gaf na de update een fout, daarom is de snapshot van daarvoor teruggezet"
+  "the website showed an error after the update, so the snapshot from before was restored": "de website gaf na de update een fout, daarom is de snapshot van daarvoor teruggezet",
+  "Enter a webhook or a Telegram bot first.": "Vul eerst een webhook of een Telegram-bot in.",
+  "From @BotFather.": "Van @BotFather.",
+  "Gets a JSON POST with server, kind, customer, subject and text.": "Krijgt een JSON-POST met server, soort, klant, onderwerp en tekst.",
+  "Remove the Telegram bot": "Telegram-bot verwijderen",
+  "Send a test to the webhook and Telegram": "Test naar webhook en Telegram sturen",
+  "Telegram bot token": "Telegram-bottoken",
+  "Telegram chat": "Telegram-chat",
+  "The Telegram chat is a number (like -1001234567890) or @channel.": "De Telegram-chat is een getal (zoals -1001234567890) of @kanaal.",
+  "The same notices as the administrators get by e-mail, also without an SMTP server. Customers are told by e-mail only.": "Dezelfde meldingen die de beheerders per e-mail krijgen, ook zonder SMTP-server. Klanten krijgen alleen e-mail.",
+  "The test message was sent.": "Het testbericht is verstuurd.",
+  "The webhook must be an http(s) address.": "De webhook moet een http(s)-adres zijn.",
+  "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "Dit is geen Telegram-bottoken (van @BotFather, zoals 123456:ABC…).",
+  "Webhook and Telegram": "Webhook en Telegram"
 }

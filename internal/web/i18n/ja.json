@@ -1307,5 +1307,18 @@
   "One per line: the code (400, 401, 403, 404, 410, 429, 500, 502, 503, 504) and a page in the website folder.": "1 行に 1 つ: コード (400、401、403、404、410、429、500、502、503、504) と Web サイトのフォルダー内のページ。",
   "One per line: the extension and the type the browser gets.": "1 行に 1 つ: 拡張子とブラウザーが受け取るタイプ。",
   "Own error pages": "独自のエラーページ",
-  "the website showed an error after the update, so the snapshot from before was restored": "更新後に Web サイトがエラーを表示したため、更新前のスナップショットを復元しました"
+  "the website showed an error after the update, so the snapshot from before was restored": "更新後に Web サイトがエラーを表示したため、更新前のスナップショットを復元しました",
+  "Enter a webhook or a Telegram bot first.": "先に Webhook または Telegram ボットを入力してください。",
+  "From @BotFather.": "@BotFather から取得します。",
+  "Gets a JSON POST with server, kind, customer, subject and text.": "サーバー、種類、顧客、件名、本文を含む JSON POST を受け取ります。",
+  "Remove the Telegram bot": "Telegram ボットを削除",
+  "Send a test to the webhook and Telegram": "Webhook と Telegram にテストを送信",
+  "Telegram bot token": "Telegram ボットトークン",
+  "Telegram chat": "Telegram チャット",
+  "The Telegram chat is a number (like -1001234567890) or @channel.": "Telegram チャットは数字 (例: -1001234567890) または @チャンネル です。",
+  "The same notices as the administrators get by e-mail, also without an SMTP server. Customers are told by e-mail only.": "管理者がメールで受け取るのと同じ通知を、SMTP サーバーがなくても送ります。顧客への通知はメールのみです。",
+  "The test message was sent.": "テストメッセージを送信しました。",
+  "The webhook must be an http(s) address.": "Webhook は http(s) のアドレスでなければなりません。",
+  "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "これは Telegram ボットトークンではありません (@BotFather から取得、例: 123456:ABC…)。",
+  "Webhook and Telegram": "Webhook と Telegram"
 }
