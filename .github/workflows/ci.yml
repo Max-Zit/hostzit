@@ -81,6 +81,28 @@ jobs:
       - name: Tests with -race
         run: go test -race -count=1 -timeout 50m ./...
 
+  upgrade:
+    name: Upgrade from the newest release (Debian 13)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Package of this commit
+        run: |
+          set -e
+          V=99.0.0~ci${GITHUB_RUN_NUMBER}
+          mkdir -p bin/pkg dist
+          for p in hostzit-server hostzit-helper; do
+            CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w -X main.version=$V" -o bin/pkg/$p ./cmd/$p
+          done
+          VERSION=$V ARCH=amd64 go run github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.43.0 package --config packaging/linux/nfpm.yaml --packager deb --target dist/
+          ls -la dist/
+      - name: Install the newest release, update to this commit, check
+        run: bash tools/ci/upgrade-test.sh dist/hostzit_*_amd64.deb
+
   fuzz:
     name: Fuzz parsers of untrusted input (short)
     runs-on: ubuntu-latest
