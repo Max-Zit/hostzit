@@ -17,7 +17,7 @@ step "Debian 13 with systemd"
 cat > /tmp/Dockerfile.hz <<'EOF'
 FROM debian:trixie
 ENV container=docker
-RUN apt-get update -q && apt-get install -y -q systemd systemd-sysv dbus curl ca-certificates iproute2 procps && apt-get clean
+RUN apt-get update -q && apt-get install -y -q systemd systemd-sysv dbus curl ca-certificates iproute2 procps && apt-get clean && rm -f /usr/sbin/policy-rc.d
 STOPSIGNAL SIGRTMIN+3
 CMD ["/sbin/init"]
 EOF
