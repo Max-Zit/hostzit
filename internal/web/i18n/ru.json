@@ -1330,5 +1330,8 @@
   "Usage history": "История использования",
   "highest": "максимум",
   "limit": "лимит",
-  "now": "сейчас"
+  "now": "сейчас",
+  "A package slug has lower-case letters, digits and dashes.": "Код пакета состоит из строчных букв, цифр и дефисов.",
+  "EmailZit package for cPanel imports": "Пакет EmailZit для импорта из cPanel",
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "С пакетом (его кодом в EmailZit) импорт из cPanel переносит в EmailZit также почтовые ящики, письма и пересылки."
 }

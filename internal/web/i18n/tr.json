@@ -1330,5 +1330,8 @@
   "Usage history": "Kullanım geçmişi",
   "highest": "en yüksek",
   "limit": "sınır",
-  "now": "şimdi"
+  "now": "şimdi",
+  "A package slug has lower-case letters, digits and dashes.": "Paket kısa adı küçük harf, rakam ve tirelerden oluşur.",
+  "EmailZit package for cPanel imports": "cPanel içe aktarmaları için EmailZit paketi",
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "Bir paketle (EmailZit'teki kısa adı), cPanel içe aktarma posta kutularını, postaları ve yönlendirmeleri de EmailZit'e taşır."
 }

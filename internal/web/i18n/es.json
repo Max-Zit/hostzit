@@ -1330,5 +1330,8 @@
   "Usage history": "Historial de uso",
   "highest": "máximo",
   "limit": "límite",
-  "now": "ahora"
+  "now": "ahora",
+  "A package slug has lower-case letters, digits and dashes.": "El identificador de un paquete tiene minúsculas, dígitos y guiones.",
+  "EmailZit package for cPanel imports": "Paquete de EmailZit para importaciones de cPanel",
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "Con un paquete (su identificador en EmailZit), una importación de cPanel también lleva los buzones, el correo y los reenvíos a EmailZit."
 }

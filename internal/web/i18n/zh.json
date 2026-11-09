@@ -1330,5 +1330,8 @@
   "Usage history": "使用历史",
   "highest": "最高",
   "limit": "上限",
-  "now": "当前"
+  "now": "当前",
+  "A package slug has lower-case letters, digits and dashes.": "套餐标识由小写字母、数字和连字符组成。",
+  "EmailZit package for cPanel imports": "用于 cPanel 导入的 EmailZit 套餐",
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "指定套餐（其在 EmailZit 中的标识）后，cPanel 导入还会把邮箱、邮件和转发迁移到 EmailZit。"
 }

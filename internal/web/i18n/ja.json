@@ -1330,5 +1330,8 @@
   "Usage history": "使用量の履歴",
   "highest": "最大",
   "limit": "上限",
-  "now": "現在"
+  "now": "現在",
+  "A package slug has lower-case letters, digits and dashes.": "パッケージのスラッグは小文字、数字、ハイフンで構成されます。",
+  "EmailZit package for cPanel imports": "cPanel インポート用の EmailZit パッケージ",
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "パッケージ (EmailZit でのスラッグ) を指定すると、cPanel インポートでメールボックス、メール、転送も EmailZit に移します。"
 }

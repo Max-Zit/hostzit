@@ -1330,5 +1330,8 @@
   "Usage history": "Istorija potrošnje",
   "highest": "najviše",
   "limit": "ograničenje",
-  "now": "sada"
+  "now": "sada",
+  "A package slug has lower-case letters, digits and dashes.": "Oznaka paketa ima mala slova, cifre i crtice.",
+  "EmailZit package for cPanel imports": "EmailZit paket za uvoz iz cPanel-a",
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "Sa paketom (njegovom oznakom u EmailZit-u), uvoz iz cPanel-a prenosi i poštanske sandučiće, poštu i prosleđivanja u EmailZit."
 }

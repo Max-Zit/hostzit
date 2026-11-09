@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -22,11 +23,16 @@ import (
 
 const settingEmailZit = "emailzit"
 
+// slugRE is a package slug (the same rule in both products).
+var slugRE = regexp.MustCompile(`^[a-z0-9-]{1,32}$`)
+
 // EmailZitLink is where EmailZit's API is.
 type EmailZitLink struct {
 	URL      string `json:"url"`   // e.g. https://mail.example.com:8444
 	Token    string `json:"token"` // sealed ezt_… token with customers:write
 	Insecure bool   `json:"insecure"`
+	// ImportPackage: EmailZit package (slug) of customers made by a cPanel import.
+	ImportPackage string `json:"import_package,omitempty"`
 }
 
 func init() {
@@ -100,7 +106,11 @@ func (s *Server) handleEmailZit(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleEmailZitSave(w http.ResponseWriter, r *http.Request) {
 	old := s.emailzitLink(r.Context())
-	l := EmailZitLink{URL: strings.TrimRight(strings.TrimSpace(r.FormValue("url")), "/"), Insecure: r.FormValue("insecure") != "", Token: old.Token}
+	l := EmailZitLink{URL: strings.TrimRight(strings.TrimSpace(r.FormValue("url")), "/"), Insecure: r.FormValue("insecure") != "", Token: old.Token, ImportPackage: strings.TrimSpace(r.FormValue("import_package"))}
+	if l.ImportPackage != "" && !slugRE.MatchString(l.ImportPackage) {
+		s.redirectErr(w, r, "/settings/emailzit", "A package slug has lower-case letters, digits and dashes.")
+		return
+	}
 	if l.URL != "" && (!strings.HasPrefix(l.URL, "https://") || strings.ContainsAny(l.URL, " \"'<>") || len(l.URL) > 200) {
 		s.redirectErr(w, r, "/settings/emailzit", "The address must start with https://")
 		return

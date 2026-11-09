@@ -1330,5 +1330,8 @@
   "Usage history": "Gebruiksgeschiedenis",
   "highest": "hoogste",
   "limit": "limiet",
-  "now": "nu"
+  "now": "nu",
+  "A package slug has lower-case letters, digits and dashes.": "Een pakketcode bestaat uit kleine letters, cijfers en streepjes.",
+  "EmailZit package for cPanel imports": "EmailZit-pakket voor cPanel-imports",
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "Met een pakket (de code in EmailZit) zet een cPanel-import ook de mailboxen, mail en doorstuuradressen over naar EmailZit."
 }

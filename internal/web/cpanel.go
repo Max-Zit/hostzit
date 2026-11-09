@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"path"
 	"regexp"
 	"sort"
@@ -442,7 +443,40 @@ func (s *Server) importCPanel(ctx context.Context, by, file, username string, pa
 	}
 	_ = s.call(ctx, by, "files", map[string]any{"account": c.Username, "req": helper.WorkerReq{Op: "delete", Path: ".hz-import"}}, &r)
 	s.kickCerts()
+	if note := s.importMailToEmailZit(ctx, by, file, c); note != "" {
+		rep.Notes = append(rep.Notes, note)
+	}
 	return rep, nil
+}
+
+// importMailToEmailZit hands the mail of a cPanel archive to EmailZit when
+// it is linked with a package for imports: the customer is created there
+// with the same id and user name, then EmailZit imports the mailboxes, mail
+// and forwarders from the archive. The answer is a note for the report.
+func (s *Server) importMailToEmailZit(ctx context.Context, by, file string, c *store.Customer) string {
+	l := s.emailzitLink(ctx)
+	if l.URL == "" {
+		return ""
+	}
+	if l.ImportPackage == "" {
+		return "Mail was not moved: choose an EmailZit package for cPanel imports under Settings → EmailZit."
+	}
+	err := s.emailzitCall(ctx, http.MethodPost, "/api/v1/customers", map[string]string{"id": c.UUID, "username": c.Username, "name": c.DisplayName, "email": c.Email, "package": l.ImportPackage})
+	if err != nil && !strings.Contains(err.Error(), ": 409 ") {
+		return "Mail was not moved: " + err.Error()
+	}
+	tok, err := s.store.OpenSecret("emailzit.token", l.Token)
+	if err != nil {
+		return "Mail was not moved: the EmailZit token cannot be read"
+	}
+	var res struct {
+		JobID string `json:"job_id"`
+	}
+	if err := s.call(ctx, by, "import.mail", map[string]any{"file": file, "url": l.URL, "token": tok, "insecure": l.Insecure, "customer": c.UUID}, &res); err != nil {
+		return "Mail was not moved: " + storeErr(err)
+	}
+	s.syncWebUIDs(ctx, c)
+	return "The mail (mailboxes, messages, forwarders) is being imported by EmailZit (job " + res.JobID + "); mailboxes get new passwords there."
 }
 
 // rewriteHome moves paths of the old cPanel home to the new layout:

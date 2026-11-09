@@ -1330,5 +1330,8 @@
   "Usage history": "Historie využití",
   "highest": "nejvýše",
   "limit": "limit",
-  "now": "nyní"
+  "now": "nyní",
+  "A package slug has lower-case letters, digits and dashes.": "Označení balíčku má malá písmena, číslice a pomlčky.",
+  "EmailZit package for cPanel imports": "Balíček EmailZit pro importy z cPanelu",
+  "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit.": "S balíčkem (jeho označením v EmailZit) přenese import z cPanelu do EmailZit i schránky, poštu a přesměrování."
 }

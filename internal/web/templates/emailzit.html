@@ -11,6 +11,7 @@
     <label>{{.T "Address of the EmailZit panel"}}<input name="url" value="{{.Data.L.URL}}" class="mono" spellcheck="false" placeholder="https://mail.example.com:8444"><small>{{.T "Empty: no link."}}</small></label>
     <label>{{.T "EmailZit API token"}} <small>{{if .Data.HasToken}}{{.T "saved; empty keeps it"}}{{else}}{{.T "with the scope customers:write"}}{{end}}</small><input type="password" name="token" autocomplete="off" class="mono" placeholder="ezt_…"></label>
     <label class="check"><input type="checkbox" name="insecure" {{if .Data.L.Insecure}}checked{{end}}><span>{{.T "Accept EmailZit's self-signed certificate"}}</span></label>
+    <label><span>{{.T "EmailZit package for cPanel imports"}} <small>{{.T "optional"}}</small></span><input name="import_package" value="{{.Data.L.ImportPackage}}" class="mono" spellcheck="false" placeholder="mail-basic"><small>{{.T "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit."}}</small></label>
     <div><button class="primary">{{.T "Save"}}</button></div>
   </form>
 </section>
