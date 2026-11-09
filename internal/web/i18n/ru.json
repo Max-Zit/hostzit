@@ -1290,5 +1290,12 @@
   "with a user of the same name": "с пользователем с тем же именем",
   "with the scope customers:write": "с областью customers:write",
   "www redirects here": "www перенаправляет сюда",
-  "yes": "да"
+  "yes": "да",
+  "Incoming connections": "Входящие подключения",
+  "Every port of the server is open. Turn this on so that only the ports HostZit uses accept connections.": "Все порты сервера открыты. Включите это, чтобы подключения принимали только порты, которые использует HostZit.",
+  "Accept connections only on the ports HostZit uses and the ports below": "Принимать подключения только на портах, которые использует HostZit, и на портах ниже",
+  "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel.": "Всегда открыты: %s (SSH, DNS, сайты, панели), порты SSH-сервера и, если на этом сервере есть EmailZit, его почтовые порты и панель.",
+  "More TCP ports": "Дополнительные порты TCP",
+  "More UDP ports": "Дополнительные порты UDP",
+  "A port is a number from 1 to 65535.": "Порт — это число от 1 до 65535."
 }

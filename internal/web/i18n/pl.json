@@ -1290,5 +1290,12 @@
   "with a user of the same name": "z użytkownikiem o tej samej nazwie",
   "with the scope customers:write": "z zakresem customers:write",
   "www redirects here": "www przekierowuje tutaj",
-  "yes": "tak"
+  "yes": "tak",
+  "Incoming connections": "Połączenia przychodzące",
+  "Every port of the server is open. Turn this on so that only the ports HostZit uses accept connections.": "Wszystkie porty serwera są otwarte. Włącz to, aby połączenia przyjmowały tylko porty używane przez HostZit.",
+  "Accept connections only on the ports HostZit uses and the ports below": "Przyjmuj połączenia tylko na portach używanych przez HostZit i na portach poniżej",
+  "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel.": "Zawsze otwarte: %s (SSH, DNS, strony, panele), porty serwera SSH oraz, gdy EmailZit jest na tym serwerze, jego porty poczty i panel.",
+  "More TCP ports": "Dodatkowe porty TCP",
+  "More UDP ports": "Dodatkowe porty UDP",
+  "A port is a number from 1 to 65535.": "Port to liczba od 1 do 65535."
 }

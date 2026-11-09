@@ -1290,5 +1290,12 @@
   "with a user of the same name": "s uživatelem stejného jména",
   "with the scope customers:write": "s rozsahem customers:write",
   "www redirects here": "www přesměrovává sem",
-  "yes": "ano"
+  "yes": "ano",
+  "Incoming connections": "Příchozí spojení",
+  "Every port of the server is open. Turn this on so that only the ports HostZit uses accept connections.": "Všechny porty serveru jsou otevřené. Zapněte to, aby spojení přijímaly jen porty, které HostZit používá.",
+  "Accept connections only on the ports HostZit uses and the ports below": "Přijímat spojení jen na portech, které HostZit používá, a na portech níže",
+  "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel.": "Vždy otevřené: %s (SSH, DNS, weby, panely), porty SSH serveru a, je-li na tomto serveru EmailZit, jeho poštovní porty a panel.",
+  "More TCP ports": "Další porty TCP",
+  "More UDP ports": "Další porty UDP",
+  "A port is a number from 1 to 65535.": "Port je číslo od 1 do 65535."
 }

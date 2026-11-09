@@ -111,7 +111,7 @@ func (s *Server) blockedList(ctx context.Context) []string {
 
 // applyFirewall loads the server-wide block list into the firewall.
 func (s *Server) applyFirewall(ctx context.Context, by string) error {
-	return s.call(ctx, by, "firewall", map[string]any{"blocked": s.blockedList(ctx)}, nil)
+	return s.call(ctx, by, "firewall", s.firewallArgs(ctx), nil)
 }
 
 func (s *Server) handleBlockedSave(w http.ResponseWriter, r *http.Request) {

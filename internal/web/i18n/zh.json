@@ -1290,5 +1290,12 @@
   "with a user of the same name": "并创建同名用户",
   "with the scope customers:write": "需要 customers:write 权限范围",
   "www redirects here": "www 重定向到此",
-  "yes": "是"
+  "yes": "是",
+  "Incoming connections": "传入连接",
+  "Every port of the server is open. Turn this on so that only the ports HostZit uses accept connections.": "服务器的所有端口都已开放。开启此项后，只有 HostZit 使用的端口才接受连接。",
+  "Accept connections only on the ports HostZit uses and the ports below": "仅在 HostZit 使用的端口和下方的端口上接受连接",
+  "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel.": "始终开放：%s（SSH、DNS、网站、面板）、SSH 服务器的端口，以及本服务器上装有 EmailZit 时其邮件端口和面板。",
+  "More TCP ports": "更多 TCP 端口",
+  "More UDP ports": "更多 UDP 端口",
+  "A port is a number from 1 to 65535.": "端口是 1 到 65535 之间的数字。"
 }

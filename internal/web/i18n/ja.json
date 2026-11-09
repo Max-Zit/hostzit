@@ -1290,5 +1290,12 @@
   "with a user of the same name": "同じ名前のユーザー付き",
   "with the scope customers:write": "スコープ customers:write 付き",
   "www redirects here": "www はここにリダイレクト",
-  "yes": "はい"
+  "yes": "はい",
+  "Incoming connections": "受信接続",
+  "Every port of the server is open. Turn this on so that only the ports HostZit uses accept connections.": "サーバーのすべてのポートが開いています。HostZit が使うポートだけが接続を受け付けるように、これをオンにしてください。",
+  "Accept connections only on the ports HostZit uses and the ports below": "HostZit が使うポートと下のポートでのみ接続を受け付ける",
+  "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel.": "常に開いているポート: %s (SSH、DNS、Web サイト、パネル)、SSH サーバーのポート、およびこのサーバーに EmailZit がある場合はそのメールポートとパネル。",
+  "More TCP ports": "追加の TCP ポート",
+  "More UDP ports": "追加の UDP ポート",
+  "A port is a number from 1 to 65535.": "ポートは 1 から 65535 までの数字です。"
 }

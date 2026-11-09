@@ -229,6 +229,13 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.setupToken = ""
+	// a new server accepts connections only on the ports HostZit uses
+	// (Settings → Sign-in and security → Incoming connections)
+	if err := s.store.SetSetting(r.Context(), settingInbound, InboundSettings{On: true}); err == nil {
+		if err := s.applyFirewall(r.Context(), "setup"); err != nil {
+			s.log.Warn("inbound firewall not applied", "err", err)
+		}
+	}
 	if s.SetupTokenFile != "" {
 		_ = os.Remove(s.SetupTokenFile)
 	}

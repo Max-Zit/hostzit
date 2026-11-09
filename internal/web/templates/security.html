@@ -23,6 +23,18 @@
   </form>
 </section>
 <section class="panel">
+  <h2>{{template "icon" "shield"}}{{.T "Incoming connections"}}</h2>
+  {{$in := .Data.Inbound}}
+  {{if not $in.S.On}}<div class="flash warn" role="status">{{template "icon" "alert"}}<span>{{.T "Every port of the server is open. Turn this on so that only the ports HostZit uses accept connections."}}</span></div>{{end}}
+  <form method="post" action="/settings/security/inbound" class="stack">
+    <label class="check"><input type="checkbox" name="on" {{if $in.S.On}}checked{{end}}><span>{{.T "Accept connections only on the ports HostZit uses and the ports below"}}</span></label>
+    <p class="small muted">{{.T "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel." $in.Open}}</p>
+    <label><span>{{.T "More TCP ports"}} <small>{{.T "optional"}}</small></span><input name="tcp" value="{{$in.TCP}}" class="mono" spellcheck="false" placeholder="3000 8080"></label>
+    <label><span>{{.T "More UDP ports"}} <small>{{.T "optional"}}</small></span><input name="udp" value="{{$in.UDP}}" class="mono" spellcheck="false" placeholder="51820"></label>
+    <div><button class="primary">{{.T "Save"}}</button></div>
+  </form>
+</section>
+<section class="panel">
   <h2>{{template "icon" "shield"}}{{.T "Blocked for the whole server"}}</h2>
   <p class="muted small">{{.T "These addresses and networks cannot reach any website, the panels or SSH. Websites cannot send mail directly in any case: their mail goes through the queue with the hourly limit of the package."}}</p>
   <form method="post" action="/settings/security/blocked" class="stack"><textarea name="blocked" rows="4" class="mono small" spellcheck="false" placeholder="198.51.100.0/24">{{.Data.Blocked}}</textarea><div><button class="secondary">{{.T "Save"}}</button></div></form>

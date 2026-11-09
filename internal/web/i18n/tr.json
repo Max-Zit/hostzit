@@ -1290,5 +1290,12 @@
   "with a user of the same name": "aynı adlı bir kullanıcıyla",
   "with the scope customers:write": "customers:write kapsamıyla",
   "www redirects here": "www buraya yönlendirir",
-  "yes": "evet"
+  "yes": "evet",
+  "Incoming connections": "Gelen bağlantılar",
+  "Every port of the server is open. Turn this on so that only the ports HostZit uses accept connections.": "Sunucunun tüm portları açık. Yalnızca HostZit'in kullandığı portların bağlantı kabul etmesi için bunu açın.",
+  "Accept connections only on the ports HostZit uses and the ports below": "Bağlantıları yalnızca HostZit'in kullandığı portlarda ve aşağıdaki portlarda kabul et",
+  "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel.": "Her zaman açık: %s (SSH, DNS, web siteleri, paneller), SSH sunucusunun portları ve EmailZit bu sunucudaysa onun posta portları ile paneli.",
+  "More TCP ports": "Ek TCP portları",
+  "More UDP ports": "Ek UDP portları",
+  "A port is a number from 1 to 65535.": "Port, 1 ile 65535 arasında bir sayıdır."
 }

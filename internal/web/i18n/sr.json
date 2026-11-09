@@ -1290,5 +1290,12 @@
   "with a user of the same name": "sa korisnikom istog imena",
   "with the scope customers:write": "sa ovlašćenjem customers:write",
   "www redirects here": "www se preusmerava ovde",
-  "yes": "da"
+  "yes": "da",
+  "Incoming connections": "Dolazne veze",
+  "Every port of the server is open. Turn this on so that only the ports HostZit uses accept connections.": "Svi portovi servera su otvoreni. Uključite ovo da bi veze primali samo portovi koje HostZit koristi.",
+  "Accept connections only on the ports HostZit uses and the ports below": "Primaj veze samo na portovima koje HostZit koristi i na portovima ispod",
+  "Always open: %s (SSH, DNS, websites, the panels), the ports of the SSH server and, with EmailZit on this server, its mail ports and panel.": "Uvek otvoreni: %s (SSH, DNS, sajtovi, paneli), portovi SSH servera i, kada je EmailZit na ovom serveru, njegovi portovi za poštu i panel.",
+  "More TCP ports": "Dodatni TCP portovi",
+  "More UDP ports": "Dodatni UDP portovi",
+  "A port is a number from 1 to 65535.": "Port je broj od 1 do 65535."
 }

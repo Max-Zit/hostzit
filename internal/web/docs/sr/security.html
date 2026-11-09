@@ -26,6 +26,7 @@
   <li>Sajtovi preko HTTPS-a: TLS 1.3, a TLS 1.2 samo sa forward secrecy i AEAD šiframa (bez CBC i SHA-1 šifara).</li>
   <li>HostZit appliance nudi SSH i SFTP samo sa jakim algoritmima: post-kvantna razmena ključeva (mlkem768, sntrup761) uz curve25519, Ed25519 i RSA ključevi servera, AES-GCM/CTR, encrypt-then-MAC. Root ne može da se prijavi preko SSH-a.</li>
   <li>LLMNR i multicast DNS (portovi 5355 i 5353), namenjeni kućnim mrežama, su isključeni.</li>
+  <li><b>Dolazne veze</b> (Podešavanja → Prijava i bezbednost): veze spolja primaju samo portovi koje HostZit koristi — SSH/SFTP (i promenjen SSH port), DNS (53), sajtovi (80, 443), oba panela i, kada je EmailZit na serveru, njegovi portovi za poštu i panel. Tu se mogu otvoriti i dodatni portovi (TCP i UDP). Odgovori na veze samog servera, ping i DHCP uvek prolaze. Novi serveri ovo imaju uključeno od podešavanja; serveri podešeni pre 0.9.3 drže sve portove otvorene dok administrator ovo ne uključi (stranica upozorava).</li>
 </ul>
 
 <h2 id="bruteforce">Zaštita od brute-force napada</h2>
