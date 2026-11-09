@@ -25,6 +25,7 @@
 
 <h2 id="resources">Potrošnja resursa</h2>
 <p><b>Potrošnja resursa</b> prikazuje svaki nalog sa CPU-om, memorijom, brzinom diska i procesima u poslednjih 10 minuta, prosečnim i najvećim CPU-om za poslednji dan i <b>dostignutim granicama</b>: intervalima od 10 minuta u kojima je CPU granica usporila nalog (četvrtinu vremena ili više) ili je granica memorije prekinula procese. Sortira se po svakoj koloni. Korisnici vide svoje pod <b>Potrošnja → Dostignuti limiti</b>; nalog koji je zadržavan sat ili više u danu dobija obaveštenje.</p>
+<p><b>Istorija potrošnje</b> (na stranici korisnika i pod Potrošnja u korisničkom panelu): grafikoni prostora na disku, memorije, CPU-a i brzine diska za 24 sata, 7, 30 ili 90 dana (meri se na 10 minuta, čuva 90 dana), sa ograničenjem paketa kao isprekidanom linijom; dugi periodi zadržavaju najveću vrednost svakog intervala, pa se vrhovi vide.</p>
 
 <h2 id="import">Uvoz</h2>
 <p>Kopirajte pune cPanel backup-e (<code>cpmove-KORISNIK.tar.gz</code>) u <code>/var/lib/hostzit/import</code> i pokrenite uvoz u <b>Uvozu</b>. HostZit pravi nalog i prebacuje sajtove (glavni, addon, sub i parked domeni), baze sa korisnicima i lozinkama, DNS zone (sa novom adresom servera) i cron poslove. Zadržite isto ime naloga da podešavanja baza u sajtovima ostanu ispravna. Ostatak starog home foldera je u <code>~/cpanel-home</code>.</p>

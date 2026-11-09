@@ -124,6 +124,12 @@
     <option value="admin" {{if eq .Row "admin"}}selected{{end}}>{{.P.T "Administrator"}} — {{.P.T "everything, including administrators and settings"}}</option>
   </select></label>{{end}}
 {{define "badge"}}<span class="badge {{statusClass .V}}"><i></i>{{.P.T .V}}</span>{{end}}
+{{define "history"}}{{$h := .Data.History}}<section class="panel">
+  <h2>{{template "icon" "clock"}}{{.T "Usage history"}}</h2>
+  <nav class="tabs small" aria-label="{{.T "Usage history"}}">{{range $h.Ranges}}<a href="{{.URL}}"{{if .On}} aria-current="page" class="on"{{end}}>{{$.T .Label}}</a> {{end}}</nav>
+  {{if $h.Charts}}<div class="cards2">{{range $h.Charts}}<div class="chartbox"><p class="small"><b>{{$.T .Title}}</b> <span class="muted">{{$.T "now"}} {{.Now}} · {{$.T "highest"}} {{.Max}}{{if .Limit}} · {{$.T "limit"}} {{.Limit}}{{end}}</span></p>{{.SVG}}<p class="small muted chart-axis"><span>{{$.Time $h.From}}</span><span>{{$.Time $h.To}}</span></p></div>{{end}}</div>
+  {{else}}<p class="muted">{{.T "No data yet."}}</p>{{end}}
+</section>{{end}}
 {{define "meter"}}<div class="meter" role="meter" aria-valuenow="{{.}}" aria-valuemin="0" aria-valuemax="100"><span class="w{{.}}"></span></div>{{end}}
 {{define "docnav"}}<nav class="docnav" aria-label="{{.T "User guide"}}"><div class="docnav-title">{{template "icon" "book"}} {{.T "User guide"}}</div><form method="get" action="/docs/search" class="docnav-search"><input type="search" name="q" placeholder="{{.T "Search the guide"}}" aria-label="{{.T "Search the guide"}}" value="{{.Data.Q}}"></form>{{range .Data.Pages}}<a href="/docs/{{.Slug}}" class="{{if eq .Slug $.Data.Page}}on{{end}}">{{$.T .Title}}</a>{{end}}</nav>{{end}}
 {{/* Some of these icons are based on Feather Icons (MIT License), see THIRD_PARTY_LICENSES.md. */}}

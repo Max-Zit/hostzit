@@ -191,6 +191,7 @@ func (s *Server) handleCustomerCreate(w http.ResponseWriter, r *http.Request) {
 type customerData struct {
 	C        *store.Customer
 	Packages []*store.Package
+	History  usageHistory
 	Sites    []*store.Site
 	Zones    []*store.Zone
 	DBs      []*store.Database
@@ -235,6 +236,7 @@ func (s *Server) handleCustomer(w http.ResponseWriter, r *http.Request) {
 	d.DBs, _ = s.store.Databases(ctx, c.ID)
 	d.Usage, _ = s.store.LastUsage(ctx, c.ID)
 	d.Package, _ = s.store.PackageByID(ctx, c.PackageID)
+	d.History = s.history(r, c, d.Package, "/customers/"+strconv.FormatInt(c.ID, 10))
 	d.User, _ = s.store.UserByID(ctx, c.UserID)
 	s.render(w, r, http.StatusOK, "customer", &Page{Title: c.Username, Nav: "customers", Crumb: "Customers", CrumbURL: "/customers", Data: d})
 }

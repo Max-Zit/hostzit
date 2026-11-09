@@ -1320,5 +1320,15 @@
   "The test message was sent.": "Testovací zpráva byla odeslána.",
   "The webhook must be an http(s) address.": "Webhook musí být adresa http(s).",
   "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "Toto není token bota Telegramu (od @BotFather, např. 123456:ABC…).",
-  "Webhook and Telegram": "Webhook a Telegram"
+  "Webhook and Telegram": "Webhook a Telegram",
+  "24 hours": "24 hodin",
+  "30 days": "30 dní",
+  "7 days": "7 dní",
+  "90 days": "90 dní",
+  "Measurements of the last 7 days": "Měření za posledních 7 dní",
+  "Show the table": "Zobrazit tabulku",
+  "Usage history": "Historie využití",
+  "highest": "nejvýše",
+  "limit": "limit",
+  "now": "nyní"
 }

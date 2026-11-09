@@ -62,7 +62,8 @@ func uiTexts(t *testing.T) map[string]bool {
 	for _, s := range []string{"Active", "Suspended", "Terminated", "Administrator", "Operator", "Viewer", "Getting started", "Installing the server", "Customers and packages",
 		"Websites, PHP and page cache", "Domains and DNS", "Databases", "Files, SFTP and SSH", "WordPress", "Isolation and security", "REST API for billing",
 		"Users, settings and updates", "Troubleshooting and FAQ", "by hand", "before update", "before push from staging", "Company sign-in",
-		"active", "suspended", "terminated", "ok", "pending", "failed", "uploaded", "queued", "running", "done", "approved", "rejected"} {
+		"active", "suspended", "terminated", "ok", "pending", "failed", "uploaded", "queued", "running", "done", "approved", "rejected",
+		"24 hours", "7 days", "30 days", "90 days", "Disk", "Memory", "CPU (%)", "Disk speed"} {
 		out[s] = true
 	}
 	return out

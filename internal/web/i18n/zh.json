@@ -1320,5 +1320,15 @@
   "The test message was sent.": "测试消息已发送。",
   "The webhook must be an http(s) address.": "Webhook 必须是 http(s) 地址。",
   "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "这不是 Telegram 机器人令牌（来自 @BotFather，如 123456:ABC…）。",
-  "Webhook and Telegram": "Webhook 和 Telegram"
+  "Webhook and Telegram": "Webhook 和 Telegram",
+  "24 hours": "24 小时",
+  "30 days": "30 天",
+  "7 days": "7 天",
+  "90 days": "90 天",
+  "Measurements of the last 7 days": "最近 7 天的测量值",
+  "Show the table": "显示表格",
+  "Usage history": "使用历史",
+  "highest": "最高",
+  "limit": "上限",
+  "now": "当前"
 }

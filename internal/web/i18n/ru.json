@@ -1320,5 +1320,15 @@
   "The test message was sent.": "Тестовое сообщение отправлено.",
   "The webhook must be an http(s) address.": "Вебхук должен быть адресом http(s).",
   "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "Это не токен бота Telegram (от @BotFather, вида 123456:ABC…).",
-  "Webhook and Telegram": "Вебхук и Telegram"
+  "Webhook and Telegram": "Вебхук и Telegram",
+  "24 hours": "24 часа",
+  "30 days": "30 дней",
+  "7 days": "7 дней",
+  "90 days": "90 дней",
+  "Measurements of the last 7 days": "Измерения за последние 7 дней",
+  "Show the table": "Показать таблицу",
+  "Usage history": "История использования",
+  "highest": "максимум",
+  "limit": "лимит",
+  "now": "сейчас"
 }

@@ -25,6 +25,7 @@
 
 <h2 id="resources">Resource usage</h2>
 <p><b>Resource usage</b> lists every account with its CPU, memory, disk speed and processes of the last 10 minutes, the average and peak CPU of the last day and its <b>limit hits</b>: 10-minute intervals in which the CPU limit slowed the account down (by a quarter of the time or more) or the memory limit ended processes. Sort by any column. Customers see their own hits under <b>Usage → Limits reached</b>; an account held back for an hour or more in a day gets a notification.</p>
+<p><b>Usage history</b> (on the customer's page and under Usage in the customer panel): graphs of disk space, memory, CPU and disk speed over 24 hours, 7, 30 or 90 days (measured every 10 minutes, kept 90 days), with the package limit as a dashed line; long ranges keep the highest value of each interval, so peaks stay visible.</p>
 
 <h2 id="import">Import</h2>
 <p>Copy full cPanel backups (<code>cpmove-USER.tar.gz</code>) to <code>/var/lib/hostzit/import</code> and start the import under <b>Import</b>. HostZit creates the account and moves the websites (main, addon, sub and parked domains), databases with their users and passwords, DNS zones (with the new server address) and cron jobs. Keep the same account name so the websites' database settings stay valid. The rest of the old home folder is in <code>~/cpanel-home</code>.</p>

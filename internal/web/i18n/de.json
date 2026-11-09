@@ -1320,5 +1320,15 @@
   "The test message was sent.": "Die Testnachricht wurde gesendet.",
   "The webhook must be an http(s) address.": "Der Webhook muss eine http(s)-Adresse sein.",
   "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "Das ist kein Telegram-Bot-Token (von @BotFather, wie 123456:ABC…).",
-  "Webhook and Telegram": "Webhook und Telegram"
+  "Webhook and Telegram": "Webhook und Telegram",
+  "24 hours": "24 Stunden",
+  "30 days": "30 Tage",
+  "7 days": "7 Tage",
+  "90 days": "90 Tage",
+  "Measurements of the last 7 days": "Messungen der letzten 7 Tage",
+  "Show the table": "Tabelle anzeigen",
+  "Usage history": "Verlauf der Nutzung",
+  "highest": "höchstens",
+  "limit": "Grenze",
+  "now": "jetzt"
 }

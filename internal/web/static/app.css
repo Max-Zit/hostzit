@@ -943,3 +943,4 @@ td.actions > form + form { display: block; margin-left: 0; margin-top: 4px; }
 td.actions > form + form:not(:only-of-type) { text-align: right; }
 .geo-chips { display: inline-flex; flex-wrap: wrap; gap: 6px; }
 [data-dest][hidden] { display: none; }
+.chart{width:100%;height:120px;display:block}.chart polyline{fill:none;stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke}.chart .area{fill:var(--accent);opacity:.12}.chart .limit{stroke:#d97706;stroke-width:1.5;stroke-dasharray:6 4;vector-effect:non-scaling-stroke}.chart-axis{display:flex;justify-content:space-between;margin-top:.15rem}.chartbox{margin-bottom:1rem}

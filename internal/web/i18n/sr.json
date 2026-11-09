@@ -1320,5 +1320,15 @@
   "The test message was sent.": "Test poruka je poslata.",
   "The webhook must be an http(s) address.": "Webhook mora biti http(s) adresa.",
   "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "Ovo nije token Telegram bota (od @BotFather-a, npr. 123456:ABC…).",
-  "Webhook and Telegram": "Webhook i Telegram"
+  "Webhook and Telegram": "Webhook i Telegram",
+  "24 hours": "24 sata",
+  "30 days": "30 dana",
+  "7 days": "7 dana",
+  "90 days": "90 dana",
+  "Measurements of the last 7 days": "Merenja u poslednjih 7 dana",
+  "Show the table": "Prikaži tabelu",
+  "Usage history": "Istorija potrošnje",
+  "highest": "najviše",
+  "limit": "ograničenje",
+  "now": "sada"
 }

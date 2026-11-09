@@ -565,6 +565,7 @@ type usageData struct {
 	CPU     []int64 // percent
 	Now     *store.UsageRate
 	Hits    []store.UsageRate // newest first
+	History usageHistory
 }
 
 func (s *Server) handleUsage(w http.ResponseWriter, r *http.Request) {
@@ -589,6 +590,7 @@ func (s *Server) handleUsage(w http.ResponseWriter, r *http.Request) {
 		d.Now = &rates[n-1]
 	}
 	d.Hits = limitHits(rates, 50)
+	d.History = s.history(r, c, d.P, "/usage")
 	s.render(w, r, http.StatusOK, "usage", &Page{Title: "Usage", Nav: "usage", Customer: c, Data: d})
 }
 

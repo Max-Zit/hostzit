@@ -1320,5 +1320,15 @@
   "The test message was sent.": "テストメッセージを送信しました。",
   "The webhook must be an http(s) address.": "Webhook は http(s) のアドレスでなければなりません。",
   "This is not a Telegram bot token (from @BotFather, like 123456:ABC…).": "これは Telegram ボットトークンではありません (@BotFather から取得、例: 123456:ABC…)。",
-  "Webhook and Telegram": "Webhook と Telegram"
+  "Webhook and Telegram": "Webhook と Telegram",
+  "24 hours": "24 時間",
+  "30 days": "30 日",
+  "7 days": "7 日",
+  "90 days": "90 日",
+  "Measurements of the last 7 days": "過去 7 日間の測定値",
+  "Show the table": "表を表示",
+  "Usage history": "使用量の履歴",
+  "highest": "最大",
+  "limit": "上限",
+  "now": "現在"
 }
