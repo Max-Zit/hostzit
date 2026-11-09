@@ -496,6 +496,17 @@ func pathID(r *http.Request, name string) (int64, bool) {
 	return id, err == nil && id > 0
 }
 
+// badOptionalID: a route shared by "new" (no {name}) and an existing object
+// got a {name} that is not an id; "/packages/abc" showed the empty form of a
+// new package and saving it made one.
+func badOptionalID(r *http.Request, name string) bool {
+	if r.PathValue(name) == "" {
+		return false
+	}
+	_, ok := pathID(r, name)
+	return !ok
+}
+
 // actor names who did something (for the audit log and the helper).
 func actor(r *http.Request) string {
 	u := userFrom(r)

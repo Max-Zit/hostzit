@@ -34,7 +34,7 @@ its configuration files and command-line tools; no foreign code is copied into
 HostZit. Go libraries only with AGPLv3-compatible licenses, listed in
 THIRD_PARTY_LICENSES.
 
-Base system: **Debian 13** (Debian 12 also supported while it is in LTS);
+Base system: **Debian 13** only (since 0.9.3; Debian 12 is not supported);
 Ubuntu 24.04 later if asked for. cgroups v2 and systemd are required.
 
 ## 2. Privilege separation

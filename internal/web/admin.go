@@ -438,6 +438,10 @@ func defaultPackage() *store.Package {
 }
 
 func (s *Server) handlePackageForm(w http.ResponseWriter, r *http.Request) {
+	if badOptionalID(r, "id") {
+		s.notFound(w, r)
+		return
+	}
 	p := defaultPackage()
 	title := "New package"
 	if id, ok := pathID(r, "id"); ok {
@@ -452,6 +456,10 @@ func (s *Server) handlePackageForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlePackageSave(w http.ResponseWriter, r *http.Request) {
+	if badOptionalID(r, "id") {
+		s.notFound(w, r)
+		return
+	}
 	p := &store.Package{Slug: r.FormValue("slug"), Name: r.FormValue("name"), MaxSites: formInt(r, "max_sites"), MaxDBs: formInt(r, "max_dbs"), MaxZones: formInt(r, "max_zones"),
 		Limits: hosting.Limits{DiskMB: formInt(r, "disk_mb"), Inodes: formInt(r, "inodes"), CPUPercent: formInt(r, "cpu_percent"), MemoryMB: formInt(r, "memory_mb"),
 			IOWeight: formInt(r, "io_weight"), IOMBps: formInt(r, "io_mbps"), RedisMB: formInt(r, "redis_mb"), Apps: formInt(r, "apps"), Processes: formInt(r, "processes"), PHPWorkers: formInt(r, "php_workers"), PHPMemoryMB: formInt(r, "php_memory_mb"),

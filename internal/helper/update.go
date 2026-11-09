@@ -92,15 +92,27 @@ func (h *Helper) updateInstall(ctx context.Context, a updateArgs) (any, error) {
 	// dpkg runs in a unit of its own: the package restarts the helper and the
 	// panel, which must not stop the installation itself
 	unit := "hostzit-update-" + strings.ReplaceAll(m.Version, ".", "-")
-	// keep configuration files the administrator changed: without
-	// --force-confold dpkg asks, gets no answer and leaves the package
-	// unpacked but not set up
-	if out, err := h.Sys.Run(ctx, nil, "systemd-run", "--unit="+unit, "--collect", "--on-active=2", "--setenv=DEBIAN_FRONTEND=noninteractive",
-		"dpkg", "--force-confdef", "--force-confold", "-i", pkg); err != nil {
+	if out, err := h.Sys.Run(ctx, nil, "systemd-run", updateCommand(unit, pkg)...); err != nil {
 		return nil, fmt.Errorf("install: %v %s", err, tail(string(out), 400))
 	}
 	h.logf("update to %s started (%s)", m.Version, unit)
 	return map[string]string{"version": m.Version, "started": "yes"}, nil
+}
+
+// updateCommand is the systemd-run command line of a panel update. apt-get
+// installs the downloaded package (and a new dependency, if any) and waits
+// up to 30 minutes while Debian's automatic updates hold the dpkg lock;
+// plain dpkg gave up at once ("dpkg frontend lock was locked"). The
+// configuration files the administrator changed are kept: without
+// --force-confold dpkg asks, gets no answer and leaves the package
+// unpacked but not set up. Downgrades are allowed for development builds
+// only (updateInstall refuses older releases otherwise).
+func updateCommand(unit, pkg string) []string {
+	return []string{"--unit=" + unit, "--collect", "--on-active=2", "--setenv=DEBIAN_FRONTEND=noninteractive",
+		"apt-get", "-y", "-q", "--allow-downgrades",
+		"-o", "DPkg::Lock::Timeout=1800",
+		"-o", "Dpkg::Options::=--force-confdef", "-o", "Dpkg::Options::=--force-confold",
+		"install", pkg}
 }
 
 // updateState reports whether the installed package is completely set up

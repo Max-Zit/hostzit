@@ -40,7 +40,7 @@
 |---|---|
 | **VM image** — [OVA](https://github.com/Max-Zit/hostzit/releases/latest/download/hostzit-appliance.ova) (VMware, VirtualBox), [qcow2](https://github.com/Max-Zit/hostzit/releases/latest/download/hostzit-appliance.qcow2) (Proxmox/KVM), [VHDX](https://github.com/Max-Zit/hostzit/releases/latest/download/hostzit-appliance-vhdx.zip) (Hyper-V) | import and start; Debian with HostZit ready |
 | **Appliance ISO** — [hostzit-appliance.iso](https://github.com/Max-Zit/hostzit/releases/latest/download/hostzit-appliance.iso) | a new VM or a physical server |
-| **Install script** | an existing Debian 12 or 13 server (amd64, arm64) |
+| **Install script** | an existing Debian 13 server (amd64, arm64; Debian 12 is not supported) |
 
 ```sh
 curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash

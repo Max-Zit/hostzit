@@ -260,6 +260,19 @@ func TestPanels(t *testing.T) {
 		"/settings/security", "/users", "/audit", "/account", "/docs", "/docs/sites", "/customers/new"} {
 		a.page(p)
 	}
+	// "/packages/<not a number>" is no new-package form and saving it makes
+	// no package (ZAP 0.9.2: "/packages/1 - Copy" answered 200)
+	for _, p := range []string{"/packages/1%20-%20Copy", "/packages/1.bak", "/packages/0", "/packages/-1"} {
+		if st, _, _ := a.get(p); st != http.StatusNotFound {
+			t.Errorf("GET %s: %d, want 404", p, st)
+		}
+		if st, _, _ := a.post(p, url.Values{"name": {"Junk"}, "slug": {"junk"}, "max_sites": {"1"}}); st != http.StatusNotFound {
+			t.Errorf("POST %s: %d, want 404", p, st)
+		}
+	}
+	if pk, err := e.st.Packages(context.Background()); err != nil || len(pk) != 1 {
+		t.Fatalf("packages after the bad ids: %d %v", len(pk), err)
+	}
 	// the zone got the default records
 	z, err := e.st.ZoneByName(context.Background(), "shop.example.com")
 	if err != nil || z.Records < 4 {

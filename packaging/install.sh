@@ -1,5 +1,5 @@
 #!/bin/bash
-# HostZit installer for Debian 12/13.
+# HostZit installer for Debian 13.
 #
 #   install.sh [--mode shared|dedicated] [--version X.Y.Z | --local DIR] [--no-dns] [--php "8.3 8.4"]
 #   install.sh --dns-only --primary IP --catalog NAME   (second name server only)
@@ -29,7 +29,8 @@ while [ $# -gt 0 ]; do
 done
 [ "$(id -u)" = 0 ] || { echo "run as root" >&2; exit 1; }
 . /etc/os-release
-case "$VERSION_ID" in 12|13) ;; *) echo "Debian 12 or 13 is required (found $PRETTY_NAME)" >&2; exit 1 ;; esac
+# only Debian 13 is tested and supported
+[ "${ID:-}" = debian ] && [ "${VERSION_ID:-}" = 13 ] || { echo "Debian 13 is required (found ${PRETTY_NAME:-an unknown system})" >&2; exit 1; }
 export DEBIAN_FRONTEND=noninteractive
 say() { printf '\n==> %s\n' "$*"; }
 
