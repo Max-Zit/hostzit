@@ -533,7 +533,11 @@ func (s *Server) auditAs(r *http.Request, user, action, target, format string, a
 	if len(args) > 0 {
 		detail = fmt.Sprintf(format, args...)
 	}
-	if err := s.store.Audit(r.Context(), user, clientIP(r), action, target, detail); err != nil {
+	// the change is already done: a client that drops the connection must
+	// not keep it out of the audit log (its request context is canceled)
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), 15*time.Second)
+	defer cancel()
+	if err := s.store.Audit(ctx, user, clientIP(r), action, target, detail); err != nil {
 		s.log.Error("audit log write failed", "action", action, "err", err)
 	}
 }
