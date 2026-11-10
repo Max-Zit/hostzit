@@ -117,7 +117,7 @@ func TestAccountApply(t *testing.T) {
 		t.Fatal(r.Error)
 	}
 	for _, want := range []string{"groupadd -g 1000005 shop", "useradd -u 1000005 -g 1000005 -G hostzit-users,hostzit-sftponly", "-K SUB_UID_COUNT=0", "systemctl daemon-reload",
-		"systemctl enable --now hz-cage-shop.service", "systemctl restart hz-php-shop-84.service"} {
+		"systemctl enable --now hz-cage-shop.service", "systemctl reset-failed hz-php-shop-84.service", "systemctl restart hz-php-shop-84.service"} {
 		if !fr.has(want) {
 			t.Errorf("missing call %q in %v", want, fr.calls)
 		}

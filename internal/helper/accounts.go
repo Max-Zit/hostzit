@@ -197,6 +197,9 @@ func (h *Helper) accountApply(ctx context.Context, a hosting.Account) (any, erro
 		if err := h.systemctl(ctx, "enable", u); err != nil {
 			return nil, err
 		}
+		// several saves in a row (found by the 0.9.3 scans) hit systemd's
+		// start limit and left the account without PHP: forget the count
+		_ = h.systemctl(ctx, "reset-failed", u)
 		if err := h.systemctl(ctx, "restart", u); err != nil {
 			return nil, err
 		}
