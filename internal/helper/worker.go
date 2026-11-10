@@ -183,7 +183,7 @@ func workerDo(home string, r WorkerReq) (WorkerResp, error) {
 			if err := os.WriteFile(tmp, []byte(body), 0o700); err != nil { // #nosec G306 -- the account's own script
 				return WorkerResp{}, cleanErr(err, home)
 			}
-			if err := os.Chmod(tmp, 0o700); err != nil { // umask may have removed bits
+			if err := os.Chmod(tmp, 0o700); err != nil { // #nosec G302 -- the job script must be executable by the account; umask may have removed bits
 				_ = os.Remove(tmp)
 				return WorkerResp{}, cleanErr(err, home)
 			}
