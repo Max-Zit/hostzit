@@ -161,6 +161,44 @@ func workerDo(home string, r WorkerReq) (WorkerResp, error) {
 			return WorkerResp{}, cleanErr(err, home)
 		}
 		return WorkerResp{Bytes: int64(len(r.Data))}, nil
+	case "cron-scripts":
+		// all scripts of the scheduled jobs at once (Data: JSON name → body);
+		// scripts of removed jobs are deleted
+		if filepath.Base(p) != ".hz-cron" {
+			return WorkerResp{}, errors.New("cron-scripts works on .hz-cron only")
+		}
+		var scripts map[string]string
+		if err := json.Unmarshal(r.Data, &scripts); err != nil {
+			return WorkerResp{}, errors.New("bad script list")
+		}
+		if err := os.MkdirAll(p, 0o700); err != nil {
+			return WorkerResp{}, cleanErr(err, home)
+		}
+		for name, body := range scripts {
+			if !cronScriptName(name) {
+				return WorkerResp{}, errors.New("bad script name")
+			}
+			dst := filepath.Join(p, name)
+			tmp := dst + ".hz-new"
+			if err := os.WriteFile(tmp, []byte(body), 0o700); err != nil { // #nosec G306 -- the account's own script
+				return WorkerResp{}, cleanErr(err, home)
+			}
+			if err := os.Chmod(tmp, 0o700); err != nil { // umask may have removed bits
+				_ = os.Remove(tmp)
+				return WorkerResp{}, cleanErr(err, home)
+			}
+			if err := os.Rename(tmp, dst); err != nil {
+				_ = os.Remove(tmp)
+				return WorkerResp{}, cleanErr(err, home)
+			}
+		}
+		ents, _ := os.ReadDir(p)
+		for _, e := range ents {
+			if _, keep := scripts[e.Name()]; !keep && cronScriptName(e.Name()) {
+				_ = os.Remove(filepath.Join(p, e.Name()))
+			}
+		}
+		return WorkerResp{Count: int64(len(scripts))}, nil
 	case "mkdir":
 		return WorkerResp{}, cleanErr(os.MkdirAll(p, 0o755), home) // #nosec G301 -- website folders must be readable by the web server group
 	case "delete":
@@ -290,4 +328,18 @@ func (h *Helper) files(ctx context.Context, a filesArgs) (any, error) {
 		return nil, userErr(resp.Error)
 	}
 	return resp, nil
+}
+
+// cronScriptName: "<job id>.sh", the scripts cron.apply writes.
+func cronScriptName(n string) bool {
+	id, ok := strings.CutSuffix(n, ".sh")
+	if !ok || id == "" || len(id) > 19 {
+		return false
+	}
+	for _, c := range id {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }

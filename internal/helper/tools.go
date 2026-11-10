@@ -2,6 +2,7 @@ package helper
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strconv"
@@ -28,9 +29,9 @@ func (h *Helper) cronApply(ctx context.Context, a cronArgs) (any, error) {
 		return nil, userErr("at most 100 scheduled jobs per account")
 	}
 	want := map[string]bool{}
-	if _, err := h.files(ctx, filesArgs{Account: a.Account, Req: WorkerReq{Op: "mkdir", Path: ".hz-cron"}}); err != nil {
-		return nil, err
-	}
+	type unitPair struct{ svc, tmr string }
+	units := map[int64]unitPair{}
+	scripts := map[string]string{}
 	for _, j := range a.Jobs {
 		if err := hosting.CheckCommand(j.Command); err != nil {
 			return nil, userErr(err.Error())
@@ -39,12 +40,16 @@ func (h *Helper) cronApply(ctx context.Context, a cronArgs) (any, error) {
 		if err != nil {
 			return nil, userErr(err.Error())
 		}
-		script := ".hz-cron/" + strconv.FormatInt(j.ID, 10) + ".sh"
-		body := "#!/bin/bash\n# written by the HostZit panel: scheduled job " + strconv.FormatInt(j.ID, 10) + "\n" + j.Command + "\n"
-		if _, err := h.files(ctx, filesArgs{Account: a.Account, Req: WorkerReq{Op: "write", Path: script, Data: []byte(body)}}); err != nil {
-			return nil, err
-		}
-		_, _ = h.files(ctx, filesArgs{Account: a.Account, Req: WorkerReq{Op: "chmod", Path: script, Mode: "700"}})
+		units[j.ID] = unitPair{svc, tmr}
+		scripts[strconv.FormatInt(j.ID, 10)+".sh"] = "#!/bin/bash\n# written by the HostZit panel: scheduled job " + strconv.FormatInt(j.ID, 10) + "\n" + j.Command + "\n"
+	}
+	// all scripts in one worker run (one per file made 140 runs for 70 jobs)
+	data, _ := json.Marshal(scripts)
+	if _, err := h.files(ctx, filesArgs{Account: a.Account, Req: WorkerReq{Op: "cron-scripts", Path: ".hz-cron", Data: data}}); err != nil {
+		return nil, err
+	}
+	for _, j := range a.Jobs {
+		svc, tmr := units[j.ID].svc, units[j.ID].tmr
 		name := fmt.Sprintf("hz-cron-%s-%d", a.Account, j.ID)
 		if err := h.Sys.WriteFile(systemdDir+name+".service", []byte(svc), 0o644, 0, 0); err != nil {
 			return nil, err
