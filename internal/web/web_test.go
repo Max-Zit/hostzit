@@ -6,6 +6,7 @@ import (
 	"crypto/ed25519"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
@@ -520,6 +521,10 @@ func TestAPI(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 		}
 		t.Fatal("job did not finish")
+	}
+	// a password the policy refuses is a 400 now, not a failed job later
+	if st, out := call("POST", "/api/v1/customers", map[string]any{"username": "shortpw", "package": "pro", "email": "a@acme.example.org", "password": "short"}); st != http.StatusBadRequest || !strings.Contains(fmt.Sprint(out["error"]), "password") {
+		t.Fatalf("short password: %d %v", st, out)
 	}
 	in := map[string]any{"id": "0b8a9f0e-1c2d-4e5f-8a9b-0c1d2e3f4a5b", "external_id": "inv-77", "username": "acmeco", "package": "pro", "domain": "acme.example.org", "email": "a@acme.example.org", "password": "acme password 1234"}
 	st, out := call("POST", "/api/v1/customers", in, "Idempotency-Key", "k1")

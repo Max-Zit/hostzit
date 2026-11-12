@@ -34,6 +34,20 @@ done
 export DEBIAN_FRONTEND=noninteractive
 say() { printf '\n==> %s\n' "$*"; }
 
+# systemd-resolved's stub listener holds 127.0.0.53:53; the server's own
+# lookups keep working through /run/systemd/resolve/resolv.conf. LLMNR
+# and multicast DNS (5355, 5353) are for home networks, not for a server
+# on the internet. Called before PowerDNS is installed: its package starts
+# it at once, and that failed while the stub still held port 53.
+free_port53() {
+	if systemctl is-active -q systemd-resolved; then
+		install -d /etc/systemd/resolved.conf.d
+		printf '[Resolve]\nDNSStubListener=no\nLLMNR=no\nMulticastDNS=no\n' > /etc/systemd/resolved.conf.d/hostzit.conf
+		ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+		systemctl restart systemd-resolved
+	fi
+}
+
 # DNS-only server: only PowerDNS, as secondary of
 # one or more HostZit servers. Each primary publishes a catalog zone (RFC
 # 9432) listing its zones; this server consumes it, so zones are added and
@@ -41,10 +55,14 @@ say() { printf '\n==> %s\n' "$*"; }
 # follow one more HostZit server.
 if [ "$DNSONLY" = 1 ]; then
 	[ -n "$PRIMARY" ] && [ -n "$CATALOG" ] || { echo "--dns-only needs --primary IP and --catalog NAME (shown in the admin panel: Settings → Hosting)" >&2; exit 2; }
-	case "$PRIMARY" in *[!0-9a-fA-F.:]*) echo "--primary must be an IP address" >&2; exit 2 ;; esac
+	# --primary may list the primary's addresses (IPv4,IPv6): it sends NOTIFY
+	# from its IPv6 address to secondaries entered with IPv6
+	case "$PRIMARY" in *[!0-9a-fA-F.:,]*|,*|*,) echo "--primary must be IP addresses separated by commas" >&2; exit 2 ;; esac
+	PRIMARIES=$(echo "$PRIMARY" | tr ',' ' ')
 	case "$CATALOG" in *[!a-zA-Z0-9.-]*|.*) echo "--catalog must be a DNS name" >&2; exit 2 ;; esac
 	CATALOG=${CATALOG%.}
 	say "PowerDNS (DNS-only server)"
+	free_port53
 	apt-get update -q
 	apt-get -y -q install pdns-server pdns-backend-sqlite3 sqlite3 nftables
 	db=/var/lib/powerdns/pdns.sqlite3
@@ -57,7 +75,7 @@ if [ "$DNSONLY" = 1 ]; then
 	# every primary that was added (one per line) may send NOTIFY
 	install -d -m 0755 /etc/hostzit
 	touch /etc/hostzit/dns-primaries
-	grep -qxF "$PRIMARY" /etc/hostzit/dns-primaries || echo "$PRIMARY" >> /etc/hostzit/dns-primaries
+	for p in $PRIMARIES; do grep -qxF "$p" /etc/hostzit/dns-primaries || echo "$p" >> /etc/hostzit/dns-primaries; done
 	cat > /etc/powerdns/pdns.d/hostzit-dnsonly.conf <<EOF
 # HostZit DNS-only server (generated)
 launch=gsqlite3
@@ -69,12 +87,7 @@ local-address=0.0.0.0, ::
 api=no
 EOF
 	chmod 644 /etc/powerdns/pdns.d/hostzit-dnsonly.conf
-	if systemctl is-active -q systemd-resolved; then
-		install -d /etc/systemd/resolved.conf.d
-		printf '[Resolve]\nDNSStubListener=no\nLLMNR=no\nMulticastDNS=no\n' > /etc/systemd/resolved.conf.d/hostzit.conf
-		ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-		systemctl restart systemd-resolved
-	fi
+	free_port53
 	systemctl enable pdns >/dev/null 2>&1
 	if ! systemctl restart pdns; then
 		if systemd-detect-virt -c -q; then
@@ -84,10 +97,10 @@ EOF
 	fi
 	sleep 1
 	if ! pdnsutil list-all-zones 2>/dev/null | grep -qxF "$CATALOG."; then
-		pdnsutil create-secondary-zone "$CATALOG" "$PRIMARY" >/dev/null
+		pdnsutil create-secondary-zone "$CATALOG" $PRIMARIES >/dev/null
 	fi
 	pdnsutil set-kind "$CATALOG" consumer >/dev/null
-	pdnsutil change-secondary-zone-primary "$CATALOG" "$PRIMARY" >/dev/null 2>&1 || true
+	pdnsutil change-secondary-zone-primary "$CATALOG" $PRIMARIES >/dev/null 2>&1 || true
 	# fetch the catalog now instead of waiting for the next NOTIFY
 	pdns_control retrieve "$CATALOG" >/dev/null 2>&1 || true
 	say "Done"
@@ -108,6 +121,7 @@ fi
 for v in $PHPS; do
 	for e in fpm cli mysql xml mbstring curl gd zip intl opcache imagick bcmath; do pkgs="$pkgs php$v-$e"; done
 done
+[ "$DNS" = 1 ] && free_port53
 apt-get -y -q install $pkgs
 for v in $PHPS; do systemctl disable --now "php$v-fpm" >/dev/null 2>&1 || true; done
 
@@ -150,16 +164,7 @@ webserver-allow-from=127.0.0.1,::1
 local-address=0.0.0.0, ::
 EOF
 	chmod 640 /etc/powerdns/pdns.d/hostzit.conf; chgrp pdns /etc/powerdns/pdns.d/hostzit.conf
-	# systemd-resolved's stub listener holds 127.0.0.53:53; the server's own
-	# lookups keep working through /run/systemd/resolve/resolv.conf. LLMNR
-	# and multicast DNS (5355, 5353) are for home networks, not for a server
-	# on the internet.
-	if systemctl is-active -q systemd-resolved; then
-		install -d /etc/systemd/resolved.conf.d
-		printf '[Resolve]\nDNSStubListener=no\nLLMNR=no\nMulticastDNS=no\n' > /etc/systemd/resolved.conf.d/hostzit.conf
-		ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
-		systemctl restart systemd-resolved
-	fi
+	free_port53
 	systemctl enable pdns >/dev/null 2>&1
 	systemctl restart pdns
 fi

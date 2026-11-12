@@ -13,7 +13,7 @@
 <section class="panel">
   <h2>{{.T "Change password"}}</h2>
   <form method="post" action="/account/password" class="stack">
-    <label>{{.T "Current password"}}<input type="password" name="current" required autocomplete="current-password"></label>
+    {{if not .User.MustChangePassword}}<label>{{.T "Current password"}}<input type="password" name="current" required autocomplete="current-password"></label>{{end}}
     <label>{{.T "New password"}}<input type="password" name="password" required minlength="12" autocomplete="new-password"><small>{{.T "At least 12 characters. A passphrase of several words is best."}}</small></label>
     <label>{{.T "Repeat the password"}}<input type="password" name="password2" required minlength="12" autocomplete="new-password"></label>
     <div><button class="primary">{{.T "Change password"}}</button></div>

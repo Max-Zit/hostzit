@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/max-zit/hostzit/internal/auth"
 	"github.com/max-zit/hostzit/internal/hosting"
 	"github.com/max-zit/hostzit/internal/store"
 )
@@ -384,6 +385,11 @@ func (s *Server) apiCustomerCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, err := s.store.CustomerByRef(r.Context(), in.Username); err == nil {
 		writeJSON(w, http.StatusConflict, map[string]apiErr{"error": {Code: "conflict", Message: "the username is taken", Field: "username"}})
+		return
+	}
+	// the job failed on this after the 202 (found on the first real server)
+	if err := auth.CheckPasswordPolicy(in.Password); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]apiErr{"error": {Code: "invalid", Message: err.Error(), Field: "password"}})
 		return
 	}
 	by := apiActor(r)

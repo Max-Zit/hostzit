@@ -41,7 +41,7 @@
     <li>{{.T "Enter the IP address of each DNS-only server above (one per line) and save."}}</li>
     <li>{{.T "Run this command on each DNS-only server (Debian 12 or 13) — the same command on all of them:"}}</li>
   </ol>
-  <pre class="mono small">curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash -s -- --dns-only --primary {{or $h.IPv4 "IP"}} --catalog {{$h.Catalog}}</pre>
+  <pre class="mono small">curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash -s -- --dns-only --primary {{or $h.IPv4 "IP"}}{{if $h.IPv6}},{{$h.IPv6}}{{end}} --catalog {{$h.Catalog}}</pre>
   <p class="muted small">{{.T "A DNS-only server runs only PowerDNS and only receives: it copies every zone of this server, also zones added later, and drops deleted ones; it sends nothing back. The same DNS-only servers can serve several HostZit servers: run the command of each HostZit server on them."}}</p>
   {{if .Data.Secondaries}}
   <div class="table-wrap"><table>

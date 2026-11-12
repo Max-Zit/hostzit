@@ -117,7 +117,7 @@ func (s *Server) requireUser(next http.HandlerFunc) http.Handler {
 			http.Error(w, "signed out", http.StatusUnauthorized)
 			return
 		}
-		if u.MustChangePassword && r.URL.Path != "/account" && r.URL.Path != "/account/password" {
+		if x := sessionFrom(r); u.MustChangePassword && (x == nil || x.ActingAdmin == "") && r.URL.Path != "/account" && r.URL.Path != "/account/password" {
 			http.Redirect(w, r, "/account", http.StatusSeeOther)
 			return
 		}

@@ -9,6 +9,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"math/big"
+	"net/http"
 	"net/url"
 	"slices"
 	"strings"
@@ -97,4 +98,55 @@ func due(t *testing.T, st *store.Store, id int64) bool {
 		t.Fatal(err)
 	}
 	return slices.ContainsFunc(l, func(s *store.Site) bool { return s.ID == id })
+}
+
+// Found on the first real import (0.9.3): an imported account must change
+// its random password but the form asked for that password, which nobody
+// knows, so a customer arriving by a one-time link was stuck. An
+// administrator working in the customer panel is not sent there at all.
+func TestForcedPasswordChangeWithoutCurrent(t *testing.T) {
+	e := newEnv(t)
+	a := e.setupAdmin()
+	ctx := context.Background()
+	a.ok("/packages/new", url.Values{"name": {"P"}, "slug": {"p"}, "max_sites": {"1"}, "max_dbs": {"1"}, "max_zones": {"1"}, "disk_mb": {"100"}, "inodes": {"0"},
+		"cpu_percent": {"0"}, "memory_mb": {"0"}, "processes": {"0"}, "io_weight": {"100"}, "php_workers": {"2"}, "php_memory_mb": {"128"}, "upload_mb": {"8"}, "mail_per_hour": {"0"}})
+	a.ok("/customers/new", url.Values{"username": {"moved"}, "package": {"1"}, "password": {"unknown random 1"}})
+	c, _ := e.st.CustomerByRef(ctx, "moved")
+	_ = e.st.SetPassword(ctx, c.UserID, "unknown random 1", true, "")
+
+	// the administrator's "log in as" is not forced to the password page
+	tok, _, err := e.st.CreateSSOLink(ctx, c.UserID, "admin:admin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	adm := e.client(e.panel.URL)
+	adm.get("/sso/" + tok)
+	if st, _, loc := adm.get("/"); st != http.StatusOK {
+		t.Fatalf("acting admin sent to %d %s", st, loc)
+	}
+	if st, _, _ := adm.post("/account/password", url.Values{"password": {"chosen by admin 1"}, "password2": {"chosen by admin 1"}}); st != http.StatusForbidden {
+		t.Fatalf("acting admin changed the customer's password: %d", st)
+	}
+
+	// the customer by a link from the billing system
+	tok, _, _ = e.st.CreateSSOLink(ctx, c.UserID, "api")
+	cu := e.client(e.panel.URL)
+	cu.get("/sso/" + tok)
+	if st, _, loc := cu.get("/"); st != http.StatusSeeOther || !strings.HasSuffix(loc, "/account") {
+		t.Fatalf("not sent to the password page: %d %s", st, loc)
+	}
+	if _, body, _ := cu.get("/account"); strings.Contains(body, `name="current"`) && strings.Contains(body, "/account/password") && strings.Index(body, `name="current"`) < strings.Index(body, `name="password2"`) {
+		t.Fatal("the forced change still asks for the current password")
+	}
+	cu.ok("/account/password", url.Values{"password": {"my own pass 123"}, "password2": {"my own pass 123"}})
+	if _, err := e.st.CheckPassword(ctx, "moved", "my own pass 123"); err != nil {
+		t.Fatal("new password not set:", err)
+	}
+	if st, _, _ := cu.get("/"); st != http.StatusOK {
+		t.Fatalf("still forced after the change: %d", st)
+	}
+	// from now on the current password is needed again
+	if st, _, _ := cu.post("/account/password", url.Values{"password": {"another pass 1234"}, "password2": {"another pass 1234"}}); st != http.StatusBadRequest {
+		t.Fatalf("changed without the current password: %d", st)
+	}
 }

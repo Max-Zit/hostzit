@@ -179,9 +179,19 @@ func (s *Server) showAccount(w http.ResponseWriter, r *http.Request, status int,
 
 func (s *Server) handleAccountPassword(w http.ResponseWriter, r *http.Request) {
 	u := userFrom(r)
-	if _, err := s.store.CheckPassword(r.Context(), u.Username, r.FormValue("current")); err != nil {
-		s.guard.fail(r.Context(), clientIP(r), u.Username, "password change")
-		s.showAccount(w, r, http.StatusBadRequest, &accountData{}, "The current password is wrong.")
+	// a password that must be changed is a temporary one the user may never
+	// have seen (accounts from a cPanel import get a random one and arrive
+	// through a one-time link): it is not asked for
+	if !u.MustChangePassword {
+		if _, err := s.store.CheckPassword(r.Context(), u.Username, r.FormValue("current")); err != nil {
+			s.guard.fail(r.Context(), clientIP(r), u.Username, "password change")
+			s.showAccount(w, r, http.StatusBadRequest, &accountData{}, "The current password is wrong.")
+			return
+		}
+	} else if x := sessionFrom(r); x != nil && x.ActingAdmin != "" {
+		// an administrator working in the customer panel does not choose
+		// the customer's password
+		s.forbidden(w, r)
 		return
 	}
 	if r.FormValue("password") != r.FormValue("password2") {
