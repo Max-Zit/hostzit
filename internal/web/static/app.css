@@ -510,6 +510,8 @@ kbd { font-family: var(--mono); font-size: 12px; border: 1px solid var(--line-2)
 
 /* ---- WatchZit 0.2: SNMP, ports, multi-series graphs */
 .err-text { display: flex; gap: 8px; align-items: center; color: var(--bad); font-weight: 600; margin: 0 0 8px; }
+/* a table cell must stay a cell (flex took it out of the row: Jobs, Websites) */
+td.err-text { display: table-cell; margin: 0; }
 .inline-field { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
 .inline-field input { width: 90px; }
 th.cb, td.cb { width: 34px; text-align: center; }
