@@ -204,7 +204,8 @@ func (s *Server) readMeta(ctx context.Context, by string, c *store.Customer, roo
 			}
 		}
 	}
-	for _, l := range strings.Split(read("cp/"+path.Base(root)[len("cpmove-"):]), "\n") {
+	cpUser, _ := cpanelUser(path.Base(root))
+	for _, l := range strings.Split(read("cp/"+cpUser), "\n") {
 		if v, ok := strings.CutPrefix(l, "IP="); ok {
 			m.IP = strings.TrimSpace(v)
 		}
@@ -276,7 +277,11 @@ func (s *Server) importCPanel(ctx context.Context, by, file, username string, pa
 		return nil, err
 	}
 	var top helper.WorkerResp
-	if err := s.call(ctx, by, "files", map[string]any{"account": c.Username, "req": helper.WorkerReq{Op: "list", Path: ".hz-import"}}, &top); err != nil || len(top.Files) != 1 || !strings.HasPrefix(top.Files[0].Name, "cpmove-") {
+	if err := s.call(ctx, by, "files", map[string]any{"account": c.Username, "req": helper.WorkerReq{Op: "list", Path: ".hz-import"}}, &top); err != nil || len(top.Files) != 1 {
+		return nil, errors.New("the archive must contain one folder cpmove-USER")
+	}
+	oldUser, ok := cpanelUser(top.Files[0].Name)
+	if !ok {
 		return nil, errors.New("the archive must contain one folder cpmove-USER")
 	}
 	root := ".hz-import/" + top.Files[0].Name
@@ -284,7 +289,6 @@ func (s *Server) importCPanel(ctx context.Context, by, file, username string, pa
 	if err != nil {
 		return nil, err
 	}
-	oldUser := strings.TrimPrefix(top.Files[0].Name, "cpmove-")
 	oldHome := "/home/" + oldUser
 	hs := s.hostingSettings(ctx)
 	// files: the whole old home goes into ~/cpanel-home first, then the
@@ -486,4 +490,23 @@ func rewriteHome(cmd, oldHome, newHome, main string) string {
 	cmd = strings.ReplaceAll(cmd, oldHome+"/public_html", mark)
 	cmd = strings.ReplaceAll(cmd, oldHome+"/", newHome+"/cpanel-home/")
 	return strings.ReplaceAll(cmd, mark, newHome+"/sites/"+main+"/public")
+}
+
+// cpanelBackupRE matches the folder (and file) name of a backup made with
+// cPanel's Backup → Download a Full Account Backup:
+// backup-MM.DD.YYYY_HH-MM-SS_USER.
+var cpanelBackupRE = regexp.MustCompile(`^backup-\d{1,2}\.\d{1,2}\.\d{4}_\d{1,2}-\d{1,2}-\d{1,2}_([a-z][a-z0-9_]*)$`)
+
+// cpanelUser returns the cPanel account name of a backup folder or file:
+// cpmove-USER (pkgacct) or backup-…_USER (Download a Full Account Backup;
+// found on the first real import, 0.9.3 only knew cpmove).
+func cpanelUser(name string) (string, bool) {
+	name = strings.TrimSuffix(strings.TrimSuffix(name, ".tar.gz"), ".tgz")
+	if u, ok := strings.CutPrefix(name, "cpmove-"); ok && u != "" {
+		return u, true
+	}
+	if m := cpanelBackupRE.FindStringSubmatch(name); m != nil {
+		return m[1], true
+	}
+	return "", false
 }

@@ -207,7 +207,7 @@ func (s *Server) handleImportStart(w http.ResponseWriter, r *http.Request) {
 		user = m.Customer["username"]
 	}
 	if user == "" {
-		user = strings.TrimSuffix(strings.TrimSuffix(strings.TrimPrefix(file, "cpmove-"), ".tar.gz"), ".tgz")
+		user, _ = cpanelUser(file)
 	}
 	if err := hosting.ValidAccount(user); err != nil {
 		s.redirectErr(w, r, "/import", err.Error())

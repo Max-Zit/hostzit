@@ -43,3 +43,22 @@ func TestCPanelParsers(t *testing.T) {
 		t.Fatal(c)
 	}
 }
+
+func TestCPanelUser(t *testing.T) {
+	for in, want := range map[string]string{
+		"cpmove-shop":                                "shop",
+		"cpmove-shop.tar.gz":                         "shop",
+		"backup-11.12.2026_11-41-01_sportiko":        "sportiko",
+		"backup-11.12.2026_11-41-01_sportiko.tar.gz": "sportiko",
+		"backup-1.2.2026_9-5-3_ab_c.tgz":             "ab_c",
+	} {
+		if got, ok := cpanelUser(in); !ok || got != want {
+			t.Errorf("%s: %q %v, want %q", in, got, ok, want)
+		}
+	}
+	for _, bad := range []string{"cpmove-", "site.tar.gz", "backup-x_sportiko", "backup-11.12.2026_11-41-01_../x"} {
+		if u, ok := cpanelUser(bad); ok {
+			t.Errorf("%s accepted as %q", bad, u)
+		}
+	}
+}
