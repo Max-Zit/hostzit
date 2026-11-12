@@ -19,6 +19,10 @@ const (
 	f2bFilter = "/etc/fail2ban/filter.d/hostzit-wordpress.conf"
 	// WPJail is the fail2ban jail of the WordPress sign-in floods.
 	WPJail = "hostzit-wordpress"
+	// f2bKeepLog is always there, so fail2ban accepts the WordPress jail on a
+	// server without websites (no access.log yet): without it fail2ban refuses
+	// the whole configuration and, after a restart, does not start at all.
+	f2bKeepLog = "/var/log/hostzit/wordpress-jail.log"
 )
 
 // f2bJails are the jails the panel shows, with the source it names.
@@ -59,7 +63,7 @@ func (a bruteArgs) jail() (string, error) {
 	b.WriteString("# HostZit: brute-force protection (written by the panel, Settings → Brute-force protection)\n[DEFAULT]\n")
 	fmt.Fprintf(&b, "ignoreip = %s\nmaxretry = %d\nfindtime = %dm\nbantime = %dm\n", strings.Join(ignore, " "), a.MaxRetry, a.FindMinutes, a.BanMinutes)
 	b.WriteString("bantime.increment = true\nbantime.maxtime = 7d\n\n[sshd]\nenabled = true\n\n")
-	fmt.Fprintf(&b, "[%s]\nenabled = true\nfilter = %s\nlogpath = /var/log/hostzit/sites/*/access.log\nbackend = polling\nport = http,https\n", WPJail, WPJail)
+	fmt.Fprintf(&b, "[%s]\nenabled = true\nfilter = %s\nlogpath = /var/log/hostzit/sites/*/access.log\n          %s\nbackend = polling\nport = http,https\n", WPJail, WPJail, f2bKeepLog)
 	return b.String(), nil
 }
 
@@ -71,6 +75,11 @@ func (h *Helper) bruteApply(ctx context.Context, a bruteArgs) (any, error) {
 	}
 	if !h.Sys.Exists("/usr/bin/fail2ban-client") {
 		return nil, userErr("fail2ban is not installed")
+	}
+	if !h.Sys.Exists(f2bKeepLog) {
+		if err := h.Sys.WriteFile(f2bKeepLog, nil, 0o640, 0, 0); err != nil {
+			return nil, err
+		}
 	}
 	if err := h.Sys.WriteFile(f2bFilter, []byte(wpFilter), 0o644, 0, 0); err != nil {
 		return nil, err

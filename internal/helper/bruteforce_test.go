@@ -19,7 +19,7 @@ func TestBruteJail(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{"ignoreip = 127.0.0.1/8 ::1 203.0.113.9/32 198.51.100.0/24", "maxretry = 5", "bantime = 30m", "[sshd]", "[hostzit-wordpress]"} {
+	for _, want := range []string{"ignoreip = 127.0.0.1/8 ::1 203.0.113.9/32 198.51.100.0/24", "maxretry = 5", "bantime = 30m", "[sshd]", "[hostzit-wordpress]", "\n          " + f2bKeepLog + "\n"} {
 		if !strings.Contains(c, want) {
 			t.Errorf("missing %q in\n%s", want, c)
 		}
