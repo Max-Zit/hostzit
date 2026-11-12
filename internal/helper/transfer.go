@@ -1,6 +1,8 @@
 package helper
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
 	"crypto/sha256"
 	"crypto/tls"
@@ -204,6 +206,13 @@ func (h *Helper) importManifest(ctx context.Context, a manifestArgs) (any, error
 	if fi, err := os.Lstat(p); err != nil || !fi.Mode().IsRegular() {
 		return nil, userErr("archive not found")
 	}
+	// A cPanel archive starts with its one folder (cpmove-USER or
+	// backup-…_USER): answer from the first entry instead of reading the
+	// whole archive for a manifest that is not there (≈8 minutes for 6 GB,
+	// found on the first real import).
+	if u, ok := hosting.CPanelUser(archiveTop(p)); ok {
+		return map[string]string{"manifest": "", "cpanel_user": u}, nil
+	}
 	// the manifest is added without ./ (see backupCreate)
 	out, err := h.Sys.Run(ctx, nil, "tar", "-xzOf", p, "hostzit-manifest.json")
 	if err != nil || len(out) == 0 {
@@ -217,3 +226,28 @@ func (h *Helper) importManifest(ctx context.Context, a manifestArgs) (any, error
 
 // TransferName reports a valid name of a received archive.
 func TransferName(n string) bool { return transferNameRE.MatchString(n) }
+
+// archiveTop returns the top folder of the first entry of a tar(.gz)
+// archive ("" when it cannot be read); only the first header is read.
+func archiveTop(p string) string {
+	f, err := os.Open(p) // #nosec G304 -- checked name in the root-only import folder
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	var r io.Reader = f
+	if !strings.HasSuffix(p, ".tar") {
+		z, err := gzip.NewReader(f)
+		if err != nil {
+			return ""
+		}
+		defer z.Close()
+		r = z
+	}
+	hdr, err := tar.NewReader(r).Next()
+	if err != nil {
+		return ""
+	}
+	top, _, _ := strings.Cut(strings.TrimPrefix(hdr.Name, "./"), "/")
+	return top
+}

@@ -56,20 +56,28 @@ func (s *Server) manifestExtras(ctx context.Context, c *store.Customer, man *Man
 // readManifest reads the manifest of an archive in the import folder
 // (nil: not a HostZit archive).
 func (s *Server) readManifest(ctx context.Context, by, file string) (*Manifest, error) {
+	m, _, err := s.archiveKind(ctx, by, file)
+	return m, err
+}
+
+// archiveKind tells a HostZit archive (its manifest) from a cPanel one (the
+// cPanel account name, read from the archive's first folder).
+func (s *Server) archiveKind(ctx context.Context, by, file string) (*Manifest, string, error) {
 	var res struct {
-		Manifest string `json:"manifest"`
+		Manifest   string `json:"manifest"`
+		CPanelUser string `json:"cpanel_user"`
 	}
 	if err := s.call(ctx, by, "import.manifest", map[string]string{"file": file}, &res); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if res.Manifest == "" {
-		return nil, nil
+		return nil, res.CPanelUser, nil
 	}
 	var m Manifest
 	if err := json.Unmarshal([]byte(res.Manifest), &m); err != nil || m.Product != "hostzit" {
-		return nil, errors.New("the archive's hostzit-manifest.json is invalid")
+		return nil, "", errors.New("the archive's hostzit-manifest.json is invalid")
 	}
-	return &m, nil
+	return &m, "", nil
 }
 
 // importHostZit creates an account from a HostZit archive in the import

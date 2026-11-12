@@ -198,7 +198,7 @@ func (s *Server) handleImportStart(w http.ResponseWriter, r *http.Request) {
 	user := strings.ToLower(strings.TrimSpace(r.FormValue("username")))
 	pkg, _ := strconv.ParseInt(r.FormValue("package"), 10, 64)
 	by := actor(r)
-	m, err := s.readManifest(r.Context(), by, file)
+	m, cpUser, err := s.archiveKind(r.Context(), by, file)
 	if err != nil {
 		s.redirectErr(w, r, "/import", storeErr(err))
 		return
@@ -207,7 +207,10 @@ func (s *Server) handleImportStart(w http.ResponseWriter, r *http.Request) {
 		user = m.Customer["username"]
 	}
 	if user == "" {
-		user, _ = cpanelUser(file)
+		user = cpUser
+	}
+	if user == "" {
+		user, _ = hosting.CPanelUser(file)
 	}
 	if err := hosting.ValidAccount(user); err != nil {
 		s.redirectErr(w, r, "/import", err.Error())

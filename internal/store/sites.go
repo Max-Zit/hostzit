@@ -238,12 +238,22 @@ func (s *Store) DeleteSite(ctx context.Context, id int64) error {
 // while ago or expires within 30 days.
 func (s *Store) CertsDue(ctx context.Context) ([]*Site, error) {
 	now := s.now()
+	// a valid certificate with a note (a renewal that failed, names that do
+	// not point here yet) is tried again after six hours like a failed one
 	return s.querySites(ctx, `s.auto_tls AND c.status='active' AND s.cert_status<>'uploaded' AND (
 		(s.cert_status IN ('', 'pending')) OR
 		(s.cert_status='failed' AND (s.cert_tried_at IS NULL OR s.cert_tried_at < $1)) OR
-		(s.cert_status='ok' AND s.cert_not_after < $2) OR
-		(s.cert_status='ok' AND NOT (s.cert_names @> (SELECT array_agg(n.name) FROM site_names n WHERE n.site_id=s.id))))`,
+		(s.cert_status='ok' AND (s.cert_error='' OR s.cert_tried_at IS NULL OR s.cert_tried_at < $1) AND (
+			s.cert_not_after < $2 OR
+			NOT (s.cert_names @> (SELECT array_agg(n.name) FROM site_names n WHERE n.site_id=s.id)))))`,
 		now.Add(-6*time.Hour), now.Add(30*24*time.Hour))
+}
+
+// SetCertNote records why the certificate of a site was not renewed (or
+// which names are still missing) without touching the certificate itself.
+func (s *Store) SetCertNote(ctx context.Context, id int64, msg string) error {
+	_, err := s.db.Exec(ctx, `UPDATE sites SET cert_error=$2, cert_tried_at=$3 WHERE id=$1`, id, truncate(msg, 500), s.now())
+	return err
 }
 
 // ---- DNS zones

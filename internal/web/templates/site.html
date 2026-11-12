@@ -17,7 +17,7 @@
 
 <section class="panel">
   <h2>{{template "icon" "lock"}}{{.T "HTTPS certificate"}}</h2>
-  {{if eq $s.CertStatus "ok"}}<p><span class="badge ok"><i></i>Let's Encrypt</span> {{.T "valid until %s" (.Time $s.CertNotAfter)}} · <span class="small muted">{{join $s.CertNames ", "}}</span></p>
+  {{if eq $s.CertStatus "ok"}}<p><span class="badge ok"><i></i>Let's Encrypt</span> {{.T "valid until %s" (.Time $s.CertNotAfter)}} · <span class="small muted">{{join $s.CertNames ", "}}</span></p>{{if $s.CertError}}<p class="small muted">{{$s.CertError}} · {{.T "It is tried again automatically every few hours."}}</p>{{end}}
   {{else if eq $s.CertStatus "uploaded"}}<p><span class="badge ok"><i></i>{{.T "own certificate"}}</span> {{.T "valid until %s" (.Time $s.CertNotAfter)}}</p>
   {{else if eq $s.CertStatus "failed"}}<p><span class="badge warn"><i></i>{{.T "not issued yet"}}</span> <span class="small">{{$s.CertError}}</span></p><p class="small muted">{{.T "It is tried again automatically every few hours."}}{{if .Data.CertValid}} {{.T "The current certificate stays in use until %s." (.Time $s.CertNotAfter)}}{{end}}</p>
   {{else if eq $s.CertStatus "pending"}}<p><span class="badge warn"><i></i>{{.T "being requested"}}</span> <span class="small muted">{{.T "reload the page in a minute"}}</span></p>

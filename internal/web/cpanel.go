@@ -3,14 +3,18 @@ package web
 import (
 	"bufio"
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/http"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/max-zit/hostzit/internal/auth"
 	"github.com/max-zit/hostzit/internal/helper"
@@ -31,7 +35,9 @@ type cpMeta struct {
 	Addons   map[string]string // addon domain → its subdomain
 	Parked   []string
 	Subs     []string
-	DocRoots map[string]string // domain → document root relative to the old home
+	DocRoots map[string]string   // domain → document root relative to the old home
+	PHP      map[string]string   // domain → PHP version (8.1) from its userdata
+	Aliases  map[string][]string // domain → serveralias names from its userdata
 	DBs      []string
 	DBUsers  map[string]cpDBUser
 	Zones    map[string]string // domain → zone file text
@@ -72,6 +78,28 @@ func parseUserdataMain(text string, m *cpMeta) {
 			m.Parked = append(m.Parked, strings.Trim(strings.TrimSpace(strings.TrimPrefix(t, "-")), `'"`))
 		case "sub_domains":
 			m.Subs = append(m.Subs, strings.Trim(strings.TrimSpace(strings.TrimPrefix(t, "-")), `'"`))
+		}
+	}
+}
+
+// parseUserdataDomain reads the document root, the PHP version and the
+// server aliases of one domain from userdata/<domain>.
+func parseUserdataDomain(text, d string, m *cpMeta) {
+	for _, l := range strings.Split(text, "\n") {
+		k, v, ok := strings.Cut(strings.TrimSpace(l), ":")
+		if !ok {
+			continue
+		}
+		v = strings.Trim(strings.TrimSpace(v), `'"`)
+		switch k {
+		case "documentroot":
+			m.DocRoots[d] = v
+		case "phpversion":
+			if p := hosting.CPanelPHP(v); p != "" {
+				m.PHP[d] = p
+			}
+		case "serveralias":
+			m.Aliases[d] = strings.Fields(v)
 		}
 	}
 }
@@ -178,7 +206,7 @@ func parseZone(text, zone, oldIP, newIP string) []hosting.Record {
 
 // readMeta reads the metadata of an unpacked cpmove archive.
 func (s *Server) readMeta(ctx context.Context, by string, c *store.Customer, root string) (*cpMeta, error) {
-	m := &cpMeta{Addons: map[string]string{}, DocRoots: map[string]string{}, DBUsers: map[string]cpDBUser{}, Zones: map[string]string{}}
+	m := &cpMeta{Addons: map[string]string{}, DocRoots: map[string]string{}, PHP: map[string]string{}, Aliases: map[string][]string{}, DBUsers: map[string]cpDBUser{}, Zones: map[string]string{}}
 	read := func(p string) string {
 		var r helper.WorkerResp
 		if err := s.call(ctx, by, "files", map[string]any{"account": c.Username, "req": helper.WorkerReq{Op: "read", Path: root + "/" + p, Limit: 8 << 20}}, &r); err != nil {
@@ -198,13 +226,9 @@ func (s *Server) readMeta(ctx context.Context, by string, c *store.Customer, roo
 		return nil, errors.New("this is not a cPanel backup (userdata/main missing)")
 	}
 	for _, d := range append([]string{m.Main}, append(keys(m.Addons), m.Subs...)...) {
-		for _, l := range strings.Split(read("userdata/"+d), "\n") {
-			if v, ok := strings.CutPrefix(strings.TrimSpace(l), "documentroot:"); ok {
-				m.DocRoots[d] = strings.Trim(strings.TrimSpace(v), `'"`)
-			}
-		}
+		parseUserdataDomain(read("userdata/"+d), d, m)
 	}
-	cpUser, _ := cpanelUser(path.Base(root))
+	cpUser, _ := hosting.CPanelUser(path.Base(root))
 	for _, l := range strings.Split(read("cp/"+cpUser), "\n") {
 		if v, ok := strings.CutPrefix(l, "IP="); ok {
 			m.IP = strings.TrimSpace(v)
@@ -265,13 +289,23 @@ type ImportReport struct {
 }
 
 // importCPanel creates the account from a cpmove archive in ImportDir.
-func (s *Server) importCPanel(ctx context.Context, by, file, username string, packageID int64) (*ImportReport, error) {
+func (s *Server) importCPanel(ctx context.Context, by, file, username string, packageID int64) (_ *ImportReport, err error) {
 	rep := &ImportReport{}
 	pw := auth.RandomToken(16) + "-Hz"
 	c, err := s.createAccount(ctx, by, NewAccount{NewCustomer: store.NewCustomer{Username: username, PackageID: packageID, Password: pw, DisplayName: "cPanel import " + username}})
 	if err != nil {
 		return nil, err
 	}
+	// a failed import removes the account it made (with the unpacked
+	// archive), so the name is free for the next try (found on the first
+	// real import: 6.5 GB stayed behind)
+	defer func() {
+		if err != nil {
+			if derr := s.deleteAccount(context.WithoutCancel(ctx), by, c); derr != nil {
+				s.log.Warn("failed import: account not removed", "account", c.Username, "err", derr)
+			}
+		}
+	}()
 	_ = s.store.SetPassword(ctx, c.UserID, pw, true, "")
 	if err := s.call(ctx, by, "import.stage", map[string]string{"account": c.Username, "file": file}, nil); err != nil {
 		return nil, err
@@ -280,7 +314,7 @@ func (s *Server) importCPanel(ctx context.Context, by, file, username string, pa
 	if err := s.call(ctx, by, "files", map[string]any{"account": c.Username, "req": helper.WorkerReq{Op: "list", Path: ".hz-import"}}, &top); err != nil || len(top.Files) != 1 {
 		return nil, errors.New("the archive must contain one folder cpmove-USER")
 	}
-	oldUser, ok := cpanelUser(top.Files[0].Name)
+	oldUser, ok := hosting.CPanelUser(top.Files[0].Name)
 	if !ok {
 		return nil, errors.New("the archive must contain one folder cpmove-USER")
 	}
@@ -291,6 +325,7 @@ func (s *Server) importCPanel(ctx context.Context, by, file, username string, pa
 	}
 	oldHome := "/home/" + oldUser
 	hs := s.hostingSettings(ctx)
+	installed := s.phpVersions(ctx)
 	// files: the whole old home goes into ~/cpanel-home first, then the
 	// document roots are moved into sites/
 	moves := map[string]string{} // new doc root → old relative path
@@ -342,17 +377,24 @@ func (s *Server) importCPanel(ctx context.Context, by, file, username string, pa
 		if err != nil {
 			continue
 		}
-		x := &store.Site{CustomerID: c.ID, Account: c.Username, Domain: dom, DocRoot: nr, PHPVersion: hs.DefaultPHP, WWW: true, Canonical: "", ForceHTTPS: true, CacheMinutes: 60, UploadMB: 64, AutoTLS: true}
-		if d == m.Main {
-			for _, p := range m.Parked {
-				if a, err := hosting.NormalizeDomain(p); err == nil {
-					x.Aliases = append(x.Aliases, a)
-				}
+		php := hs.DefaultPHP
+		if v := m.PHP[d]; v != "" && v != php {
+			if slices.Contains(installed, v) {
+				php = v
+			} else {
+				rep.Notes = append(rep.Notes, dom+": PHP "+v+" (used on cPanel) is not installed here, the website runs PHP "+php+"; install it under Settings → PHP and choose it for the website")
 			}
+		}
+		x := &store.Site{CustomerID: c.ID, Account: c.Username, Domain: dom, DocRoot: nr, PHPVersion: php, WWW: true, Canonical: "", ForceHTTPS: true, CacheMinutes: 60, UploadMB: 64, AutoTLS: true}
+		if d == m.Main {
+			x.Aliases = parkedAliases(m)
 		}
 		if err := s.store.SaveSite(ctx, x); err != nil {
 			rep.Notes = append(rep.Notes, dom+": "+err.Error())
 			continue
+		}
+		if note := s.importSiteCert(ctx, by, c, root, d, x); note != "" {
+			rep.Notes = append(rep.Notes, note)
 		}
 		if err := s.applySite(ctx, by, x, false); err != nil {
 			rep.Notes = append(rep.Notes, dom+": "+storeErr(err))
@@ -492,21 +534,87 @@ func rewriteHome(cmd, oldHome, newHome, main string) string {
 	return strings.ReplaceAll(cmd, mark, newHome+"/sites/"+main+"/public")
 }
 
-// cpanelBackupRE matches the folder (and file) name of a backup made with
-// cPanel's Backup → Download a Full Account Backup:
-// backup-MM.DD.YYYY_HH-MM-SS_USER.
-var cpanelBackupRE = regexp.MustCompile(`^backup-\d{1,2}\.\d{1,2}\.\d{4}_\d{1,2}-\d{1,2}-\d{1,2}_([a-z][a-z0-9_]*)$`)
+// parkedAliases are the aliases of the main website: the parked domains and
+// those of their www names that cPanel served (serveralias of the main
+// domain); mail.* names are left out.
+func parkedAliases(m *cpMeta) []string {
+	served := map[string]bool{}
+	for _, a := range m.Aliases[m.Main] {
+		served[strings.ToLower(a)] = true
+	}
+	var out []string
+	add := func(n string) {
+		if a, err := hosting.NormalizeDomain(n); err == nil && !slices.Contains(out, a) {
+			out = append(out, a)
+		}
+	}
+	for _, p := range m.Parked {
+		add(p)
+		if w := "www." + strings.ToLower(p); served[w] {
+			add(w)
+		}
+	}
+	return out
+}
 
-// cpanelUser returns the cPanel account name of a backup folder or file:
-// cpmove-USER (pkgacct) or backup-…_USER (Download a Full Account Backup;
-// found on the first real import, 0.9.3 only knew cpmove).
-func cpanelUser(name string) (string, bool) {
-	name = strings.TrimSuffix(strings.TrimSuffix(name, ".tar.gz"), ".tgz")
-	if u, ok := strings.CutPrefix(name, "cpmove-"); ok && u != "" {
-		return u, true
+// importSiteCert installs the certificate cPanel had for the domain
+// (apache_tls/<domain>: key and chain) when it is still valid and covers a
+// name of the website, so HTTPS works right after the DNS moves here; the
+// free certificate replaces it as soon as the names point to this server.
+// The answer is a note for the report ("" when there was nothing to do).
+func (s *Server) importSiteCert(ctx context.Context, by string, c *store.Customer, root, domain string, x *store.Site) string {
+	var r helper.WorkerResp
+	if err := s.call(ctx, by, "files", map[string]any{"account": c.Username, "req": helper.WorkerReq{Op: "read", Path: root + "/apache_tls/" + domain, Limit: 1 << 20}}, &r); err != nil || len(r.Data) == 0 {
+		return ""
 	}
-	if m := cpanelBackupRE.FindStringSubmatch(name); m != nil {
-		return m[1], true
+	chain, key, leaf := splitCertPEM(r.Data)
+	if leaf == nil || key == "" {
+		return ""
 	}
-	return "", false
+	if time.Until(leaf.NotAfter) < 24*time.Hour {
+		return x.Domain + ": the certificate from cPanel has expired and was not moved"
+	}
+	names := x.Spec(false, 0).Names()
+	covers := false
+	for _, n := range names {
+		covers = covers || leaf.VerifyHostname(n) == nil
+	}
+	if !covers {
+		return ""
+	}
+	var res struct {
+		NotAfter time.Time `json:"not_after"`
+		Names    []string  `json:"names"`
+	}
+	if err := s.call(ctx, by, "cert.install", map[string]any{"account": c.Username, "id": x.ID, "fullchain": chain, "key": key}, &res); err != nil {
+		return x.Domain + ": the certificate from cPanel was not moved: " + storeErr(err)
+	}
+	// "ok" with the certificate's names: the free certificate is requested
+	// for the missing names and replaces this one when the domain points here
+	_ = s.store.SetCert(ctx, x.ID, "ok", "", &res.NotAfter, res.Names)
+	x.CertStatus = "ok"
+	return x.Domain + ": the certificate from cPanel (" + strings.Join(res.Names, ", ") + ", until " + res.NotAfter.Format("2006-01-02") + ") was moved"
+}
+
+// splitCertPEM separates a cPanel apache_tls file into the certificate
+// chain and the private key; leaf is the first certificate.
+func splitCertPEM(b []byte) (chain, key string, leaf *x509.Certificate) {
+	var cb strings.Builder
+	for {
+		var blk *pem.Block
+		blk, b = pem.Decode(b)
+		if blk == nil {
+			break
+		}
+		switch {
+		case blk.Type == "CERTIFICATE":
+			if leaf == nil {
+				leaf, _ = x509.ParseCertificate(blk.Bytes)
+			}
+			_ = pem.Encode(&cb, blk)
+		case strings.HasSuffix(blk.Type, "PRIVATE KEY") && key == "":
+			key = string(pem.EncodeToMemory(blk))
+		}
+	}
+	return cb.String(), key, leaf
 }

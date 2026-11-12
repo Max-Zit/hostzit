@@ -86,18 +86,27 @@ func (s *Server) certRound(ctx context.Context) {
 		}
 		if err := s.issueCert(ctx, hs, x); err != nil {
 			s.log.Warn("certificate not issued", "site", x.Domain, "err", err)
-			_ = s.store.SetCert(ctx, x.ID, "failed", err.Error(), nil, nil)
+			if hasValidCert(x, s.now()) {
+				// keep serving the valid certificate (a renewal before expiry,
+				// or one moved from cPanel): "failed" would switch HTTPS off
+				// at the next change of the site
+				_ = s.store.SetCertNote(ctx, x.ID, err.Error())
+			} else {
+				_ = s.store.SetCert(ctx, x.ID, "failed", err.Error(), nil, nil)
+			}
 		}
 	}
 }
 
-// reachableNames keeps the names of a site that resolve to this server.
-func (s *Server) reachableNames(ctx context.Context, hs HostingSettings, x *store.Site) ([]string, error) {
+// reachableNames splits the names of a site into those that resolve to
+// this server and the others; at least one must (an imported cPanel site
+// may keep a main name of the old provider and have its real domain as an
+// alias).
+func (s *Server) reachableNames(ctx context.Context, hs HostingSettings, x *store.Site) (ok, missing []string, err error) {
 	names := x.Spec(false, 0).Names()
 	if hs.IPv4 == "" && hs.IPv6 == "" {
-		return names, nil
+		return names, nil, nil
 	}
-	var ok []string
 	var r net.Resolver
 	for _, n := range names {
 		c, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -105,12 +114,27 @@ func (s *Server) reachableNames(ctx context.Context, hs HostingSettings, x *stor
 		cancel()
 		if err == nil && (slices.Contains(addrs, hs.IPv4) || hs.IPv6 != "" && slices.Contains(addrs, hs.IPv6)) {
 			ok = append(ok, n)
+		} else {
+			missing = append(missing, n)
 		}
 	}
-	if !slices.Contains(ok, x.Domain) {
-		return nil, fmt.Errorf("%s does not point to this server yet (DNS A record %s)", x.Domain, hs.IPv4)
+	if len(ok) == 0 {
+		return nil, nil, fmt.Errorf("%s does not point to this server yet (DNS A record %s)", x.Domain, hs.IPv4)
 	}
-	return ok, nil
+	return ok, missing, nil
+}
+
+// hasValidCert: the site serves a certificate that is good for a day more.
+func hasValidCert(x *store.Site, now time.Time) bool {
+	return x.CertStatus == "ok" && x.CertNotAfter != nil && x.CertNotAfter.After(now.Add(24*time.Hour))
+}
+
+// sameNames: both lists hold the same names.
+func sameNames(a, b []string) bool {
+	a, b = slices.Clone(a), slices.Clone(b)
+	slices.Sort(a)
+	slices.Sort(b)
+	return slices.Equal(a, b)
 }
 
 func (s *Server) acmeClient(ctx context.Context, hs HostingSettings) (*acme.Client, error) {
@@ -160,11 +184,22 @@ func (s *Server) issueCert(ctx context.Context, hs HostingSettings, x *store.Sit
 	defer s.acmeMu.Unlock()
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
 	defer cancel()
-	names, err := s.reachableNames(ctx, hs, x)
+	names, missing, err := s.reachableNames(ctx, hs, x)
 	if err != nil {
 		return err
 	}
-	_ = s.store.SetCert(ctx, x.ID, "pending", "", nil, nil)
+	note := ""
+	if len(missing) > 0 {
+		note = "not yet pointing to this server: " + strings.Join(missing, ", ")
+	}
+	// the same names again while the certificate is far from expiry: wait
+	// (Let's Encrypt gives at most 5 certificates for the same names a week)
+	if hasValidCert(x, s.now()) && sameNames(names, x.CertNames) && x.CertNotAfter.After(s.now().Add(30*24*time.Hour)) {
+		return s.store.SetCertNote(ctx, x.ID, note)
+	}
+	if !hasValidCert(x, s.now()) {
+		_ = s.store.SetCert(ctx, x.ID, "pending", "", nil, nil)
+	}
 	chain, keyPEM, leaf, err := s.obtainCert(ctx, hs, names)
 	if err != nil {
 		return err
@@ -174,7 +209,7 @@ func (s *Server) issueCert(ctx context.Context, hs HostingSettings, x *store.Sit
 		return err
 	}
 	na := leaf.NotAfter
-	if err := s.store.SetCert(ctx, x.ID, "ok", "", &na, names); err != nil {
+	if err := s.store.SetCert(ctx, x.ID, "ok", note, &na, names); err != nil {
 		return err
 	}
 	x.CertStatus = "ok"

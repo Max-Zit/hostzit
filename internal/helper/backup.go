@@ -52,6 +52,12 @@ type ImportFile struct {
 	Time time.Time `json:"time"`
 }
 
+// importSettle: an archive changed less than this ago is probably still
+// being copied (SFTP/scp of several GB) and is neither listed nor
+// imported (found on the first real import: a half-copied 6 GB archive
+// was offered for import).
+const importSettle = time.Minute
+
 func (h *Helper) importList(_ context.Context, _ struct{}) (any, error) {
 	if err := h.Sys.Mkdir(ImportDir, 0o700, 0, 0); err != nil {
 		return nil, err
@@ -62,7 +68,7 @@ func (h *Helper) importList(_ context.Context, _ struct{}) (any, error) {
 		if e.IsDir() || !importNameRE.MatchString(e.Name()) {
 			continue
 		}
-		if fi, err := e.Info(); err == nil {
+		if fi, err := e.Info(); err == nil && time.Since(fi.ModTime()) >= importSettle {
 			out = append(out, ImportFile{Name: e.Name(), Size: fi.Size(), Time: fi.ModTime().UTC()})
 		}
 	}
@@ -95,6 +101,9 @@ func (h *Helper) importStage(ctx context.Context, a stageArgs) (any, error) {
 		return nil, userErr("archive not found")
 	}
 	defer src.Close()
+	if fi, err := src.Stat(); err != nil || !fi.Mode().IsRegular() || time.Since(fi.ModTime()) < importSettle {
+		return nil, userErr("the archive is still being copied; try again in a minute")
+	}
 	name := randomName("import-", ".tar.gz")
 	dst, err := rootCreate(filepath.Join(hosting.TmpDir(a.Account), name), uid)
 	if err != nil {
