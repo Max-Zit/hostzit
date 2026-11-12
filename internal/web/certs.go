@@ -231,6 +231,11 @@ func (s *Server) obtainCert(ctx context.Context, hs HostingSettings, names []str
 			return nil, nil, nil, fmt.Errorf("challenge file: %w", err)
 		}
 		written = append(written, f)
+		// the service runs with UMask=0077, so WriteFile leaves 0600 and nginx
+		// answers 403 to the CA (found on the first real VPS, 0.9.3)
+		if err := os.Chmod(f, 0o644); err != nil { // #nosec G302 -- nginx must read the answer
+			return nil, nil, nil, fmt.Errorf("challenge file: %w", err)
+		}
 		if _, err := cl.Accept(ctx, ch); err != nil {
 			return nil, nil, nil, err
 		}
