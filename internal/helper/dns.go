@@ -373,7 +373,11 @@ func (h *Helper) dnsFillCatalog(ctx context.Context, catalog string) (int, error
 		}
 	}
 	if !have {
-		if err := h.pdns(ctx, http.MethodPost, "/zones", pdnsZone{Name: catalog, Kind: "Producer"}, nil); err != nil {
+		// PowerDNS sets the serial of a producer zone to the Unix time on
+		// every member change; the API default (SOA-EDIT-API DEFAULT) would
+		// start it at YYYYMMDD01, which is larger until 2034, so secondaries
+		// never fetched the catalog again (found on the first real servers).
+		if err := h.pdns(ctx, http.MethodPost, "/zones", pdnsZone{Name: catalog, Kind: "Producer", SOAEdit: "OFF"}, nil); err != nil {
 			return 0, err
 		}
 	}
