@@ -27,7 +27,7 @@
 - **Domains and DNS:** authoritative DNS (PowerDNS) with an editor and DNSSEC, secondary name servers (AXFR/NOTIFY) and a DNS-only second name server.
 - **Databases:** MariaDB databases and users, and a database manager in the customer panel (tables, rows, SQL, export).
 - **Mail from websites** goes through a queue with an hourly limit per package; accounts cannot send mail directly. Mail hosting is [EmailZit](https://github.com/Max-Zit/emailzit); HostZit customers can sign in to it with their HostZit account (OpenID Connect).
-- **Migration:** import of full cPanel backups (websites, databases with their passwords, DNS zones, cron jobs; mailboxes go to EmailZit); moving accounts to another HostZit server.
+- **Migration:** import of full cPanel backups (pkgacct or *Download a Full Account Backup*: websites with their PHP version and still valid certificates, databases with their passwords, DNS zones, cron jobs; mailboxes go to EmailZit); moving accounts to another HostZit server.
 - **Backups:** nightly incremental, encrypted restore points of every account (restic) to a local folder, SFTP or S3, with daily/weekly/monthly retention; customers restore single files, databases, DNS records and cron jobs. Nightly encrypted backups of the panel itself.
 - **Protection against attacks:** web application firewall (ModSecurity + OWASP CRS) with per-site tuning, ClamAV malware scans with quarantine and a WordPress file check against the official checksums, an inbound firewall that opens only the ports HostZit uses, brute-force protection (fail2ban) with **Unblock**, an optional domain ownership check, and blocking by country for the panels, SSH/SFTP and websites.
 - **Billing:** REST API for customers, packages, suspension, usage and single sign-on links.
