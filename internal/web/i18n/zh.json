@@ -1,4 +1,5 @@
 {
+  "The package's disk space is too small for this archive: unpacking it needs about twice its size. Choose a bigger package.": "套餐的磁盘空间对此归档来说太小：解压大约需要其两倍大小。请选择更大的套餐。",
   "%d MB free of %d MB": "%d MB 可用，共 %d MB",
   "%d WordPress sites found.": "找到 %d 个 WordPress 网站。",
   "%d blocks today": "今天封锁 %d 次",

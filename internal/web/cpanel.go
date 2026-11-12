@@ -367,7 +367,12 @@ func (s *Server) importCPanel(ctx context.Context, by, file, username string, pa
 	}
 	_ = s.call(ctx, by, "files", map[string]any{"account": c.Username, "req": helper.WorkerReq{Op: "rename", Path: "sites/" + m.Main + ".old", To: "cpanel-home"}}, &r)
 	rep.Notes = append(rep.Notes, "The rest of the old home folder (mail, settings) is in ~/cpanel-home.")
-	// sites
+	// sites: saved first, set up after the account knows their PHP versions
+	type savedSite struct {
+		domain string
+		site   *store.Site
+	}
+	var saved []savedSite
 	for _, d := range domains {
 		nr, ok := m.DocRoots[d]
 		if !ok {
@@ -393,11 +398,22 @@ func (s *Server) importCPanel(ctx context.Context, by, file, username string, pa
 			rep.Notes = append(rep.Notes, dom+": "+err.Error())
 			continue
 		}
-		if note := s.importSiteCert(ctx, by, c, root, d, x); note != "" {
+		saved = append(saved, savedSite{d, x})
+	}
+	// the account gets PHP processes for every version its websites use
+	// (it was made with the default one only: "PHP 8.1 is not set up for
+	// this account" on the first real import with 8.1)
+	if len(saved) > 0 {
+		if err := s.applyCustomer(ctx, by, c); err != nil {
+			rep.Notes = append(rep.Notes, "account: "+storeErr(err))
+		}
+	}
+	for _, sv := range saved {
+		if note := s.importSiteCert(ctx, by, c, root, sv.domain, sv.site); note != "" {
 			rep.Notes = append(rep.Notes, note)
 		}
-		if err := s.applySite(ctx, by, x, false); err != nil {
-			rep.Notes = append(rep.Notes, dom+": "+storeErr(err))
+		if err := s.applySite(ctx, by, sv.site, false); err != nil {
+			rep.Notes = append(rep.Notes, sv.site.Domain+": "+storeErr(err))
 		}
 		rep.Sites++
 	}

@@ -198,6 +198,14 @@ func (s *Server) handleImportStart(w http.ResponseWriter, r *http.Request) {
 	user := strings.ToLower(strings.TrimSpace(r.FormValue("username")))
 	pkg, _ := strconv.ParseInt(r.FormValue("package"), 10, 64)
 	by := actor(r)
+	// copying and unpacking an archive inside the account needs about twice
+	// its size of the package's disk space (the first real import on a 2 GB
+	// package failed after the copy, with no clear message); checked before
+	// anything is read from the archive
+	if !s.importFits(r.Context(), by, file, pkg) {
+		s.redirectErr(w, r, "/import", "The package's disk space is too small for this archive: unpacking it needs about twice its size. Choose a bigger package.")
+		return
+	}
 	m, cpUser, err := s.archiveKind(r.Context(), by, file)
 	if err != nil {
 		s.redirectErr(w, r, "/import", storeErr(err))
@@ -296,4 +304,24 @@ func (s *Server) apiBackups(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
+// importFits: the package (0 = the default one) has room for the copy and
+// the unpacked contents of the archive; true when the size is unknown.
+func (s *Server) importFits(ctx context.Context, by, file string, pkg int64) bool {
+	var files []helper.ImportFile
+	if err := s.call(ctx, by, "import.list", struct{}{}, &files); err != nil {
+		return true
+	}
+	var size int64 = -1
+	for _, f := range files {
+		if f.Name == file {
+			size = f.Size
+		}
+	}
+	p, err := s.store.PackageByID(ctx, pkg)
+	if size < 0 || err != nil || p.Limits.DiskMB <= 0 {
+		return true
+	}
+	return int64(p.Limits.DiskMB)<<20 >= 2*size
 }

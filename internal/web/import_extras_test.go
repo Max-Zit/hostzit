@@ -11,6 +11,9 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -148,5 +151,33 @@ func TestForcedPasswordChangeWithoutCurrent(t *testing.T) {
 	// from now on the current password is needed again
 	if st, _, _ := cu.post("/account/password", url.Values{"password": {"another pass 1234"}, "password2": {"another pass 1234"}}); st != http.StatusBadRequest {
 		t.Fatalf("changed without the current password: %d", st)
+	}
+}
+
+// Copying and unpacking a cPanel archive inside the account needs about
+// twice its size; a package that is too small is refused before the account
+// is made (the first real import on a 2 GB package failed after the copy).
+func TestImportRefusesSmallPackage(t *testing.T) {
+	e := newEnv(t)
+	a := e.setupAdmin()
+	a.ok("/packages/new", url.Values{"name": {"Tiny"}, "slug": {"tiny"}, "max_sites": {"1"}, "max_dbs": {"1"}, "max_zones": {"1"}, "disk_mb": {"1"}, "inodes": {"0"},
+		"cpu_percent": {"0"}, "memory_mb": {"0"}, "processes": {"0"}, "io_weight": {"100"}, "php_workers": {"2"}, "php_memory_mb": {"128"}, "upload_mb": {"8"}, "mail_per_hour": {"0"}})
+	dir := filepath.Join(e.root, "var", "lib", "hostzit", "import")
+	_ = os.MkdirAll(dir, 0o700)
+	p := filepath.Join(dir, "backup-1.2.2026_3-4-5_shop.tar.gz")
+	if err := os.WriteFile(p, make([]byte, 1<<20), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	old := time.Now().Add(-5 * time.Minute)
+	_ = os.Chtimes(p, old, old)
+	st, _, loc := a.post("/import", url.Values{"file": {"backup-1.2.2026_3-4-5_shop.tar.gz"}, "username": {""}, "package": {"1"}})
+	if st != http.StatusSeeOther || !strings.HasSuffix(loc, "/import") {
+		t.Fatalf("%d %s", st, loc)
+	}
+	if body := a.page("/import"); !strings.Contains(body, "disk space is too small") {
+		t.Fatal("no message about the package's disk space: ", regexp.MustCompile(`<span>[^<]{10,200}</span>`).FindAllString(body, 5))
+	}
+	if c, err := e.st.CustomerByRef(context.Background(), "shop"); err == nil {
+		t.Fatalf("account %s made anyway", c.Username)
 	}
 }

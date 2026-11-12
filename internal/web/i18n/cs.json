@@ -1,4 +1,5 @@
 {
+  "The package's disk space is too small for this archive: unpacking it needs about twice its size. Choose a bigger package.": "Místo na disku v balíčku je pro tento archiv příliš malé: rozbalení potřebuje zhruba dvojnásobek jeho velikosti. Zvolte větší balíček.",
   "%d MB free of %d MB": "%d MB volných z %d MB",
   "%d WordPress sites found.": "Nalezené weby WordPress: %d.",
   "%d blocks today": "%d blokování dnes",

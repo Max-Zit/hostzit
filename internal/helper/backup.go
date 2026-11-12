@@ -111,16 +111,20 @@ func (h *Helper) importStage(ctx context.Context, a stageArgs) (any, error) {
 	}
 	if _, err := io.Copy(dst, src); err != nil {
 		_ = dst.Close()
-		return nil, err
+		_ = os.Remove(dst.Name())
+		return nil, userErr("the archive could not be copied into the account (is its disk space large enough?): " + err.Error())
 	}
 	if err := dst.Close(); err != nil {
-		return nil, err
+		_ = os.Remove(dst.Name())
+		return nil, userErr("the archive could not be copied into the account: " + err.Error())
 	}
 	home := hosting.HomeDir(a.Account)
 	defer func() { _, _ = h.inCage(ctx, a.Account, nil, "/usr/bin/rm", "-f", "/tmp/"+name) }()
 	_, _ = h.inCage(ctx, a.Account, nil, "/usr/bin/rm", "-rf", home+"/.hz-import")
+	// the message used to be empty here (the first real import on a small
+	// package): say what failed
 	if out, err := h.inCage(ctx, a.Account, nil, "/usr/bin/mkdir", "-p", home+"/.hz-import"); err != nil {
-		return nil, userErr(tail(string(out), 200))
+		return nil, userErr("the import folder could not be made: " + tail(string(out)+" "+err.Error(), 300))
 	}
 	if out, err := h.inCage(ctx, a.Account, nil, "/usr/bin/tar", "-xzf", "/tmp/"+name, "-C", home+"/.hz-import", "--no-same-owner", "--no-same-permissions", "--warning=no-unknown-keyword"); err != nil {
 		return nil, userErr("the archive could not be unpacked: " + tail(string(out)+" "+err.Error(), 300))

@@ -1,4 +1,5 @@
 {
+  "The package's disk space is too small for this archive: unpacking it needs about twice its size. Choose a bigger package.": "Paketin disk alanı bu arşiv için çok küçük: açmak için boyutunun yaklaşık iki katı gerekir. Daha büyük bir paket seçin.",
   "%d MB free of %d MB": "%d MB boş (toplam %d MB)",
   "%d WordPress sites found.": "%d WordPress sitesi bulundu.",
   "%d blocks today": "bugün %d engelleme",

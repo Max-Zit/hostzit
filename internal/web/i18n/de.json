@@ -1,4 +1,5 @@
 {
+  "The package's disk space is too small for this archive: unpacking it needs about twice its size. Choose a bigger package.": "Der Speicherplatz des Pakets ist für dieses Archiv zu klein: Zum Entpacken braucht es etwa die doppelte Größe. Wählen Sie ein größeres Paket.",
   "%d MB free of %d MB": "%d MB frei von %d MB",
   "%d WordPress sites found.": "%d WordPress-Websites gefunden.",
   "%d blocks today": "%d Sperren heute",

@@ -1,4 +1,5 @@
 {
+  "The package's disk space is too small for this archive: unpacking it needs about twice its size. Choose a bigger package.": "Prostor na disku paketa je premali za ovu arhivu: za raspakivanje treba otprilike dvostruko više od njene veličine. Izaberite veći paket.",
   "%d MB free of %d MB": "%d MB slobodno od %d MB",
   "%d WordPress sites found.": "Pronađeno WordPress sajtova: %d.",
   "%d blocks today": "%d blokada danas",

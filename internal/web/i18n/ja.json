@@ -1,4 +1,5 @@
 {
+  "The package's disk space is too small for this archive: unpacking it needs about twice its size. Choose a bigger package.": "このアーカイブにはパッケージのディスク容量が足りません。展開にはおよそ 2 倍のサイズが必要です。より大きなパッケージを選んでください。",
   "%d MB free of %d MB": "空き %d MB（全 %d MB）",
   "%d WordPress sites found.": "WordPress サイトが %d 件見つかりました。",
   "%d blocks today": "本日 %d 回のブロック",
