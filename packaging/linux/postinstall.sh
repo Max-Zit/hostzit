@@ -6,6 +6,10 @@ install -d -m 0711 /var/lib/hostzit
 install -d -m 0700 -o hostzit -g hostzit /var/lib/hostzit/panel
 systemctl daemon-reload
 systemctl enable hostzit-helper hostzit-firewall >/dev/null 2>&1 || true
+# packages up to 0.9.4 (built on Windows) had group-writable files; logrotate
+# refuses such a file, so the logs of the websites were never rotated. dpkg
+# keeps an unchanged configuration file as it is, so its mode is fixed here.
+if [ -f /etc/logrotate.d/hostzit ]; then chmod go-w /etc/logrotate.d/hostzit; fi
 # servers set up before 0.9.2: also no LLMNR / multicast DNS (port 5355 was open)
 r=/etc/systemd/resolved.conf.d/hostzit.conf
 if [ -f "$r" ] && ! grep -q '^LLMNR=' "$r"; then

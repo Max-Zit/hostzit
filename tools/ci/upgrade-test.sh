@@ -61,5 +61,9 @@ echo "customer panel: $(cx "curl -sk -o /dev/null -w '%{http_code}' https://127.
 if cx "journalctl -u hostzit-server --no-pager | grep -iE 'migration.*(fail|error)'"; then echo "a migration failed"; exit 1; fi
 cx "nginx -t" 2>&1 | tail -2
 for u in nginx postgresql mariadb pdns; do printf '%s %s\n' "$u" "$(cx "systemctl is-active $u" || true)"; done
+# no group- or world-writable file of the package (logrotate refuses its
+# file then: up to 0.9.4 the logs of the websites were never rotated)
+if cx "dpkg -L hostzit | xargs -r stat -c '%A %n' 2>/dev/null | grep -E '^-(....w|.......w)'"; then echo "writable package files"; exit 1; fi
+if cx "logrotate -d /etc/logrotate.d/hostzit 2>&1 | grep -iE '^error'"; then echo "logrotate refuses /etc/logrotate.d/hostzit"; exit 1; fi
 end
 echo "upgrade $OLD → ${NEW%% *}: ok"

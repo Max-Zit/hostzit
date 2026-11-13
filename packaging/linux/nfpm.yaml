@@ -29,8 +29,12 @@ overrides:
 contents:
   - src: ./LICENSE
     dst: /usr/share/doc/hostzit/copyright
+    file_info:
+      mode: 0644
   - src: ./THIRD_PARTY_LICENSES.md
     dst: /usr/share/doc/hostzit/THIRD_PARTY_LICENSES.md
+    file_info:
+      mode: 0644
   - src: ./bin/pkg/hostzit-server
     dst: /usr/bin/hostzit-server
     file_info:
@@ -41,23 +45,37 @@ contents:
       mode: 0755
   - src: ./packaging/linux/hostzit-server.service
     dst: /usr/lib/systemd/system/hostzit-server.service
+    file_info:
+      mode: 0644
   - src: ./packaging/linux/hostzit-helper.service
     dst: /usr/lib/systemd/system/hostzit-helper.service
+    file_info:
+      mode: 0644
   - src: ./packaging/linux/hostzit-firewall.service
     dst: /usr/lib/systemd/system/hostzit-firewall.service
+    file_info:
+      mode: 0644
   - src: ./packaging/linux/appliance-ssh-guard
     dst: /usr/lib/hostzit/appliance-ssh-guard
     file_info:
       mode: 0755
   - src: ./packaging/linux/hostzit-ssh-guard.service
     dst: /usr/lib/systemd/system/hostzit-ssh-guard.service
+    file_info:
+      mode: 0644
   - src: ./packaging/linux/hostzit-ssh-guard.path
     dst: /usr/lib/systemd/system/hostzit-ssh-guard.path
+    file_info:
+      mode: 0644
   - src: ./packaging/appliance/sshd-hostzit-appliance.conf
     dst: /usr/lib/hostzit/sshd-hostzit-appliance.conf
+    file_info:
+      mode: 0644
   - src: ./packaging/linux/hostzit.logrotate
     dst: /etc/logrotate.d/hostzit
     type: config
+    file_info:
+      mode: 0644
   - src: ./packaging/install.sh
     dst: /usr/share/hostzit/install.sh
     file_info:
