@@ -45,12 +45,12 @@ type Server struct {
 	wpAfterUpdate func()
 	// jobTimeout replaces helper.OpTimeout for every job (tests).
 	jobTimeout time.Duration
-	store         *store.Store
-	log           *slog.Logger
-	tmpl          map[string]*template.Template
-	now           func() time.Time
-	guard         *loginGuard
-	help          Helper
+	store      *store.Store
+	log        *slog.Logger
+	tmpl       map[string]*template.Template
+	now        func() time.Time
+	guard      *loginGuard
+	help       Helper
 
 	// AdminACL and PanelACL guard the listeners.
 	AdminACL *netacl.List
