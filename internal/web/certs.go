@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"slices"
@@ -112,7 +113,7 @@ func (s *Server) reachableNames(ctx context.Context, hs HostingSettings, x *stor
 		c, cancel := context.WithTimeout(ctx, 5*time.Second)
 		addrs, err := r.LookupHost(c, n)
 		cancel()
-		if err == nil && (slices.Contains(addrs, hs.IPv4) || hs.IPv6 != "" && slices.Contains(addrs, hs.IPv6)) {
+		if err == nil && pointsHere(addrs, hs) {
 			ok = append(ok, n)
 		} else {
 			missing = append(missing, n)
@@ -122,6 +123,27 @@ func (s *Server) reachableNames(ctx context.Context, hs HostingSettings, x *stor
 		return nil, nil, fmt.Errorf("%s does not point to this server yet (DNS A record %s)", x.Domain, hs.IPv4)
 	}
 	return ok, missing, nil
+}
+
+// pointsHere: the addresses of a name include this server's, or they are
+// only loopback addresses. The system resolver reads /etc/hosts first, and
+// Debian maps the server's own name to 127.0.1.1 there (cloud-init writes
+// that file again at every boot on Contabo, found on h1): such an answer
+// says nothing about public DNS, so the certificate authority checks it.
+func pointsHere(addrs []string, hs HostingSettings) bool {
+	if slices.Contains(addrs, hs.IPv4) || hs.IPv6 != "" && slices.Contains(addrs, hs.IPv6) {
+		return true
+	}
+	if len(addrs) == 0 {
+		return false
+	}
+	for _, a := range addrs {
+		ip, err := netip.ParseAddr(a)
+		if err != nil || !ip.Unmap().IsLoopback() {
+			return false
+		}
+	}
+	return true
 }
 
 // hasValidCert: the site serves a certificate that is good for a day more.

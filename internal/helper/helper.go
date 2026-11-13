@@ -158,13 +158,28 @@ func (h *Helper) answer(ctx context.Context, c net.Conn) {
 	var req Request
 	resp := Response{Error: "invalid request"}
 	if json.Unmarshal(line, &req) == nil {
-		ctx, cancel := context.WithTimeout(ctx, 30*time.Minute)
+		ctx, cancel := context.WithTimeout(ctx, OpTimeout(req.Op))
 		resp = h.Do(ctx, req)
 		cancel()
 	}
 	_ = c.SetWriteDeadline(time.Now().Add(time.Minute))
 	b, _ := json.Marshal(resp)
 	_, _ = c.Write(append(b, '\n'))
+}
+
+// ScanTimeout is the longest malware scan of one account.
+const ScanTimeout = 6 * time.Hour
+
+// OpTimeout is how long one helper operation (or the job of the same
+// name in the panel) may run. A malware scan of a real account takes
+// longer than the usual 30 minutes: on h1 a 6.4 GB WordPress account
+// (79,000 files, scanned at the lowest priority) was killed after 30
+// minutes with "nice: signal: killed".
+func OpTimeout(op string) time.Duration {
+	if op == "malware.scan" {
+		return ScanTimeout + 5*time.Minute
+	}
+	return 30 * time.Minute
 }
 
 // ServeConn answers one connection (in-process use in development and tests).

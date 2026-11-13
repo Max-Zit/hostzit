@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 // pdnsStub answers the zone list and records NOTIFY requests.
@@ -108,5 +109,46 @@ func TestSecondariesOnlyNotifyEntered(t *testing.T) {
 	h.secondaryConfUpgrade(t.Context())
 	if fr.has("restart pdns") {
 		t.Fatal("a second run must not restart PowerDNS again")
+	}
+}
+
+// Found on h1: with no relay for websites the messages stayed in the spool
+// for ever. They go after 48 hours, newer ones wait.
+func TestMailWithoutRelayExpires(t *testing.T) {
+	h, _, root, _ := newTest(t)
+	dir := filepath.Join(root, "var/spool/hostzit/shop1")
+	_ = os.MkdirAll(dir, 0o700)
+	for id, at := range map[string]time.Time{"old": time.Now().Add(-49 * time.Hour), "new": time.Now().Add(-time.Hour)} {
+		b, _ := json.Marshal(queued{From: "a@b.test", To: []string{"c@d.test"}, At: at})
+		_ = os.WriteFile(filepath.Join(dir, id+".json"), b, 0o600)
+		_ = os.WriteFile(filepath.Join(dir, id+".eml"), []byte("Subject: x\r\n\r\nx"), 0o600)
+	}
+	m := &mailer{h: h, sent: map[string][]time.Time{}}
+	m.round(t.Context()) // no /etc/hostzit/mail-relay.json at all
+	if _, err := os.Stat(filepath.Join(dir, "old.json")); !os.IsNotExist(err) {
+		t.Fatal("old message kept")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "old.eml")); !os.IsNotExist(err) {
+		t.Fatal("old message body kept")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "new.json")); err != nil {
+		t.Fatal("new message dropped")
+	}
+}
+
+// Found on h1: a malware scan of a real account was killed after the usual
+// 30 minutes of a helper operation (and of a panel job).
+func TestScanTimeoutLonger(t *testing.T) {
+	if OpTimeout("malware.scan") <= ScanTimeout || OpTimeout("site.apply") != 30*time.Minute {
+		t.Fatal(OpTimeout("malware.scan"), OpTimeout("site.apply"))
+	}
+	h, fr, root, _ := newTest(t)
+	_ = os.MkdirAll(filepath.Join(root, "usr/bin"), 0o755)
+	_ = os.WriteFile(filepath.Join(root, "usr/bin/clamscan"), []byte("x"), 0o755)
+	if r := call(t, h, "malware.scan", scanArgs{Account: "shop1"}); !r.OK {
+		t.Fatal(r.Error)
+	}
+	if !fr.has("nice -n 19 ionice -c 2 -n 7 clamscan") {
+		t.Fatalf("scan command: %v", fr.calls)
 	}
 }

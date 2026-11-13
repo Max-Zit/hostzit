@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/max-zit/hostzit/internal/helper"
 	"github.com/max-zit/hostzit/internal/hosting"
 	"github.com/max-zit/hostzit/internal/store"
 )
@@ -447,7 +448,7 @@ func (s *Server) runJob(kind string, customerID *int64, detail string, fn func(c
 	s.jobs.Add(1)
 	go func() {
 		defer s.jobs.Done()
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		ctx, cancel := context.WithTimeout(context.Background(), helper.OpTimeout(kind))
 		defer cancel()
 		_ = s.store.StartJob(ctx, j.ID)
 		err := fn(ctx)

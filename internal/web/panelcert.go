@@ -109,7 +109,7 @@ func (s *Server) issuePanelCert(ctx context.Context, hs HostingSettings, names [
 		var r net.Resolver
 		for _, n := range names {
 			addrs, err := r.LookupHost(ctx, n)
-			if err != nil || !slices.Contains(addrs, hs.IPv4) && (hs.IPv6 == "" || !slices.Contains(addrs, hs.IPv6)) {
+			if err != nil || !pointsHere(addrs, hs) {
 				return &panelCertError{name: n, ip: hs.IPv4}
 			}
 		}

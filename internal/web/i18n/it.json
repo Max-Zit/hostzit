@@ -1,4 +1,5 @@
 {
+  "Websites cannot send mail: set a mail server under Settings → Notifications and switch on mail from websites. Waiting messages are dropped after 48 hours.": "I siti web non possono inviare posta: imposta un server di posta in Impostazioni → Notifiche e attiva la posta dai siti web. I messaggi in attesa vengono eliminati dopo 48 ore.",
   "The package's disk space is too small for this archive: unpacking it needs about twice its size. Choose a bigger package.": "Lo spazio su disco del pacchetto è troppo piccolo per questo archivio: per estrarlo serve circa il doppio della sua dimensione. Scegli un pacchetto più grande.",
   "%d MB free of %d MB": "%d MB liberi su %d MB",
   "%d WordPress sites found.": "%d siti WordPress trovati.",

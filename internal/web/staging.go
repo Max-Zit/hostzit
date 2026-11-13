@@ -204,6 +204,34 @@ func (s *Server) handleStagingPush(w http.ResponseWriter, r *http.Request) {
 	s.redirect(w, r, "/wordpress/"+strconv.FormatInt(*in.StagingOf, 10), "The staging copy is live now. A snapshot from before is listed below.")
 }
 
+// dropStagingRecord removes the A record createStaging added for the
+// staging name (the same name pointing at this server; a record the
+// customer changed stays). Up to 0.9.4 it stayed behind (found on h1), a
+// name of the customer pointing at this server without a website.
+func (s *Server) dropStagingRecord(ctx context.Context, by string, c *store.Customer, domain string) {
+	z, err := s.store.ZoneFor(ctx, domain)
+	if err != nil || z.CustomerID != c.ID {
+		return
+	}
+	ip := s.hostingSettings(ctx).IPv4
+	rel := hosting.RelName(domain+".", z.Name)
+	recs, err := s.store.Records(ctx, z.ID)
+	if err != nil {
+		return
+	}
+	dropped := false
+	for _, rec := range recs {
+		if rec.Name == rel && rec.Type == "A" && rec.Content == ip && rec.Owner == "" {
+			if s.store.DeleteRecord(ctx, z.ID, rec.ID) == nil {
+				dropped = true
+			}
+		}
+	}
+	if dropped {
+		_ = s.applyZone(ctx, by, z)
+	}
+}
+
 func (s *Server) handleStagingDelete(w http.ResponseWriter, r *http.Request) {
 	c := s.me(w, r)
 	if c == nil {
@@ -227,6 +255,7 @@ func (s *Server) handleStagingDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = s.store.DeleteSite(r.Context(), x.ID)
+	s.dropStagingRecord(r.Context(), actor(r), c, x.Domain)
 	if in.DBName != "" {
 		_ = s.call(r.Context(), actor(r), "db.drop", map[string]string{"account": c.Username, "name": in.DBName}, nil)
 		_ = s.call(r.Context(), actor(r), "db.user.drop", map[string]string{"account": c.Username, "user": in.DBName}, nil)

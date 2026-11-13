@@ -219,11 +219,12 @@ func (m *mailer) limit(account string) int {
 
 func (m *mailer) round(ctx context.Context) {
 	b, err := m.h.Sys.ReadFile(relayFile)
-	if err != nil {
-		return
-	}
 	var relay RelayConfig
-	if json.Unmarshal(b, &relay) != nil || relay.Host == "" {
+	if err != nil || json.Unmarshal(b, &relay) != nil || relay.Host == "" {
+		// no way out: messages used to stay in the spool for ever without
+		// a word (found on h1); they go after 48 h like failed ones, and
+		// the admin overview says that websites cannot send mail
+		m.expire(48 * time.Hour)
 		return
 	}
 	accounts, _ := m.h.Sys.ReadDir(SpoolRoot)
@@ -305,6 +306,37 @@ func (m *mailer) deliver(ctx context.Context, relay RelayConfig, account, dir, i
 	}
 	nb, _ := json.Marshal(q)
 	_ = m.h.Sys.WriteFile(envFile, nb, 0o600, 0, 0)
+}
+
+// expire drops queued messages older than max when there is no relay.
+func (m *mailer) expire(max time.Duration) {
+	accounts, _ := m.h.Sys.ReadDir(SpoolRoot)
+	for _, acc := range accounts {
+		name := acc.Name()
+		if hosting.ValidAccount(name) != nil {
+			continue
+		}
+		dir := SpoolRoot + "/" + name
+		ents, _ := m.h.Sys.ReadDir(dir)
+		for _, e := range ents {
+			n := e.Name()
+			if !strings.HasSuffix(n, ".json") || strings.HasPrefix(n, ".") {
+				continue
+			}
+			b, err := m.h.Sys.ReadFile(dir + "/" + n)
+			if err != nil {
+				continue
+			}
+			var q queued
+			if json.Unmarshal(b, &q) != nil || time.Since(q.At) <= max {
+				continue
+			}
+			id := strings.TrimSuffix(n, ".json")
+			_ = m.h.Sys.Remove(dir + "/" + n)
+			_ = m.h.Sys.Remove(dir + "/" + id + ".eml")
+			m.h.logf("mail from %s dropped after %s: no mail server is set for websites", name, max)
+		}
+	}
 }
 
 // stripBcc removes Bcc headers (the recipients are in the envelope).

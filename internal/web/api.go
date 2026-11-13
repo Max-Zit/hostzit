@@ -361,8 +361,13 @@ func (s *Server) apiCustomerCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if in.Domain != "" {
-		if _, err := hosting.NormalizeDomain(in.Domain); err != nil {
+		dom, err := hosting.NormalizeDomain(in.Domain)
+		if err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]apiErr{"error": {Code: "invalid", Message: err.Error(), Field: "domain"}})
+			return
+		}
+		if err := s.nameTaken(r.Context(), 0, dom); err != nil {
+			writeJSON(w, http.StatusConflict, map[string]apiErr{"error": {Code: "domain_taken", Message: err.Error(), Field: "domain"}})
 			return
 		}
 	}

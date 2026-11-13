@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/max-zit/hostzit/internal/hosting"
 	"github.com/max-zit/hostzit/internal/store"
 )
 
@@ -249,5 +250,66 @@ func TestRestorePointPageLocalNoError(t *testing.T) {
 	// (the tests run in development mode, whose banner is one more flash err)
 	if strings.Contains(page, "choose SFTP or S3") || strings.Count(page, `class="flash err"`) > 1 {
 		t.Fatalf("error on the restore point page:\n%s", page)
+	}
+}
+
+// Found on h1: deleting a staging copy left its A record in the customer's
+// zone. Only the record createStaging added goes; others stay.
+func TestStagingRecordDropped(t *testing.T) {
+	e := newEnv(t)
+	a := e.setupAdmin()
+	a.ok("/settings/hosting", url.Values{"mode": {"shared"}, "ipv4": {"192.0.2.10"}, "nameservers": {"ns1.hostzit.test"}, "default_php": {"8.4"}, "grace_days": {"0"}})
+	a.ok("/packages/new", url.Values{"name": {"P"}, "slug": {"p"}, "max_sites": {"3"}, "max_dbs": {"3"}, "max_zones": {"3"}, "disk_mb": {"100"}, "inodes": {"0"},
+		"cpu_percent": {"0"}, "memory_mb": {"0"}, "processes": {"0"}, "io_weight": {"100"}, "php_workers": {"2"}, "php_memory_mb": {"128"}, "upload_mb": {"8"}, "mail_per_hour": {"0"}})
+	a.ok("/customers/new", url.Values{"username": {"stagezone"}, "package": {"1"}, "password": {"stage zone 1234"}})
+	ctx := context.Background()
+	c, err := e.st.CustomerByRef(ctx, "stagezone")
+	if err != nil {
+		t.Fatal(err)
+	}
+	z, err := e.st.CreateZone(ctx, c.ID, "shop.test", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range []hosting.Record{
+		{Name: "staging", Type: "A", Content: "192.0.2.10"},  // added by createStaging
+		{Name: "staging", Type: "TXT", Content: `"keep"`},    // the customer's own
+		{Name: "stagingx", Type: "A", Content: "192.0.2.10"}, // another name
+	} {
+		if _, err := e.st.AddRecord(ctx, z, r); err != nil {
+			t.Fatal(err)
+		}
+	}
+	e.srv.dropStagingRecord(ctx, "test", c, "staging.shop.test")
+	recs, _ := e.st.Records(ctx, z.ID)
+	var left []string
+	for _, r := range recs {
+		left = append(left, r.Name+" "+r.Type)
+	}
+	if slices.Contains(left, "staging A") || !slices.Contains(left, "staging TXT") || !slices.Contains(left, "stagingx A") {
+		t.Fatalf("records left: %v", left)
+	}
+}
+
+// Found on h1: Debian maps the server's own name to 127.0.1.1 in /etc/hosts
+// (cloud-init rewrites it at every boot), and the certificate pre-check
+// read that instead of DNS. Loopback-only answers no longer block it.
+func TestPointsHere(t *testing.T) {
+	hs := HostingSettings{IPv4: "192.0.2.10", IPv6: "2001:db8::10"}
+	for _, c := range []struct {
+		addrs []string
+		want  bool
+	}{
+		{[]string{"192.0.2.10"}, true},
+		{[]string{"2001:db8::10"}, true},
+		{[]string{"127.0.1.1"}, true},
+		{[]string{"127.0.1.1", "::1"}, true},
+		{[]string{"198.51.100.7"}, false},
+		{[]string{"127.0.1.1", "198.51.100.7"}, false},
+		{nil, false},
+	} {
+		if got := pointsHere(c.addrs, hs); got != c.want {
+			t.Errorf("%v: %v", c.addrs, got)
+		}
 	}
 }

@@ -1,4 +1,5 @@
 {
+  "Websites cannot send mail: set a mail server under Settings → Notifications and switch on mail from websites. Waiting messages are dropped after 48 hours.": "网站无法发送邮件：请在 设置 → 通知 中设置邮件服务器并开启来自网站的邮件。等待中的邮件将在 48 小时后被丢弃。",
   "The package's disk space is too small for this archive: unpacking it needs about twice its size. Choose a bigger package.": "套餐的磁盘空间对此归档来说太小：解压大约需要其两倍大小。请选择更大的套餐。",
   "%d MB free of %d MB": "%d MB 可用，共 %d MB",
   "%d WordPress sites found.": "找到 %d 个 WordPress 网站。",

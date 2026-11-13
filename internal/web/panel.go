@@ -155,6 +155,18 @@ func (s *Server) handleSiteCreate(w http.ResponseWriter, r *http.Request) {
 // must not serve a subdomain of another customer's domain) and the
 // server's own names.
 func (s *Server) domainAllowed(ctx context.Context, c *store.Customer, dom string) error {
+	if err := s.nameTaken(ctx, c.ID, dom); err != nil {
+		return err
+	}
+	return s.checkOwnership(ctx, c, dom)
+}
+
+// nameTaken: the server's own names and names at or below a zone of
+// another account (customerID 0: an account still to be made). The REST
+// API checks it too: the billing portal passes the domain a customer typed
+// into the order form (found on h1: the API made a website below another
+// customer's zone).
+func (s *Server) nameTaken(ctx context.Context, customerID int64, dom string) error {
 	hs := s.hostingSettings(ctx)
 	if hs.ServerName != "" && hosting.IsSubdomainOf(dom, hs.ServerName) {
 		return errors.New("names of the server itself cannot be used")
@@ -164,10 +176,10 @@ func (s *Server) domainAllowed(ctx context.Context, c *store.Customer, dom strin
 			return errors.New("names of the server itself cannot be used")
 		}
 	}
-	if z, err := s.store.ZoneFor(ctx, dom); err == nil && z.CustomerID != c.ID {
+	if z, err := s.store.ZoneFor(ctx, dom); err == nil && z.CustomerID != customerID {
 		return errors.New("this domain belongs to another account on this server")
 	}
-	return s.checkOwnership(ctx, c, dom)
+	return nil
 }
 
 func (s *Server) mySite(w http.ResponseWriter, r *http.Request, c *store.Customer) *store.Site {

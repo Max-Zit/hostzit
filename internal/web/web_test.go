@@ -536,6 +536,10 @@ func TestAPI(t *testing.T) {
 	if st2 != http.StatusAccepted || out2["job_id"] != out["job_id"] {
 		t.Fatal("idempotency key not honoured", out2)
 	}
+	// found on h1: the API made a website below another customer's zone
+	if st, out := call("POST", "/api/v1/customers", map[string]any{"username": "evilco", "package": "pro", "domain": "shop.acme.example.org", "email": "e@evil.example", "password": "evil password 1234"}); st != http.StatusConflict || !strings.Contains(fmt.Sprint(out["error"]), "domain_taken") {
+		t.Fatalf("name below another customer's zone: %d %v", st, out)
+	}
 	if st, _ := call("POST", "/api/v1/customers", in); st != http.StatusConflict {
 		t.Fatalf("duplicate without key: %d", st)
 	}

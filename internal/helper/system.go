@@ -121,6 +121,8 @@ type Info struct {
 	Disks       []Disk            `json:"disks"`
 	Services    map[string]string `json:"services"` // unit → active state
 	WAF         bool              `json:"waf"`      // ModSecurity with the OWASP rules is ready
+	// LocalEmailZit: EmailZit is installed here, websites send through it
+	LocalEmailZit bool `json:"local_emailzit"`
 }
 
 // Disk is the usage of a mounted file system.
@@ -135,6 +137,7 @@ var verRE = regexp.MustCompile(`[0-9]+\.[0-9]+(\.[0-9]+)?`)
 func (h *Helper) info(ctx context.Context, _ struct{}) (any, error) {
 	in := Info{Programs: map[string]string{}, Services: map[string]string{}}
 	in.WAF = h.Sys.Exists(hosting.ModSecConf)
+	in.LocalEmailZit = h.Sys.Exists(emailzitMarker)
 	ents, _ := h.Sys.ReadDir("/usr/sbin")
 	for _, e := range ents {
 		if v, ok := strings.CutPrefix(e.Name(), "php-fpm"); ok && hosting.ValidPHPVersion(v) {

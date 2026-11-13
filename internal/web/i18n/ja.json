@@ -1,4 +1,5 @@
 {
+  "Websites cannot send mail: set a mail server under Settings → Notifications and switch on mail from websites. Waiting messages are dropped after 48 hours.": "ウェブサイトはメールを送信できません：設定 → 通知 でメールサーバーを設定し、ウェブサイトからのメールをオンにしてください。待機中のメッセージは 48 時間後に破棄されます。",
   "The package's disk space is too small for this archive: unpacking it needs about twice its size. Choose a bigger package.": "このアーカイブにはパッケージのディスク容量が足りません。展開にはおよそ 2 倍のサイズが必要です。より大きなパッケージを選んでください。",
   "%d MB free of %d MB": "空き %d MB（全 %d MB）",
   "%d WordPress sites found.": "WordPress サイトが %d 件見つかりました。",

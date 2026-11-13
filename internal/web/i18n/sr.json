@@ -1,4 +1,5 @@
 {
+  "Websites cannot send mail: set a mail server under Settings → Notifications and switch on mail from websites. Waiting messages are dropped after 48 hours.": "Sajtovi ne mogu da šalju poštu: podesite mail server u Podešavanja → Obaveštenja i uključite poštu sa sajtova. Poruke koje čekaju brišu se posle 48 sati.",
   "The package's disk space is too small for this archive: unpacking it needs about twice its size. Choose a bigger package.": "Prostor na disku paketa je premali za ovu arhivu: za raspakivanje treba otprilike dvostruko više od njene veličine. Izaberite veći paket.",
   "%d MB free of %d MB": "%d MB slobodno od %d MB",
   "%d WordPress sites found.": "Pronađeno WordPress sajtova: %d.",
