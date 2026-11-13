@@ -25,6 +25,8 @@ type fakeRun struct {
 	fail map[string]bool
 	// users known to getent
 	users map[string]string
+	// out: output of a command whose line contains the key
+	out map[string]string
 }
 
 func (f *fakeRun) run(_ context.Context, stdin []byte, name string, args ...string) ([]byte, error) {
@@ -36,6 +38,11 @@ func (f *fakeRun) run(_ context.Context, stdin []byte, name string, args ...stri
 	for k := range f.fail {
 		if strings.Contains(line, k) {
 			return nil, errors.New("failed: " + k)
+		}
+	}
+	for k, v := range f.out {
+		if strings.Contains(line, k) {
+			return []byte(v), nil
 		}
 	}
 	switch name {

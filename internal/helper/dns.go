@@ -243,6 +243,49 @@ func (h *Helper) dnsDelete(ctx context.Context, a zoneRef) (any, error) {
 	return nil, err
 }
 
+// nsec3 sets plain NSEC3 (RFC 9276: no extra iterations, no salt) on a
+// signed zone and tells the secondaries. Not "narrow": PowerDNS computes
+// narrow NSEC3 records on the fly and refuses to transfer such a zone ("not
+// doing AXFR of an NSEC3 narrow zone"), so DNS-only servers never got a
+// signed zone again (up to 0.9.4) and validating resolvers rejected their
+// answers once the DS was at the registrar. The records change through the
+// API, which rectifies the zone itself.
+func (h *Helper) nsec3(ctx context.Context, zone string) {
+	_, _ = h.Sys.Run(ctx, nil, "pdnsutil", "set-nsec3", zone, "1 0 0 -")
+	_, _ = h.Sys.Run(ctx, nil, "pdnsutil", "rectify-zone", zone)
+	h.zoneChanged(ctx, zone)
+}
+
+// zoneChanged raises the serial and sends NOTIFY: switching DNSSEC on or
+// off does not touch the SOA, and the secondaries transfer a zone only
+// when its serial rose.
+func (h *Helper) zoneChanged(ctx context.Context, zone string) {
+	_, _ = h.Sys.Run(ctx, nil, "pdnsutil", "increase-serial", zone)
+	_ = h.pdns(ctx, http.MethodPut, "/zones/"+zone+"./notify", nil, nil)
+}
+
+// dnssecNoNarrow moves zones signed by 0.9.4 and older (NSEC3 narrow) to
+// plain NSEC3 so the DNS-only servers can transfer them again (setup runs
+// it after every update; zones already moved are skipped).
+func (h *Helper) dnssecNoNarrow(ctx context.Context) {
+	var zones []pdnsZone
+	if err := h.pdns(ctx, http.MethodGet, "/zones", nil, &zones); err != nil {
+		return
+	}
+	for _, z := range zones {
+		name := strings.TrimSuffix(z.Name, ".")
+		if !z.DNSSEC || !hosting.ValidDomain(name) {
+			continue
+		}
+		out, err := h.Sys.Run(ctx, nil, "pdnsutil", "get-meta", name, "NSEC3NARROW")
+		if err != nil || !strings.Contains(string(out), "NSEC3NARROW = 1") {
+			continue
+		}
+		h.nsec3(ctx, name)
+		h.logf("DNSSEC of %s moved from NSEC3 narrow to NSEC3 (secondaries can transfer it now)", name)
+	}
+}
+
 type dnssecArgs struct {
 	Zone string `json:"zone"`
 	On   bool   `json:"on"`
@@ -261,13 +304,13 @@ func (h *Helper) dnsDNSSEC(ctx context.Context, a dnssecArgs) (any, error) {
 				return nil, err
 			}
 		}
+		h.zoneChanged(ctx, zone)
 		return map[string]any{"ds": []string{}}, nil
 	}
 	if _, err := h.Sys.Run(ctx, nil, "pdnsutil", "secure-zone", zone); err != nil && !strings.Contains(err.Error(), "already secure") {
 		return nil, err
 	}
-	_, _ = h.Sys.Run(ctx, nil, "pdnsutil", "set-nsec3", zone, "1 0 0 -", "narrow")
-	_, _ = h.Sys.Run(ctx, nil, "pdnsutil", "rectify-zone", zone)
+	h.nsec3(ctx, zone)
 	out, err := h.Sys.Run(ctx, nil, "pdnsutil", "export-zone-ds", zone)
 	if err != nil {
 		return nil, err
@@ -310,6 +353,28 @@ func (h *Helper) dnsCatalog() string {
 	return ""
 }
 
+// secondaryConfText: only the entered secondaries may copy the zones and
+// get NOTIFY. only-notify is empty so PowerDNS does not also notify the
+// addresses of the NS records: found on h1 (0.9.4), where it notified the
+// DNS-only servers' IPv6 addresses, they then asked for the zone over IPv6
+// and were refused because only their IPv4 addresses were entered.
+func secondaryConfText(catalog string, ips []string) string {
+	return "# HostZit (generated, do not edit)\n# catalog=" + catalog + "\nprimary=yes\nallow-axfr-ips=" + strings.Join(ips, ",") +
+		"\nalso-notify=" + strings.Join(ips, ",") + "\nonly-notify=\n"
+}
+
+// secondaryConfUpgrade adds only-notify to a configuration written by
+// 0.9.4 or older (setup after an update).
+func (h *Helper) secondaryConfUpgrade(ctx context.Context) {
+	b, err := h.Sys.ReadFile(secondaryConf)
+	if err != nil || strings.Contains(string(b), "\nonly-notify=") {
+		return
+	}
+	if h.Sys.WriteFile(secondaryConf, append(bytes.TrimRight(b, "\n"), []byte("\nonly-notify=\n")...), 0o644, 0, 0) == nil {
+		_ = h.systemctl(ctx, "restart", "pdns")
+	}
+}
+
 // dnsSecondaries lets other name servers copy the zones (AXFR), tells them
 // about changes (NOTIFY) and keeps every zone in the catalog zone.
 func (h *Helper) dnsSecondaries(ctx context.Context, a secondariesArgs) (any, error) {
@@ -333,8 +398,7 @@ func (h *Helper) dnsSecondaries(ctx context.Context, a secondariesArgs) (any, er
 	if len(ips) == 0 {
 		_ = h.Sys.Remove(secondaryConf)
 	} else {
-		conf := "# HostZit (generated, do not edit)\n# catalog=" + catalog + "\nprimary=yes\nallow-axfr-ips=" + strings.Join(ips, ",") + "\nalso-notify=" + strings.Join(ips, ",") + "\n"
-		if err := h.Sys.WriteFile(secondaryConf, []byte(conf), 0o644, 0, 0); err != nil {
+		if err := h.Sys.WriteFile(secondaryConf, []byte(secondaryConfText(catalog, ips)), 0o644, 0, 0); err != nil {
 			return nil, err
 		}
 	}

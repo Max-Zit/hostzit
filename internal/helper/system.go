@@ -98,6 +98,10 @@ func (h *Helper) setup(ctx context.Context, _ struct{}) (any, error) {
 		}
 		_ = h.systemctl(ctx, "reload", "ssh")
 	}
+	h.secondaryConfUpgrade(ctx)
+	if h.PDNS.URL != "" && h.Sys.Exists(h.PDNS.KeyFile) {
+		h.dnssecNoNarrow(ctx)
+	}
 	return h.info(ctx, struct{}{})
 }
 

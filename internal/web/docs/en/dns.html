@@ -8,7 +8,7 @@
 <p>The editor accepts A, AAAA, CNAME, MX, TXT, SRV, CAA, NS (delegation of a subdomain), TLSA, HTTPS, SVCB and PTR. Names are relative to the zone: <code>@</code> for the domain itself, <code>www</code>, <code>_dmarc</code>. Values are checked before they are saved. Records managed by EmailZit are marked and cannot be changed here.</p>
 
 <h2 id="dnssec">DNSSEC</h2>
-<p><b>Sign the zone</b> switches DNSSEC on; put the DS record shown at the registrar. Before switching it off, remove the DS record at the registrar first.</p>
+<p><b>Sign the zone</b> switches DNSSEC on; put the DS record shown at the registrar. Before switching it off, remove the DS record at the registrar first. Signed zones use NSEC3 without extra iterations or salt (RFC 9276) and reach the secondary and DNS-only servers already signed, so their answers validate too. Zones signed before 0.9.5 (NSEC3 &ldquo;narrow&rdquo;, which PowerDNS does not transfer) are changed by the update itself.</p>
 
 <h2 id="secondary">Secondary name servers</h2>
 <p>Under Settings → Hosting, <b>Secondary name servers</b> holds the IP addresses of the name servers that copy every zone of this server, <b>one per line</b> (commas or spaces work too), for example:</p>
@@ -19,7 +19,7 @@
 <h2 id="dns-only">DNS-only servers</h2>
 <p>The other name servers can be small Debian 13 servers that run only PowerDNS (1 CPU, 512 MB are enough). Adding one:</p>
 <ol>
-  <li>Enter its IP address under Secondary name servers (one per line) and save.</li>
+  <li>Enter its IP address under Secondary name servers (one per line) and save. Only the servers entered there get change notices and may copy the zones; enter the IPv6 address as well when the HostZit server should also reach it over IPv6.</li>
   <li>Run the command the page then shows on the new server as root — the same command on every DNS-only server, for example:</li>
 </ol>
 <pre>curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash -s -- --dns-only --primary 203.0.113.10,2001:db8::10 --catalog host1.example.com.catalog.invalid</pre>

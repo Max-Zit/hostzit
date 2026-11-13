@@ -96,17 +96,32 @@ EOF
 		exit 1
 	fi
 	sleep 1
-	if ! pdnsutil list-all-zones 2>/dev/null | grep -qxF "$CATALOG."; then
+	# list-all-zones prints the names without the final dot (up to 0.9.4 a
+	# second run stopped here with "exists already")
+	if ! pdnsutil list-all-zones 2>/dev/null | grep -qxF -e "$CATALOG" -e "$CATALOG."; then
 		pdnsutil create-secondary-zone "$CATALOG" $PRIMARIES >/dev/null
 	fi
 	pdnsutil set-kind "$CATALOG" consumer >/dev/null
 	pdnsutil change-secondary-zone-primary "$CATALOG" $PRIMARIES >/dev/null 2>&1 || true
+	# zones the catalog brought earlier keep the primaries of that time: give
+	# the ones from this HostZit server all its addresses, else NOTIFY from a
+	# newly listed address is refused ("not a primary")
+	sqlite3 "$db" "SELECT name, master FROM domains WHERE type='SLAVE'" 2>/dev/null | while IFS='|' read -r zone masters; do
+		[ "$zone" = "$CATALOG" ] && continue
+		masters=$(echo "$masters" | tr -d ' ') # stored as "IP, IP"
+		for p in $PRIMARIES; do
+			case ",$masters," in *",$p,"*|*",$p:53,"*|*",[$p]:53,"*)
+				pdnsutil change-secondary-zone-primary "$zone" $PRIMARIES >/dev/null 2>&1 || true
+				break ;;
+			esac
+		done
+	done
 	# fetch the catalog now instead of waiting for the next NOTIFY
 	pdns_control retrieve "$CATALOG" >/dev/null 2>&1 || true
 	say "Done"
 	echo "This server follows the zones of $PRIMARY (catalog $CATALOG)."
-	echo "On that HostZit server enter this server's address under Settings → Hosting → Secondary name servers:"
-	hostname -I | awk '{print "  " $1}'
+	echo "On that HostZit server enter ALL addresses of this server (IPv4 and IPv6) under Settings → Hosting → Secondary name servers:"
+	hostname -I | tr ' ' '\n' | grep -v '^$' | sed 's/^/  /'
 	exit 0
 fi
 

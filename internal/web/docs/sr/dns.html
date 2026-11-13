@@ -8,7 +8,7 @@
 <p>Editor prima A, AAAA, CNAME, MX, TXT, SRV, CAA, NS (delegacija poddomena), TLSA, HTTPS, SVCB i PTR. Imena su relativna u odnosu na zonu: <code>@</code> za sam domen, <code>www</code>, <code>_dmarc</code>. Vrednosti se proveravaju pre čuvanja. Zapisi kojima upravlja EmailZit su označeni i ovde se ne mogu menjati.</p>
 
 <h2 id="dnssec">DNSSEC</h2>
-<p><b>Potpiši zonu</b> uključuje DNSSEC; DS zapis koji se prikaže unesite kod registra. Pre isključivanja prvo uklonite DS zapis kod registra.</p>
+<p><b>Potpiši zonu</b> uključuje DNSSEC; DS zapis koji se prikaže unesite kod registra. Pre isključivanja prvo uklonite DS zapis kod registra. Potpisane zone koriste NSEC3 bez dodatnih iteracija i soli (RFC 9276) i stižu na sekundarne i DNS-only servere već potpisane, pa se i njihovi odgovori uspešno proveravaju. Zone potpisane pre 0.9.5 (NSEC3 &bdquo;narrow&ldquo;, koji PowerDNS ne prenosi) nadogradnja sama prebacuje.</p>
 
 <h2 id="secondary">Sekundarni name serveri</h2>
 <p>U Podešavanja → Hosting polje <b>Sekundarni name serveri</b> sadrži IP adrese name servera koji kopiraju svaku zonu ovog servera, <b>jednu po redu</b> (mogu i zarezi ili razmaci), na primer:</p>
@@ -19,7 +19,7 @@
 <h2 id="dns-only">DNS-only serveri</h2>
 <p>Ostali name serveri mogu biti mali Debian 13 serveri na kojima radi samo PowerDNS (dovoljno je 1 CPU i 512 MB). Dodavanje jednog:</p>
 <ol>
-  <li>Unesite njegovu IP adresu u Sekundarni name serveri (jednu po redu) i sačuvajte.</li>
+  <li>Unesite njegovu IP adresu u Sekundarni name serveri (jednu po redu) i sačuvajte. Samo tu upisani serveri dobijaju obaveštenja o izmenama i smeju da kopiraju zone; upišite i IPv6 adresu kada HostZit server treba da ga dosegne i preko IPv6.</li>
   <li>Na novom serveru kao root pokrenite komandu koju stranica tada prikaže — istu komandu na svakom DNS-only serveru, na primer:</li>
 </ol>
 <pre>curl -fsSL https://github.com/Max-Zit/hostzit/releases/latest/download/install.sh | sudo bash -s -- --dns-only --primary 203.0.113.10,2001:db8::10 --catalog host1.example.com.catalog.invalid</pre>
