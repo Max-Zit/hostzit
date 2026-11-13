@@ -2,6 +2,7 @@ package hosting
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -428,5 +429,41 @@ func TestNginxSiteGeo(t *testing.T) {
 	}
 	if ValidGeo("block", []string{"rs"}) == nil || ValidGeo("allow", nil) == nil || ValidGeo("x", []string{"RS"}) == nil || ValidGeo("block", []string{"@EU", "US"}) != nil {
 		t.Error("ValidGeo")
+	}
+}
+
+// Found by ssh-audit on h1 (0.9.4, installed by script): the strong SSH
+// algorithms were only on the appliance. The drop-in sets them on every
+// server, before the Match blocks (global options after a Match would
+// belong to it), with the same values as the appliance.
+func TestSSHDConfigStrongAlgorithms(t *testing.T) {
+	c := SSHDConfig()
+	m := strings.Index(c, "\nMatch ")
+	for _, want := range []string{"KexAlgorithms mlkem768x25519-sha256,", "HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256\n", "Ciphers aes256-gcm@openssh.com,", "MACs hmac-sha2-512-etm@openssh.com,"} {
+		i := strings.Index(c, want)
+		if i < 0 || i > m {
+			t.Errorf("%q missing or after the first Match", want)
+		}
+	}
+	for _, l := range strings.Split(c[:m], "\n") {
+		if strings.HasPrefix(l, "#") {
+			continue
+		}
+		for _, bad := range []string{"nistp", "hmac-sha1", "chacha20", "umac-64", "ecdsa"} {
+			if strings.Contains(strings.ToLower(l), bad) {
+				t.Errorf("weak algorithm %s offered: %s", bad, l)
+			}
+		}
+	}
+	appliance, err := os.ReadFile("../../packaging/appliance/sshd-hostzit-appliance.conf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range strings.Split(string(appliance), "\n") {
+		if strings.HasPrefix(l, "KexAlgorithms ") || strings.HasPrefix(l, "HostKeyAlgorithms ") || strings.HasPrefix(l, "Ciphers ") || strings.HasPrefix(l, "MACs ") {
+			if !strings.Contains(c, l+"\n") {
+				t.Errorf("appliance line not the same in the drop-in: %s", l)
+			}
+		}
 	}
 }

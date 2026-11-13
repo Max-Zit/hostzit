@@ -25,7 +25,7 @@
 <h2 id="network">Encryption and network</h2>
 <ul>
   <li>Websites over HTTPS: TLS 1.3, and TLS 1.2 only with forward secrecy and AEAD ciphers (no CBC or SHA-1 ciphers).</li>
-  <li>The HostZit appliance offers SSH and SFTP only with strong algorithms: post-quantum key exchange (mlkem768, sntrup761) next to curve25519, Ed25519 and RSA host keys, AES-GCM/CTR, encrypt-then-MAC. Root cannot sign in over SSH.</li>
+  <li>Every HostZit server (the appliance and servers installed by script, since 0.9.5) offers SSH and SFTP only with strong algorithms: post-quantum key exchange (mlkem768, sntrup761) next to curve25519, Ed25519 and RSA host keys, AES-GCM/CTR, encrypt-then-MAC. On the appliance root cannot sign in over SSH.</li>
   <li>LLMNR and multicast DNS (ports 5355 and 5353), meant for home networks, are switched off.</li>
   <li><b>Incoming connections</b> (Settings → Sign-in and security): only the ports HostZit uses accept connections from outside — SSH/SFTP (also a changed SSH port), DNS (53), the websites (80, 443), both panels and, with EmailZit on the server, its mail ports and panel. More ports can be opened there (TCP and UDP). Answers to the server's own connections, ping and DHCP always pass. New servers have it on from the setup; servers set up before 0.9.3 keep every port open until the administrator turns it on (the page warns).</li>
 </ul>

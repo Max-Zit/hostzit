@@ -137,6 +137,15 @@ func SortedNames(m map[string]string) []string {
 func SSHDConfig() string {
 	return strings.TrimLeft(`
 # HostZit (generated, do not edit)
+# Only strong algorithms, on every server (up to 0.9.4 only the appliance
+# had them; ssh-audit on a server installed by script listed the NIST
+# curves, ECDSA host keys, hmac-sha1 and 64-bit UMAC): curve25519 stays for
+# SFTP clients next to the post-quantum mlkem768/sntrup761, no
+# chacha20-poly1305 (Terrapin), MACs encrypt-then-MAC only.
+KexAlgorithms mlkem768x25519-sha256,sntrup761x25519-sha512,sntrup761x25519-sha512@openssh.com,curve25519-sha256,curve25519-sha256@libssh.org,diffie-hellman-group16-sha512,diffie-hellman-group18-sha512
+HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+Ciphers aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com
 Match Group hostzit-users
     ChrootDirectory /var/lib/hostzit/cages/%u
     AllowTcpForwarding no
