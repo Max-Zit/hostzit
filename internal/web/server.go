@@ -43,6 +43,8 @@ type Helper interface {
 type Server struct {
 	// wpAfterUpdate runs after a WordPress update, before the site check (tests).
 	wpAfterUpdate func()
+	// jobTimeout replaces helper.OpTimeout for every job (tests).
+	jobTimeout time.Duration
 	store         *store.Store
 	log           *slog.Logger
 	tmpl          map[string]*template.Template

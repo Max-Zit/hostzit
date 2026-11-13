@@ -448,14 +448,26 @@ func (s *Server) runJob(kind string, customerID *int64, detail string, fn func(c
 	s.jobs.Add(1)
 	go func() {
 		defer s.jobs.Done()
-		ctx, cancel := context.WithTimeout(context.Background(), helper.OpTimeout(kind))
+		timeout := helper.OpTimeout(kind)
+		if s.jobTimeout > 0 {
+			timeout = s.jobTimeout
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
 		_ = s.store.StartJob(ctx, j.ID)
 		err := fn(ctx)
+		if err != nil && errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			err = fmt.Errorf("the job took longer than %s and was stopped: %w", shortDur(timeout), err)
+		}
 		if err != nil {
 			s.log.Warn("job failed", "kind", kind, "id", j.ID, "err", err)
 		}
-		_ = s.store.FinishJob(ctx, j.ID, err)
+		// recorded even when the job ran out of time: with the job's own
+		// (expired) context the result was never written and the job showed
+		// "running" until the next restart (found on h1, malware scan)
+		fctx, fcancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
+		_ = s.store.FinishJob(fctx, j.ID, err)
+		fcancel()
 	}()
 	return j, nil
 }
@@ -579,4 +591,17 @@ func catalogName(h HostingSettings) string {
 		base = "hostzit-" + strings.NewReplacer(".", "-", ":", "-").Replace(h.IPv4)
 	}
 	return strings.TrimSuffix(base, ".") + ".catalog.invalid"
+}
+
+// shortDur writes 6h5m instead of 6h5m0s and 6h instead of 6h0m0s; below a
+// minute the duration stays as it is.
+func shortDur(d time.Duration) string {
+	if d < time.Minute {
+		return d.String()
+	}
+	s := strings.TrimSuffix(d.Round(time.Minute).String(), "0s")
+	if strings.HasSuffix(s, "h0m") {
+		s = strings.TrimSuffix(s, "0m")
+	}
+	return s
 }

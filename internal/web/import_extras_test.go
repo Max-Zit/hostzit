@@ -313,3 +313,37 @@ func TestPointsHere(t *testing.T) {
 		}
 	}
 }
+
+// Found on h1: a job that ran out of time was finished with its own expired
+// context, so the record kept "running" until the next restart.
+func TestJobTimeoutRecorded(t *testing.T) {
+	e := newEnv(t)
+	e.srv.jobTimeout = 50 * time.Millisecond
+	j, err := e.srv.runJob("test.slow", nil, "slow", func(ctx context.Context) error {
+		<-ctx.Done()
+		return ctx.Err()
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	for range 100 {
+		if got, err := e.st.JobByID(ctx, j.ID); err == nil && got.Status == "failed" {
+			if !strings.Contains(got.Error, "took longer than 50ms") {
+				t.Fatalf("error %q", got.Error)
+			}
+			return
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	got, _ := e.st.JobByID(ctx, j.ID)
+	t.Fatalf("job not finished: %+v", got)
+}
+
+func TestShortDur(t *testing.T) {
+	for d, want := range map[time.Duration]string{6*time.Hour + 5*time.Minute: "6h5m", 30 * time.Minute: "30m", 6 * time.Hour: "6h", 50 * time.Millisecond: "50ms", 90 * time.Second: "2m"} {
+		if got := shortDur(d); got != want {
+			t.Errorf("%v: %q, want %q", d, got, want)
+		}
+	}
+}
