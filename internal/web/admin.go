@@ -361,6 +361,11 @@ func (s *Server) panelURL(ctx context.Context, r *http.Request) string {
 	if u := s.hostingSettings(ctx).PanelURL; u != "" {
 		return u
 	}
+	return s.panelURLOf(r)
+}
+
+// panelURLOf is the customer panel on the host the request came to.
+func (s *Server) panelURLOf(r *http.Request) string {
 	host := r.Host
 	if h, _, err := splitHostPort(host); err == nil {
 		host = h
@@ -619,6 +624,7 @@ func (s *Server) handleHostingSettingsSave(w http.ResponseWriter, r *http.Reques
 		s.serverError(w, r, err)
 		return
 	}
+	s.cspForget()
 	s.audit(r, "settings.hosting", "settings", "mode %s, server %s, %s, name servers %s, certificates %q", h.Mode, h.ServerName, h.IPv4, strings.Join(h.Nameservers, " "), h.ACME)
 	if err := s.call(r.Context(), actor(r), "dns.secondaries", map[string]any{"ips": h.Secondaries, "catalog": h.Catalog}, nil); err != nil {
 		s.redirectErr(w, r, "/settings/hosting", storeErr(err))

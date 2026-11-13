@@ -352,6 +352,7 @@ func (s *Server) handleOIDCClientSave(w http.ResponseWriter, r *http.Request) {
 	red := strings.TrimSpace(r.FormValue("redirect_uri"))
 	if r.FormValue("off") != "" {
 		_ = s.store.SetSetting(r.Context(), settingOIDCClient, OIDCClient{})
+		s.cspForget()
 		s.audit(r, "oidc.client", "settings", "sign-in for EmailZit switched off")
 		s.redirect(w, r, "/settings/emailzit", "Saved.")
 		return
@@ -372,6 +373,7 @@ func (s *Server) handleOIDCClientSave(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
+	s.cspForget()
 	if _, _, err := s.oidcKey(r.Context()); err != nil {
 		s.serverError(w, r, err)
 		return

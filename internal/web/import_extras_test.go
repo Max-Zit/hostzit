@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -179,5 +180,74 @@ func TestImportRefusesSmallPackage(t *testing.T) {
 	}
 	if c, err := e.st.CustomerByRef(context.Background(), "shop"); err == nil {
 		t.Fatalf("account %s made anyway", c.Username)
+	}
+}
+
+// Found on h1 in Chrome (0.9.4): form-action 'self' also applies to the
+// redirects after a form, so "Open the customer panel" (→ customer panel
+// port) and the EmailZit sign-in (→ EmailZit's redirect URI) did nothing.
+// form-action lists exactly those origins, nothing else.
+func TestCSPFormActionAllowsPanelAndOIDC(t *testing.T) {
+	e := newEnv(t)
+	formAction := func(base string) string {
+		resp, err := http.Get(base + "/login")
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = resp.Body.Close()
+		for _, d := range strings.Split(resp.Header.Get("Content-Security-Policy"), ";") {
+			if d = strings.TrimSpace(d); strings.HasPrefix(d, "form-action ") {
+				return strings.TrimPrefix(d, "form-action ")
+			}
+		}
+		t.Fatal("no form-action")
+		return ""
+	}
+	// without a configured panel address: the customer panel on the same host
+	got := formAction(e.admin.URL)
+	if !strings.HasPrefix(got, "'self' http://127.0.0.1:") || strings.Count(got, " ") != 1 {
+		t.Fatalf("admin form-action %q", got)
+	}
+	ctx := context.Background()
+	h := e.srv.hostingSettings(ctx)
+	h.PanelURL = "https://panel.example.com:8443"
+	if h.DefaultPHP == "" {
+		h.DefaultPHP = "8.4"
+	}
+	if err := e.st.SetSetting(ctx, settingHosting, h); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.st.SetSetting(ctx, settingOIDCClient, OIDCClient{ID: "emailzit", RedirectURI: "https://mail.example.com:8444/login/hostzit/callback?x=1"}); err != nil {
+		t.Fatal(err)
+	}
+	e.srv.cspForget()
+	got = formAction(e.panel.URL)
+	if got != "'self' https://panel.example.com:8443 https://mail.example.com:8444" {
+		t.Fatalf("form-action %q", got)
+	}
+	// a broken redirect address never reaches the header
+	_ = e.st.SetSetting(ctx, settingOIDCClient, OIDCClient{ID: "emailzit", RedirectURI: "javascript:alert(1)"})
+	e.srv.cspForget()
+	if got = formAction(e.admin.URL); strings.Contains(got, "javascript") || strings.Contains(got, "mail.example.com") {
+		t.Fatalf("form-action %q", got)
+	}
+}
+
+// Found on h1: with restore points in a folder of the server, every
+// customer's restore point page showed the error "choose SFTP or S3".
+func TestRestorePointPageLocalNoError(t *testing.T) {
+	e := newEnv(t)
+	a := e.setupAdmin()
+	a.ok("/packages/new", url.Values{"name": {"P"}, "slug": {"p"}, "max_sites": {"1"}, "max_dbs": {"1"}, "max_zones": {"1"}, "disk_mb": {"100"}, "inodes": {"0"},
+		"cpu_percent": {"0"}, "memory_mb": {"0"}, "processes": {"0"}, "io_weight": {"100"}, "php_workers": {"2"}, "php_memory_mb": {"128"}, "upload_mb": {"8"}, "mail_per_hour": {"0"}})
+	a.ok("/customers/new", url.Values{"username": {"localrp"}, "package": {"1"}, "password": {"local restore 12"}})
+	c, err := e.st.CustomerByRef(context.Background(), "localrp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := a.page("/customers/" + strconv.FormatInt(c.ID, 10) + "/remote-backups")
+	// (the tests run in development mode, whose banner is one more flash err)
+	if strings.Contains(page, "choose SFTP or S3") || strings.Count(page, `class="flash err"`) > 1 {
+		t.Fatalf("error on the restore point page:\n%s", page)
 	}
 }

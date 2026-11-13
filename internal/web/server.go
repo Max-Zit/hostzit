@@ -71,6 +71,7 @@ type Server struct {
 	panelCert atomic.Pointer[tls.Certificate]
 	jobs      sync.WaitGroup
 	applyMu   sync.Map // customer id → *sync.Mutex (one change at a time per account)
+	csp       cspCache
 }
 
 // New creates the server.
@@ -415,7 +416,7 @@ func cacheStatic(next http.Handler) http.Handler {
 func (s *Server) secure(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
-		h.Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
+		h.Set("Content-Security-Policy", "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; font-src 'self'; form-action "+s.formActionSrc(r)+"; frame-ancestors 'none'; base-uri 'none'")
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("X-Frame-Options", "DENY")
 		h.Set("Referrer-Policy", "same-origin")

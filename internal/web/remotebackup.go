@@ -282,12 +282,17 @@ func (s *Server) handleRemoteBackupList(w http.ResponseWriter, r *http.Request) 
 		d.PointsErr = storeErr(perr)
 	}
 	p := &Page{Title: c.Username, Nav: "customers", Crumb: "Customers", CrumbURL: "/customers", Data: d}
-	dest, err := s.openDest(s.remoteBackup(r.Context()))
-	if err == nil {
-		err = s.call(r.Context(), actor(r), "backup.remote.list", map[string]any{"dest": dest, "account": c.Username}, &d.Files)
-	}
-	if err != nil {
-		p.Error = storeErr(err)
+	// older archives exist only on SFTP or S3 (a folder on this server keeps
+	// restore points only): with "local" the list used to show the error
+	// "choose SFTP or S3" on every customer's page (found on h1)
+	if rb := s.remoteBackup(r.Context()); rb.Dest.Type == "sftp" || rb.Dest.Type == "s3" {
+		dest, err := s.openDest(rb)
+		if err == nil {
+			err = s.call(r.Context(), actor(r), "backup.remote.list", map[string]any{"dest": dest, "account": c.Username}, &d.Files)
+		}
+		if err != nil {
+			p.Error = storeErr(err)
+		}
 	}
 	for i, j := 0, len(d.Files)-1; i < j; i, j = i+1, j-1 {
 		d.Files[i], d.Files[j] = d.Files[j], d.Files[i]
