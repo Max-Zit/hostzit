@@ -302,6 +302,12 @@ func TestNginxSecurity(t *testing.T) {
 	if n, err := CleanNets([]string{" 10.1.2.3/8 ", "", "::1"}); err != nil || strings.Join(n, ",") != "10.0.0.0/8,::1" {
 		t.Fatal(n, err)
 	}
+	// IPv6 zones: any text after the % went into the nginx/nft configuration
+	for _, z := range []string{"fe80::1%eth0", "::1%a}", "::%\x000", "::1%a{deny"} {
+		if n, err := CleanNets([]string{z}); err == nil {
+			t.Errorf("CleanNets(%q) = %q", z, n)
+		}
+	}
 	if !strings.Contains(NginxBase(), "limit_req_zone $binary_remote_addr zone=hz_login") {
 		t.Fatal("base without the login limit")
 	}

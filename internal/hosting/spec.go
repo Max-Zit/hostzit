@@ -305,8 +305,11 @@ func CleanNets(list []string) ([]string, error) {
 			out = append(out, p.Masked().String())
 			continue
 		}
+		// no IPv6 zone ("fe80::1%eth0"): it means nothing in these lists, and
+		// netip takes any text after the %, also } and NUL, which then went
+		// into the nginx and nftables configuration (found by FuzzDomainNames)
 		a, err := netip.ParseAddr(x)
-		if err != nil {
+		if err != nil || a.Zone() != "" {
 			return nil, fmt.Errorf("%q is not an IP address or network", x)
 		}
 		out = append(out, a.String())

@@ -219,7 +219,7 @@ func FuzzCleanINI(f *testing.F) {
 }
 
 func FuzzDomainNames(f *testing.F) {
-	for _, s := range []string{"example.com", "Bücher.example", "a..b", "-x.com", "x.com.", "localhost", strings.Repeat("a.", 130) + "com"} {
+	for _, s := range []string{"example.com", "Bücher.example", "a..b", "-x.com", "x.com.", "localhost", strings.Repeat("a.", 130) + "com", "::%\x000"} {
 		f.Add(s)
 	}
 	f.Fuzz(func(t *testing.T, d string) {
