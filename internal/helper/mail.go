@@ -343,7 +343,10 @@ func (m *mailer) deliver(ctx context.Context, relay RelayConfig, account, dir, i
 				return
 			}
 		}
-		p := prepare(account, ma, q, msg, mode == "direct", time.Now())
+		// signed with the domain's hz1 key also through EmailZit's relay:
+		// EmailZit signs only its own mail domains, and a domain that is only
+		// a website here would leave unsigned (EmailZit, INTEGRATION.md 7)
+		p := prepare(account, ma, q, msg, true, time.Now())
 		entry.From = p.Header
 		if p.Refusal != "" {
 			entry.Status, entry.Detail = "refused", p.Refusal

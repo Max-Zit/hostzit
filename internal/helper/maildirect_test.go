@@ -296,7 +296,8 @@ func TestWebsiteMailThroughEmailZit(t *testing.T) {
 	if r := call(t, h, "mail.relay", relayArgs{Relay: RelayConfig{Mode: "emailzit", Host: "127.0.0.1", Port: p, Security: "none", User: "hostzit-relay@mail.test", Password: "pw", Helo: "host1.hostzit.test"}}); !r.OK {
 		t.Fatal(r.Error)
 	}
-	if r := call(t, h, "mail.account", mailAccountArgs{Account: "shop1", Mail: MailAccount{Primary: "shop.test", Domains: []string{"shop.test"}}}); !r.OK {
+	priv, record, _ := NewDKIMKey()
+	if r := call(t, h, "mail.account", mailAccountArgs{Account: "shop1", Mail: MailAccount{Primary: "shop.test", Domains: []string{"shop.test"}, DKIM: []DKIMKey{{Domain: "shop.test", Selector: DKIMSelector, Key: priv}}}}); !r.OK {
 		t.Fatal(r.Error)
 	}
 	_ = os.MkdirAll(filepath.Join(root, "etc/hostzit/accounts"), 0o700)
@@ -307,10 +308,11 @@ func TestWebsiteMailThroughEmailZit(t *testing.T) {
 	m.round(t.Context())
 	got := f.all()
 	// the envelope sender is on the From domain (EmailZit refuses others),
-	// EmailZit signs, so HostZit does not
-	if !strings.Contains(got, "EHLO host1.hostzit.test") || !strings.Contains(got, "MAIL FROM:<info@shop.test>") || strings.Contains(got, "DKIM-Signature") {
+	// and HostZit signs: EmailZit signs only its own mail domains
+	if !strings.Contains(got, "EHLO host1.hostzit.test") || !strings.Contains(got, "MAIL FROM:<info@shop.test>") || !strings.Contains(got, "DKIM-Signature") {
 		t.Fatal(got)
 	}
+	verifyDKIM(t, []byte(got[strings.Index(got, "DATA\n")+5:]), record)
 	f.mu.Lock()
 	auth := f.auth
 	f.mu.Unlock()

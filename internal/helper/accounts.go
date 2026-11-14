@@ -125,8 +125,11 @@ func (h *Helper) accountApply(ctx context.Context, a hosting.Account) (any, erro
 			return nil, err
 		}
 	}
-	if h.Sys.Exists("/usr/sbin/emailzit-sendmail") {
-		a.Sendmail = "/usr/sbin/emailzit-sendmail"
+	// EmailZit's sendmail only when the panel chose it (EmailZit on this
+	// server knows the customer) and it is installed; other accounts keep
+	// HostZit's queue (EmailZit refuses senders that are not its mail domains)
+	if a.Sendmail != "" && (a.Sendmail != "/usr/sbin/emailzit-sendmail" || !h.Sys.Exists(a.Sendmail)) {
+		a.Sendmail = ""
 	}
 	if err := h.buildCage(ctx, a, uid, webGID); err != nil {
 		return nil, fmt.Errorf("cage: %w", err)

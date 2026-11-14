@@ -26,15 +26,16 @@
 <section class="panel">
   <h2>{{template "icon" "mail"}}{{.T "Mail from your websites"}}</h2>
   {{$w := .Data.Mail}}
-  <p class="muted small">{{if eq $w.Mode "local"}}{{.T "Contact forms and WordPress send mail through EmailZit on this server."}}{{else if eq $w.Mode "emailzit"}}{{.T "Contact forms and WordPress send mail through EmailZit, the mail service linked to this server; EmailZit signs it for your domain."}}{{else if eq $w.Mode "relay"}}{{.T "Contact forms and WordPress send mail through the mail server of your provider."}}{{else}}{{.T "Contact forms and WordPress send mail directly from this server, signed with the DKIM key of your domain."}}{{end}}
-  {{.T "The sender (From) must be an address on one of your domains. Your package allows a number of messages per hour; messages above the limit wait for the next hour."}}</p>
+  <p class="muted small">{{if eq $w.Mode "local"}}{{.T "Contact forms and WordPress send mail through EmailZit on this server."}}{{else if eq $w.Mode "emailzit"}}{{.T "Contact forms and WordPress send mail through EmailZit, the mail service linked to this server, signed with the DKIM key of your domain."}}{{else if eq $w.Mode "relay"}}{{.T "Contact forms and WordPress send mail through the mail server of your provider."}}{{else}}{{.T "Contact forms and WordPress send mail directly from this server, signed with the DKIM key of your domain."}}{{end}}
+  {{.T "The sender (From) must be an address on one of your domains. Your package allows a number of messages per hour; messages above the limit wait for the next hour."}} {{.T "Bounces and replies go to the From address: use one that receives mail, or set a Reply-To."}}</p>
   {{if $w.DKIM}}
   <h3 class="mt">{{.T "DKIM records"}}</h3>
   <div class="table-wrap"><table>
-    <thead><tr><th>{{.T "Domain"}}</th><th>{{.T "State"}}</th><th>{{.T "Record"}}</th></tr></thead>
+    <thead><tr><th>{{.T "Domain"}}</th><th>DKIM</th><th>SPF</th><th>{{.T "Record"}}</th></tr></thead>
     <tbody>{{range $w.DKIM}}<tr>
       <td><b>{{.Domain}}</b></td>
       <td>{{if .Here}}<span class="badge ok"><i></i>{{$.T "set by HostZit"}}</span>{{else if .Found}}<span class="badge ok"><i></i>{{$.T "found in the DNS"}}</span>{{else}}<span class="badge warn"><i></i>{{$.T "set it at your DNS provider"}}</span>{{end}}</td>
+      <td>{{if .SPFOK}}<span class="badge ok"><i></i>ok</span>{{else}}<span class="badge warn"><i></i>{{$.T "add %s to the SPF record" .SPFNeed}}</span>{{end}}</td>
       <td class="small">{{if .Here}}<span class="mono">{{.Name}}</span>{{else}}<details><summary class="mono">TXT {{.Name}}</summary><pre class="token small">{{.Value}}</pre></details>{{end}}</td>
     </tr>{{end}}</tbody>
   </table></div>

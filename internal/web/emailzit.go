@@ -217,7 +217,10 @@ func urlHost(raw string) string {
 // syncWebUIDs tells a local EmailZit the uid of a hosting account (empty
 // list when the account is gone or not active). Only EmailZit on the same
 // server counts mail by uid; a customer EmailZit does not know is not an
-// error (404 customer_not_found: no mail customer).
+// error (404 customer_not_found: no mail customer). The answer also decides
+// which sendmail the account's websites use: EmailZit's only for customers
+// EmailZit knows (it refuses senders that are not its mail domains), HostZit's
+// queue for the others.
 func (s *Server) syncWebUIDs(ctx context.Context, c *store.Customer) {
 	if s.emailzitLink(ctx).URL == "" || !localEmailZit() {
 		return
@@ -230,12 +233,40 @@ func (s *Server) syncWebUIDs(ctx context.Context, c *store.Customer) {
 	}
 	err := s.emailzitCall(ctx, http.MethodPut, "/api/v1/customers/"+c.UUID+"/web-uids", map[string]any{"uids": uids})
 	var ez *ezError
-	if errors.As(err, &ez) && ez.Status == http.StatusNotFound {
+	known := err == nil
+	if err != nil && !(errors.As(err, &ez) && ez.Status == http.StatusNotFound) {
+		s.log.Warn("EmailZit web uids not sent", "customer", c.Username, "err", err)
 		return
 	}
-	if err != nil {
-		s.log.Warn("EmailZit web uids not sent", "customer", c.Username, "err", err)
+	if known != s.emailzitKnows(ctx, c.UUID) {
+		s.setEmailZitKnows(ctx, c.UUID, known)
+		if err := s.applyCustomer(ctx, "system", c); err != nil {
+			s.log.Warn("website mail of the account not switched", "customer", c.Username, "err", err)
+		}
 	}
+}
+
+const settingEmailZitKnown = "emailzit_known"
+
+// emailzitKnows: a local EmailZit has the customer (same UUID).
+func (s *Server) emailzitKnows(ctx context.Context, uuid string) bool {
+	var m map[string]bool
+	_ = s.store.GetSetting(ctx, settingEmailZitKnown, &m)
+	return m[uuid]
+}
+
+func (s *Server) setEmailZitKnows(ctx context.Context, uuid string, known bool) {
+	var m map[string]bool
+	_ = s.store.GetSetting(ctx, settingEmailZitKnown, &m)
+	if m == nil {
+		m = map[string]bool{}
+	}
+	if known {
+		m[uuid] = true
+	} else {
+		delete(m, uuid)
+	}
+	_ = s.store.SetSetting(ctx, settingEmailZitKnown, m)
 }
 
 // ---- the settings page
@@ -501,6 +532,8 @@ func (s *Server) handleEmailZitPair(w http.ResponseWriter, r *http.Request) {
 	if err := s.applyRelay(ctx, actor(r)); err != nil {
 		s.log.Warn("website mail after the pairing", "err", err)
 	}
+	// SPF records of the zones get EmailZit's relay
+	go s.syncAllMail(context.WithoutCancel(ctx))
 	if localEmailZit() {
 		list, _ := s.store.Customers(ctx, store.CustomerFilter{})
 		for _, c := range list {
@@ -583,6 +616,7 @@ func (s *Server) dropLink(ctx context.Context, by string, l EmailZitLink) error 
 	if err := s.applyRelay(ctx, by); err != nil {
 		s.log.Warn("website mail after the unlink", "err", err)
 	}
+	go s.syncAllMail(context.WithoutCancel(ctx))
 	return nil
 }
 

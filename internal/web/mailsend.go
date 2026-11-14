@@ -153,8 +153,10 @@ func (s *Server) syncMailAccount(ctx context.Context, by string, c *store.Custom
 		keys[d] = k
 	}
 	_ = s.store.DeleteDKIMKeys(ctx, c.ID, domains)
+	relay := s.relaySPF(ctx)
 	// the records of the zones here
 	for _, z := range zones {
+		s.syncRelaySPF(ctx, by, z, relay)
 		var want []hosting.Record
 		if k, ok := keys[z.Name]; ok {
 			want = []hosting.Record{{Name: k.Selector + "._domainkey", Type: "TXT", TTL: 3600, Content: k.Record}}
@@ -285,6 +287,9 @@ type dkimRow struct {
 	Value  string
 	Here   bool // the zone is in this server's DNS: HostZit publishes it
 	Found  bool // the record is in the public DNS
+	// SPFNeed is the mechanism the domain's SPF needs; SPFOK: it has it
+	SPFNeed string
+	SPFOK   bool
 }
 
 // websiteMail is the mail part of the customer's security page.
@@ -297,20 +302,50 @@ type websiteMail struct {
 
 func (s *Server) websiteMail(ctx context.Context, by string, c *store.Customer) *websiteMail {
 	d := &websiteMail{Mode: s.mailMode(ctx)}
-	if d.Mode == "direct" {
+	if d.Mode == "direct" || d.Mode == "emailzit" {
 		keys, _ := s.store.DKIMKeys(ctx, c.ID)
 		zones, _ := s.store.Zones(ctx, c.ID)
+		hs := s.hostingSettings(ctx)
+		mech := s.relaySPF(ctx)
+		if mech == "" && hs.ServerName != "" {
+			mech = "a:" + hs.ServerName
+		}
 		for _, k := range keys {
-			row := dkimRow{Domain: k.Domain, Name: k.Selector + "._domainkey." + k.Domain, Value: k.Record}
+			row := dkimRow{Domain: k.Domain, Name: k.Selector + "._domainkey." + k.Domain, Value: k.Record, SPFNeed: mech}
+			var zone *store.Zone
 			for _, z := range zones {
-				row.Here = row.Here || z.Name == k.Domain
+				if z.Name == k.Domain {
+					zone = z
+				}
 			}
-			if !row.Here {
+			row.Here = zone != nil
+			var spf string
+			if zone != nil {
+				if rows, err := s.store.Records(ctx, zone.ID); err == nil {
+					for _, r := range rows {
+						if v := unquoteTXT(r.Content); r.Name == "@" && r.Type == "TXT" && strings.HasPrefix(v, "v=spf1") {
+							spf = v
+						}
+					}
+				}
+			} else {
 				lc, cancel := context.WithTimeout(ctx, 3*time.Second)
 				txt, err := net.DefaultResolver.LookupTXT(lc, row.Name)
-				cancel()
 				row.Found = err == nil && slices.Contains(txt, k.Record)
+				if all, err := net.DefaultResolver.LookupTXT(lc, k.Domain); err == nil {
+					for _, v := range all {
+						if strings.HasPrefix(v, "v=spf1") {
+							spf = v
+						}
+					}
+				}
+				cancel()
 			}
+			// direct sending from a zone here: HostZit's own "a" record covers
+			// the server; otherwise the mechanism must be in the record
+			row.SPFOK = spf != "" && (slices.Contains(strings.Fields(spf), mech) ||
+				d.Mode == "direct" && zone != nil && slices.Contains(strings.Fields(spf), "a") ||
+				d.Mode == "direct" && hs.IPv4 != "" && strings.Contains(spf, "ip4:"+hs.IPv4))
 			d.DKIM = append(d.DKIM, row)
 		}
 	}
@@ -340,5 +375,113 @@ func (s *Server) mailFailureNotices(ctx context.Context) {
 		}
 		s.notify(ctx, "mail:"+account, c, "Website mail of "+account+" was not delivered",
 			"Messages from the websites of "+account+" could not be delivered ("+strconv.Itoa(x.N)+" since the last notice). The last one: "+x.Last+"\n\nThe customer sees every message under Security → Mail from your websites.\n")
+	}
+}
+
+// sendmailFor is EmailZit's sendmail for a customer a local EmailZit knows,
+// else "" (HostZit's own queue).
+func (s *Server) sendmailFor(ctx context.Context, c *store.Customer) string {
+	if localEmailZit() && s.emailzitKnows(ctx, c.UUID) {
+		return "/usr/sbin/emailzit-sendmail"
+	}
+	return ""
+}
+
+// syncLocalEmailZit asks a local EmailZit about every customer (it may have
+// got customers since), so their websites use the right sendmail.
+func (s *Server) syncLocalEmailZit(ctx context.Context) {
+	if !localEmailZit() || s.emailzitLink(ctx).URL == "" {
+		return
+	}
+	list, err := s.store.Customers(ctx, store.CustomerFilter{})
+	if err != nil {
+		return
+	}
+	for _, c := range list {
+		if ctx.Err() != nil {
+			return
+		}
+		s.syncWebUIDs(ctx, c)
+	}
+}
+
+// relaySPF is the SPF mechanism of EmailZit's relay while website mail
+// goes through it ("" otherwise).
+func (s *Server) relaySPF(ctx context.Context) string {
+	if s.mailMode(ctx) != "emailzit" {
+		return ""
+	}
+	return "a:" + s.emailzitLink(ctx).Relay.Host
+}
+
+// spfWith puts a mechanism into an SPF record, before its "all".
+func spfWith(spf, mech string) string {
+	f := strings.Fields(spf)
+	if n := len(f); n > 0 && strings.TrimLeft(f[n-1], "+-~?") == "all" {
+		return strings.Join(append(append(f[:n-1:n-1], mech), f[n-1]), " ")
+	}
+	return strings.Join(append(f, mech), " ")
+}
+
+// spfDefaultWithRelay reports whether an SPF value is def with one "a:"
+// mechanism HostZit added for a relay.
+func spfDefaultWithRelay(v, def string) bool {
+	f := strings.Fields(v)
+	for i, x := range f {
+		if strings.HasPrefix(x, "a:") {
+			rest := append(append([]string{}, f[:i]...), f[i+1:]...)
+			return strings.Join(rest, " ") == strings.Join(strings.Fields(def), " ")
+		}
+	}
+	return false
+}
+
+func unquoteTXT(c string) string {
+	c = strings.TrimSpace(c)
+	if strings.HasPrefix(c, `"`) && strings.HasSuffix(c, `"`) && !strings.Contains(c, `" "`) {
+		c = c[1 : len(c)-1]
+	}
+	return strings.NewReplacer(`\"`, `"`, `\`, `\`).Replace(c)
+}
+
+// syncRelaySPF keeps EmailZit's mail host in the zone's SPF while website
+// mail goes through EmailZit's relay (EmailZit, INTEGRATION.md 7), and
+// takes it out again after an unlink. Only an SPF record that is still
+// HostZit's default is changed; one the customer wrote stays as it is (the
+// Security page tells what it needs).
+func (s *Server) syncRelaySPF(ctx context.Context, by string, z *store.Zone, mech string) {
+	def := s.hostingSettings(ctx).SPF
+	if def == "" {
+		return
+	}
+	want := def
+	if mech != "" {
+		want = spfWith(def, mech)
+	}
+	rows, err := s.store.Records(ctx, z.ID)
+	if err != nil {
+		return
+	}
+	for _, r := range rows {
+		if r.Owner != "" || r.Name != "@" || r.Type != "TXT" {
+			continue
+		}
+		v := unquoteTXT(r.Content)
+		if !strings.HasPrefix(v, "v=spf1") {
+			continue
+		}
+		if v == want || (v != def && !spfDefaultWithRelay(v, def)) {
+			return
+		}
+		rec := r.Record
+		rec.Content = want
+		if err := s.store.UpdateRecord(ctx, z, r.ID, rec); err != nil {
+			s.log.Warn("SPF record for EmailZit's relay", "zone", z.Name, "err", err)
+			return
+		}
+		if err := s.applyZone(ctx, by, z); err != nil {
+			s.log.Warn("SPF record not published", "zone", z.Name, "err", err)
+		}
+		return
 	}
 }

@@ -179,7 +179,7 @@ func (s *Server) accountFor(ctx context.Context, c *store.Customer) (hosting.Acc
 		lim = hosting.DedicatedLimits()
 	}
 	return hosting.Account{Name: c.Username, Number: c.Number, Suspended: c.Status != store.StatusActive, Limits: lim, PHPVersions: versions,
-		PHP: s.phpOptionsFor(ctx, c, versions, lim), Redis: lim.RedisMB > 0 && s.redisOn(ctx, c), Apps: s.appSpecs(ctx, c, lim.Apps)}, p, nil
+		PHP: s.phpOptionsFor(ctx, c, versions, lim), Redis: lim.RedisMB > 0 && s.redisOn(ctx, c), Apps: s.appSpecs(ctx, c, lim.Apps), Sendmail: s.sendmailFor(ctx, c)}, p, nil
 }
 
 // applyCustomer brings the system account in line with the database.
@@ -519,6 +519,7 @@ func (s *Server) Run(ctx context.Context) {
 		case <-hourly.C:
 			go s.remoteBackupRound(ctx, false)
 			go func() { _, _ = s.refreshMailCheck(ctx) }()
+			go s.syncLocalEmailZit(ctx)
 			go s.checkServer(ctx)
 			_ = s.store.PurgeSessions(ctx)
 			_ = s.store.PruneUsage(ctx)

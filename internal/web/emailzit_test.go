@@ -356,3 +356,80 @@ func TestAPITokenAddresses(t *testing.T) {
 		t.Fatal("the address was blocked after wrong-address calls", st)
 	}
 }
+
+// With EmailZit's relay the default SPF of a zone here names EmailZit's
+// mail host (a record the customer wrote stays), and goes back after the
+// unlink. A local EmailZit gets the websites' mail only of customers it knows.
+func TestRelaySPFAndLocalSendmail(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	known := false
+	f := newFakeEZ(t, func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/web-uids") && !known {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
+	a := e.setupAdmin()
+	pairEmailZit(t, a, f)
+	a.ok("/packages/new", url.Values{"name": {"P"}, "slug": {"p"}, "max_sites": {"3"}, "max_dbs": {"1"}, "max_zones": {"3"}, "disk_mb": {"100"}, "inodes": {"0"},
+		"cpu_percent": {"0"}, "memory_mb": {"0"}, "processes": {"0"}, "io_weight": {"100"}, "php_workers": {"2"}, "php_memory_mb": {"128"}, "upload_mb": {"8"}, "mail_per_hour": {"10"}})
+	a.ok("/customers/new", url.Values{"username": {"web1"}, "package": {"1"}, "domain": {"web1.example.com"}, "dns": {"on"}, "password": {"web1 password 123"}})
+	c, _ := e.st.CustomerByRef(ctx, "web1")
+	spf := func() string {
+		z, _ := e.st.ZoneFor(ctx, "web1.example.com")
+		rows, _ := e.st.Records(ctx, z.ID)
+		for _, r := range rows {
+			if r.Owner == "" && r.Name == "@" && r.Type == "TXT" {
+				return unquoteTXT(r.Content)
+			}
+		}
+		return ""
+	}
+	e.srv.syncMailAccount(ctx, "test", c)
+	if got := spf(); got != "v=spf1 a mx a:mail.example.test ~all" {
+		t.Fatalf("SPF with the relay: %q", got)
+	}
+	e.srv.syncMailAccount(ctx, "test", c) // stays, no second mechanism
+	if got := spf(); got != "v=spf1 a mx a:mail.example.test ~all" {
+		t.Fatalf("SPF after a second sync: %q", got)
+	}
+	// the customer sees the SPF as fine
+	p := e.client(e.panel.URL)
+	p.ok("/login", url.Values{"username": {"web1"}, "password": {"web1 password 123"}})
+	if page := p.page("/security"); !strings.Contains(page, "hz1._domainkey.web1.example.com") || strings.Contains(page, "to the SPF record") {
+		t.Fatal("security page: DKIM row missing or SPF reported as missing")
+	}
+	a.ok("/settings/emailzit/unlink", url.Values{})
+	e.srv.syncMailAccount(ctx, "test", c)
+	if got := spf(); got != "v=spf1 a mx ~all" {
+		t.Fatalf("SPF after the unlink: %q", got)
+	}
+
+	// EmailZit on this server: its sendmail only for a customer it knows
+	old := localEmailZit
+	localEmailZit = func() bool { return true }
+	t.Cleanup(func() { localEmailZit = old })
+	pairEmailZit(t, a, f)
+	e.srv.syncWebUIDs(ctx, c)
+	if acc, _, _ := e.srv.accountFor(ctx, c); acc.Sendmail != "" {
+		t.Fatal("a customer EmailZit does not know got EmailZit's sendmail")
+	}
+	known = true
+	e.srv.syncWebUIDs(ctx, c)
+	if acc, _, _ := e.srv.accountFor(ctx, c); acc.Sendmail != "/usr/sbin/emailzit-sendmail" {
+		t.Fatal("a customer EmailZit knows keeps HostZit's queue")
+	}
+}
+
+func TestSPFWith(t *testing.T) {
+	for in, want := range map[string]string{"v=spf1 a mx ~all": "v=spf1 a mx a:m.test ~all", "v=spf1 mx -all": "v=spf1 mx a:m.test -all", "v=spf1 a": "v=spf1 a a:m.test"} {
+		if got := spfWith(in, "a:m.test"); got != want {
+			t.Errorf("%q: %q", in, got)
+		}
+	}
+	if !spfDefaultWithRelay("v=spf1 a mx a:old.test ~all", "v=spf1 a mx ~all") || spfDefaultWithRelay("v=spf1 a mx include:x ~all", "v=spf1 a mx ~all") {
+		t.Fatal("spfDefaultWithRelay")
+	}
+}
