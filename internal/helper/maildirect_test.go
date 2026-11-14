@@ -358,3 +358,116 @@ func TestWebsiteMailWaitsForTheAccount(t *testing.T) {
 		t.Fatalf("%+v", log)
 	}
 }
+
+// fakeRelay answers AUTH with ok or 535.
+func fakeRelay(t *testing.T, accept bool) (port int, got *[]string, mu *sync.Mutex) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { ln.Close() })
+	var lines []string
+	var m sync.Mutex
+	go func() {
+		for {
+			c, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			go func(c net.Conn) {
+				defer c.Close()
+				r := bufio.NewReader(c)
+				say := func(s string) { _, _ = c.Write([]byte(s + "\r\n")) }
+				say("220 relay.test ESMTP")
+				for {
+					l, err := r.ReadString('\n')
+					if err != nil {
+						return
+					}
+					l = strings.TrimRight(l, "\r\n")
+					m.Lock()
+					lines = append(lines, l)
+					m.Unlock()
+					switch u := strings.ToUpper(l); {
+					case strings.HasPrefix(u, "EHLO"):
+						say("250-relay.test")
+						say("250 AUTH PLAIN")
+					case strings.HasPrefix(u, "AUTH"):
+						if !accept {
+							say("535 5.7.8 authentication failed")
+							continue
+						}
+						say("235 ok")
+					case u == "DATA":
+						say("354 go")
+						for {
+							x, err := r.ReadString('\n')
+							if err != nil || x == ".\r\n" {
+								break
+							}
+						}
+						say("250 queued")
+					case u == "QUIT":
+						say("221 bye")
+						return
+					default:
+						say("250 ok")
+					}
+				}
+			}(c)
+		}
+	}()
+	_, p, _ := net.SplitHostPort(ln.Addr().String())
+	_ = json.Unmarshal([]byte(p), &port)
+	return port, &lines, &m
+}
+
+// An account whose mail is on EmailZit X sends through X's relay; the others
+// take the server's route. A refused relay sign-in keeps the message waiting.
+func TestWebsiteMailPerAccountRelay(t *testing.T) {
+	h, _, root, _ := newTest(t)
+	f := newFakeMX(t)
+	useFakeMX(t, f)
+	okPort, okLines, okMu := fakeRelay(t, true)
+	badPort, _, _ := fakeRelay(t, false)
+	if r := call(t, h, "mail.relay", relayArgs{Relay: RelayConfig{Mode: "direct", Helo: "host1.hostzit.test", Relays: map[string]RelayConfig{
+		"ezok":  {Host: "127.0.0.1", Port: okPort, Security: "none", User: "u1", Password: "p1"},
+		"ezbad": {Host: "127.0.0.1", Port: badPort, Security: "none", User: "u2", Password: "p2"},
+	}}}); !r.OK {
+		t.Fatal(r.Error)
+	}
+	_ = os.MkdirAll(filepath.Join(root, "etc/hostzit/accounts"), 0o700)
+	for acc, relay := range map[string]string{"shop1": "ezok", "shop2": "ezbad", "shop3": ""} {
+		_ = os.WriteFile(filepath.Join(root, "etc/hostzit/accounts/"+acc+".json"), []byte(`{"name":"`+acc+`","number":1,"limits":{"mail_per_hour":10}}`), 0o600)
+		d := acc + ".test"
+		if r := call(t, h, "mail.account", mailAccountArgs{Account: acc, Mail: MailAccount{Primary: d, Domains: []string{d}, Relay: relay}}); !r.OK {
+			t.Fatal(r.Error)
+		}
+		queueMail(t, root, acc, "m-"+acc, queued{To: []string{"ok@dest.test"}, At: time.Now(), Subject: "From " + acc}, "From: info@"+d+"\nSubject: x\n\nx\n")
+	}
+	m := &mailer{h: h, sent: map[string][]time.Time{}}
+	m.round(t.Context())
+	okMu.Lock()
+	viaOK := strings.Join(*okLines, "\n")
+	okMu.Unlock()
+	if !strings.Contains(viaOK, "MAIL FROM:<info@shop1.test>") || strings.Contains(viaOK, "shop3") {
+		t.Fatalf("relay of link ezok got:\n%s", viaOK)
+	}
+	if !strings.Contains(f.all(), "MAIL FROM:<info@shop3.test>") {
+		t.Fatal("the account without a link did not send directly")
+	}
+	// shop2: the relay refused the sign-in → waiting, not refused
+	if log := mailLogOf(t, h, "shop2"); len(log) != 0 {
+		t.Fatalf("a refused relay sign-in judged the message: %+v", log)
+	}
+	var q []QueueItem
+	_ = json.Unmarshal(call(t, h, "mail.queue", mailQueueArgs{Account: "shop2"}).Result, &q)
+	if len(q) != 1 || !strings.Contains(q[0].LastErr, "535") {
+		t.Fatalf("queue %+v", q)
+	}
+	var st map[string]RelayState
+	_ = json.Unmarshal(call(t, h, "mail.relays", struct{}{}).Result, &st)
+	if !strings.Contains(st["ezbad"].Error, "sign-in") || st["ezok"].Error != "" {
+		t.Fatalf("relay state %+v", st)
+	}
+}

@@ -130,6 +130,12 @@ type RelayConfig struct {
 	Mode string `json:"mode,omitempty"`
 	// Helo is the server name the mailer introduces itself with.
 	Helo string `json:"helo,omitempty"`
+	// ID names an EmailZit link (its relay login); "" for the others.
+	ID string `json:"id,omitempty"`
+	// Relays are the relay logins of the linked EmailZit servers by link
+	// id: an account whose mail is on one of them sends through it (its
+	// MailAccount.Relay), the others take the route above.
+	Relays map[string]RelayConfig `json:"relays,omitempty"`
 }
 
 const relayFile = "/etc/hostzit/mail-relay.json"
@@ -152,6 +158,14 @@ func (h *Helper) mailRelay(_ context.Context, a relayArgs) (any, error) {
 	}
 	if r.Helo != "" && !hosting.ValidDomain(r.Helo) {
 		return nil, userErr("invalid server name")
+	}
+	if len(r.Relays) > 100 {
+		return nil, userErr("too many relays")
+	}
+	for id, x := range r.Relays {
+		if !selectorRE(id) || x.Host == "" || strings.ContainsAny(x.Host, " /\\@\r\n") || x.Port < 1 || x.Port > 65535 || len(x.Relays) > 0 {
+			return nil, userErr("invalid relay of a link")
+		}
 	}
 	b, _ := json.Marshal(r) // #nosec G117 -- the relay password goes into a root-only file (0600) of the helper
 	return nil, h.Sys.WriteFile(relayFile, b, 0o600, 0, 0)
@@ -310,6 +324,26 @@ func (m *mailer) deliver(ctx context.Context, relay RelayConfig, account, dir, i
 		_ = m.h.Sys.Remove(envFile)
 		return
 	}
+	// the route: the relay of the account's EmailZit, else the server's own
+	ma, known := m.account(account)
+	if known && ma.Relay != "" {
+		r, ok := relay.Relays[ma.Relay]
+		if !ok {
+			// the relay of the account's EmailZit is not there (its login
+			// could not be read): wait rather than send another way
+			if time.Since(q.At) < 48*time.Hour {
+				q.NextTry = time.Now().Add(5 * time.Minute)
+				q.LastErr = "waiting for the relay of the account's EmailZit"
+				nb, _ := json.Marshal(q)
+				_ = m.h.Sys.WriteFile(envFile, nb, 0o600, 0, 0)
+				m.h.logf("mail from %s waits: no relay for EmailZit link %s", account, ma.Relay)
+				return
+			}
+		} else {
+			r.Mode, r.ID, r.Helo = "emailzit", ma.Relay, relay.Helo
+			relay = r
+		}
+	}
 	mode := relay.mode()
 	entry := MailLogEntry{At: time.Now().UTC(), ID: id, To: q.To, Subject: q.Subject, Via: mode}
 	done := func(e MailLogEntry) {
@@ -326,12 +360,12 @@ func (m *mailer) deliver(ctx context.Context, relay RelayConfig, account, dir, i
 	switch mode {
 	case "relay":
 		err = sendVia(ctx, relay, account, "", q, stripBcc(msg))
+		m.h.relayState("smarthost", err)
 		res = wholeResult(q.To, err)
 		if err == nil {
 			res.Host = relay.Host
 		}
 	default:
-		ma, known := m.account(account)
 		if !known {
 			// found on h1: right after the update the queued messages were
 			// refused because the panel had not sent the domains yet
@@ -356,6 +390,7 @@ func (m *mailer) deliver(ctx context.Context, relay RelayConfig, account, dir, i
 		}
 		if mode == "emailzit" {
 			err = sendVia(ctx, relay, account, p.From, q, p.Msg)
+			m.h.relayState(relay.ID, err)
 			res = wholeResult(q.To, err)
 			if err == nil {
 				res.Host = relay.Host
@@ -450,6 +485,18 @@ func stripBcc(msg []byte) []byte {
 	return out.Bytes()
 }
 
+// setupError: the relay could not be used at all (connection, TLS,
+// sign-in). The message waits and is tried again: a refused sign-in is a
+// broken link (EmailZit replaced or removed the relay login), not the
+// recipient's answer. It has no Unwrap on purpose, so a 535 is not taken
+// for a permanent refusal of the message.
+type setupError struct {
+	stage string
+	err   error
+}
+
+func (e *setupError) Error() string { return "relay " + e.stage + ": " + e.err.Error() }
+
 // sendVia hands a message to a relay with a login: the administrator's
 // SMTP server (from empty: the envelope sender is <account>@<relay
 // domain>, as before) or EmailZit's relay (from = the prepared sender on
@@ -465,26 +512,26 @@ func sendVia(ctx context.Context, relay RelayConfig, account, from string, q que
 		conn, err = d.DialContext(ctx, "tcp", addr)
 	}
 	if err != nil {
-		return err
+		return &setupError{"connection", err}
 	}
 	_ = conn.SetDeadline(time.Now().Add(2 * time.Minute))
 	c, err := smtp.NewClient(conn, relay.Host)
 	if err != nil {
 		_ = conn.Close()
-		return err
+		return &setupError{"greeting", err}
 	}
 	defer c.Close()
 	if err := c.Hello(helloName(relay.Helo)); err != nil {
-		return err
+		return &setupError{"greeting", err}
 	}
 	if relay.Security == "starttls" {
 		if err := c.StartTLS(&tls.Config{ServerName: relay.Host, MinVersion: tls.VersionTLS12}); err != nil {
-			return err
+			return &setupError{"STARTTLS", err}
 		}
 	}
 	if relay.User != "" {
 		if err := c.Auth(smtp.PlainAuth("", relay.User, relay.Password, relay.Host)); err != nil {
-			return err
+			return &setupError{"sign-in", err}
 		}
 	}
 	head := ""

@@ -259,7 +259,11 @@ with EmailZit (section 11).
   secret + certificate pin); the servers exchange least-privilege tokens
   (`ezt_` customers:read/write + sso:create, `hzt_` dns:mail), each limited to
   the other server's IPv4 and IPv6 addresses; Unlink on either side revokes
-  both. Customers open EmailZit from HostZit with a one-time link
+  both. Any number of HostZit and EmailZit servers can be linked in any
+  combination: each link has its own tokens and relay login, a customer's
+  mail is on at most one EmailZit (HostZit asks which), and a link can be
+  limited to the customers of one client (it then sees and writes nothing
+  else). Customers open EmailZit from HostZit with a one-time link
   (`POST /api/v1/customers/{uuid}/sso`); each product signs in on its own.
 - Same look, a product switcher in the header, same REST conventions
   (`/api/v1`, Bearer tokens `hzt_`/`ezt_`, JSON errors, cursor pagination, idempotency keys,

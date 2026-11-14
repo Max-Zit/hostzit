@@ -17,6 +17,7 @@ func (h *Helper) registerMore() {
 	h.ops["mail.log"] = op{handle(h.mailLog), false}
 	h.ops["mail.check"] = op{handle(h.mailCheck), false}
 	h.ops["mail.failures"] = op{handle(h.mailFailures), false}
+	h.ops["mail.relays"] = op{handle(h.mailRelays), false}
 	h.ops["firewall"] = op{handle(h.firewall), true}
 	h.ops["malware.scan"] = op{handle(h.malwareScan), false}
 	for _, f := range moreOps {

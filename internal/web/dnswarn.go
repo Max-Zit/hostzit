@@ -51,7 +51,7 @@ type dnsWarning struct {
 }
 
 // dnsWarnings are the notes for a website's names.
-func (s *Server) dnsWarnings(ctx context.Context, names []string, mailDomain string) []dnsWarning {
+func (s *Server) dnsWarnings(ctx context.Context, names []string, mailDomain, mailHost string) []dnsWarning {
 	hs := s.hostingSettings(ctx)
 	ctx, cancel := context.WithTimeout(ctx, 6*time.Second)
 	defer cancel()
@@ -70,18 +70,17 @@ func (s *Server) dnsWarnings(ctx context.Context, names []string, mailDomain str
 			out = append(out, dnsWarning{Kind: "proxy", Name: n})
 		}
 	}
-	l := s.emailzitLink(ctx)
-	if mailDomain != "" && l.URL != "" && l.MailHost != "" {
+	if mailDomain != "" && mailHost != "" {
 		if mx, err := mxLookup(ctx, mailDomain); err == nil && len(mx) > 0 {
 			ours := false
 			var hosts []string
 			for _, m := range mx {
 				h := strings.ToLower(strings.TrimSuffix(m.Host, "."))
 				hosts = append(hosts, h)
-				ours = ours || h == l.MailHost
+				ours = ours || h == mailHost
 			}
 			if !ours {
-				out = append(out, dnsWarning{Kind: "mx", Name: mailDomain, MX: strings.Join(hosts, ", "), MailHost: l.MailHost})
+				out = append(out, dnsWarning{Kind: "mx", Name: mailDomain, MX: strings.Join(hosts, ", "), MailHost: mailHost})
 			}
 		}
 	}

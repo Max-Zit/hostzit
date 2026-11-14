@@ -74,9 +74,15 @@ type Server struct {
 	// selfPanelCert is the self-signed certificate of the panels (its pin
 	// goes to EmailZit at the pairing when there is no CA certificate).
 	selfPanelCert *tls.Certificate
-	jobs          sync.WaitGroup
-	applyMu       sync.Map // customer id → *sync.Mutex (one change at a time per account)
-	csp           cspCache
+	// ezMu guards the read-modify-write of the EmailZit links and of the
+	// customer → link map (requests, pairing and background checks).
+	ezMu sync.Mutex
+	// resolving: a run that finds every customer's EmailZit is going on
+	resolving atomic.Bool
+	ezAsked   sync.Map // customer UUID → when applyCustomer last asked the EmailZit servers
+	jobs      sync.WaitGroup
+	applyMu   sync.Map // customer id → *sync.Mutex (one change at a time per account)
+	csp       cspCache
 }
 
 // New creates the server.

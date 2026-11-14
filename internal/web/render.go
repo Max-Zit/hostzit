@@ -300,9 +300,13 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, name
 	p.Host = r.Host
 	p.Panel = panelOf(r)
 	if p.User != nil {
-		if l := s.emailzitLink(r.Context()); l.URL != "" {
-			// customers open EmailZit by a one-time link, admins sign in there
-			p.MailURL = l.URL + "/"
+		if links := s.emailzitLinks(r.Context()); len(links) > 0 {
+			// customers open their EmailZit by a one-time link, admins sign
+			// in there (with several links: the list of them)
+			p.MailURL = links[0].URL + "/"
+			if len(links) > 1 {
+				p.MailURL = "/settings/emailzit"
+			}
 			if panelOf(r) != PanelAdmin {
 				p.MailURL = "/emailzit"
 			}

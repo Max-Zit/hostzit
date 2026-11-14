@@ -247,7 +247,11 @@ func (s *Server) showSite(w http.ResponseWriter, r *http.Request, status int, c 
 		if d.Zone != nil {
 			md = d.Zone.Name
 		}
-		d.DNSWarn = s.dnsWarnings(r.Context(), names, md)
+		mh := ""
+		if l, ok := s.linkFor(r.Context(), c); ok {
+			mh = l.MailHost
+		}
+		d.DNSWarn = s.dnsWarnings(r.Context(), names, md, mh)
 	}
 	if x.WAF {
 		names := append([]string{x.Domain}, x.Aliases...)

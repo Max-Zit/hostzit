@@ -193,7 +193,15 @@ func (s *Server) applyCustomer(ctx context.Context, by string, c *store.Customer
 	_ = s.store.MarkCustomerApplied(ctx, c.ID, err)
 	if err == nil {
 		s.syncMailAccount(ctx, by, c)
-		go s.syncWebUIDs(context.WithoutCancel(ctx), c)
+		s.background(ctx, func(bg context.Context) {
+			s.syncWebUIDs(bg, c)
+			// a new customer (or one made in EmailZit since): find its EmailZit
+			if _, ok := s.linkFor(bg, c); !ok && len(s.emailzitLinks(bg)) > 0 && s.askedRecently(c.UUID) {
+				if _, ok := s.resolveCustomer(bg, c); ok {
+					s.customerMailChanged(bg, c)
+				}
+			}
+		})
 	}
 	return err
 }
@@ -516,10 +524,15 @@ func (s *Server) Run(ctx context.Context) {
 			s.checkNotices(ctx)
 			go s.syncAllMail(ctx)
 			go s.mailFailureNotices(ctx)
+			go s.checkEmailZitLinks(ctx) // a broken link shows within ten minutes
 		case <-hourly.C:
 			go s.remoteBackupRound(ctx, false)
 			go func() { _, _ = s.refreshMailCheck(ctx) }()
-			go s.syncLocalEmailZit(ctx)
+			go func() {
+				// which EmailZit each customer is on
+				s.resolveAllCustomers(ctx)
+				s.syncLocalEmailZit(ctx)
+			}()
 			go s.checkServer(ctx)
 			_ = s.store.PurgeSessions(ctx)
 			_ = s.store.PruneUsage(ctx)

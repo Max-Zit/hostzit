@@ -597,7 +597,8 @@ func (s *Server) apiDomain(w http.ResponseWriter, r *http.Request) {
 			out["customer_id"] = c.UUID
 		}
 	}
-	if _, ok := out["customer_id"]; !ok {
+	// an EmailZit link learns only about the customers of its scope
+	if id, ok := out["customer_id"].(string); !ok || !s.apiScopeAllows(r, id, false) {
 		apiError(w, http.StatusNotFound, "not_found", "the domain is not on this server")
 		return
 	}
@@ -617,6 +618,11 @@ func (s *Server) ownedZone(w http.ResponseWriter, r *http.Request) (*store.Zone,
 	}
 	z, err := s.store.ZoneByName(r.Context(), name)
 	if err != nil {
+		apiError(w, http.StatusNotFound, "not_found", "the zone is not hosted here")
+		return nil, ""
+	}
+	// an EmailZit link reads and writes only zones of its scope
+	if c, err := s.store.CustomerByID(r.Context(), z.CustomerID); err != nil || !s.apiScopeAllows(r, c.UUID, r.Method != http.MethodGet) {
 		apiError(w, http.StatusNotFound, "not_found", "the zone is not hosted here")
 		return nil, ""
 	}

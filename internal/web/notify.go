@@ -222,7 +222,7 @@ type mailData struct {
 func (s *Server) handleMailSettings(w http.ResponseWriter, r *http.Request) {
 	m := s.mailSettings(r.Context())
 	s.render(w, r, http.StatusOK, "mail", &Page{Title: "Notifications", Nav: "settings", Data: &mailData{M: m, Admins: strings.Join(m.Admins, "\n"), HasPW: m.Password != "", Kinds: noticeChoices(m), Channels: s.channelSettings(r.Context()),
-		WebMode: s.mailMode(r.Context()), Check: s.mailCheck(r.Context()), Linked: s.emailzitLink(r.Context()).URL != ""}})
+		WebMode: s.mailMode(r.Context()), Check: s.mailCheck(r.Context()), Linked: len(s.emailzitLinks(r.Context())) > 0}})
 }
 
 func (s *Server) handleMailSettingsSave(w http.ResponseWriter, r *http.Request) {
@@ -281,6 +281,8 @@ func noticeKind(key string) string {
 	switch k {
 	case "certexp":
 		return "cert"
+	case "mail-link":
+		return "mail"
 	case "remote-backup", "panel-backup":
 		return "backup"
 	case "wp":

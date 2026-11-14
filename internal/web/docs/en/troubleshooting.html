@@ -11,6 +11,8 @@
 
 <h2 id="mail">Mail from a website does not arrive</h2>
 <p>Look under <b>Security</b> (customer): the queue shows waiting messages with the last error, the list below shows what was sent, refused by the receiver or not sent. A message whose From address is not on a domain of the account is not sent. When HostZit sends itself, check Settings → Notifications → <i>Mail from websites</i> (outgoing port 25, reverse DNS) and that the domain has the DKIM record shown on the Security page; with EmailZit linked, its delivery log has the rest.</p>
+<h2 id="emailzit">A link to EmailZit shows "not working"</h2>
+<p>EmailZit no longer accepts HostZit's token or relay login — usually the link was ended or replaced on EmailZit's side. Website mail of its customers waits in the queue (up to 48 hours). Make a new pairing code in EmailZit and link again: the link to the same EmailZit is replaced and the mail goes out.</p>
 
 <h2 id="locked">I locked myself out</h2>
 <p>On the server: <code>hostzit-server --unblock-ip all</code> and <code>hostzit-server --reset-allowlist</code>, then restart the service. A lost authenticator: another administrator resets the second factor; with only one administrator, use a recovery code.</p>

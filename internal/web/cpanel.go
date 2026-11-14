@@ -516,14 +516,21 @@ func (s *Server) importCPanel(ctx context.Context, by, file, username string, pa
 // with the same id and user name, then EmailZit imports the mailboxes, mail
 // and forwarders from the archive. The answer is a note for the report.
 func (s *Server) importMailToEmailZit(ctx context.Context, by, file string, c *store.Customer) string {
-	l := s.emailzitLink(ctx)
-	if l.URL == "" {
+	links := s.emailzitLinks(ctx)
+	if len(links) == 0 {
 		return ""
 	}
-	if l.ImportPackage == "" {
+	l, ok := s.emailzitLinkByID(ctx, s.emailzitOptions(ctx).ImportLink)
+	if !ok && len(links) == 1 && links[0].Scope != "assigned" {
+		l, ok = links[0], true
+	}
+	if !ok || l.ImportPackage == "" {
 		return "Mail was not moved: choose an EmailZit package for cPanel imports under Settings → EmailZit."
 	}
-	err := s.emailzitCall(ctx, http.MethodPost, "/api/v1/customers", map[string]string{"id": c.UUID, "username": c.Username, "name": c.DisplayName, "email": c.Email, "package": l.ImportPackage})
+	if !inScope(l, c.UUID, links) {
+		return "Mail was not moved: the EmailZit for cPanel imports does not serve this customer (Settings → EmailZit)."
+	}
+	err := s.emailzitCall(ctx, l, http.MethodPost, "/api/v1/customers", map[string]string{"id": c.UUID, "username": c.Username, "name": c.DisplayName, "email": c.Email, "package": l.ImportPackage})
 	if err != nil && !strings.Contains(err.Error(), ": 409 ") {
 		return "Mail was not moved: " + err.Error()
 	}
@@ -537,7 +544,10 @@ func (s *Server) importMailToEmailZit(ctx context.Context, by, file string, c *s
 	if err := s.call(ctx, by, "import.mail", map[string]any{"file": file, "url": l.URL, "token": tok, "insecure": l.Insecure, "pin": l.Pin, "customer": c.UUID}, &res); err != nil {
 		return "Mail was not moved: " + storeErr(err)
 	}
+	// the customer's mail is on that EmailZit now
+	s.setCustomerLink(ctx, c.UUID, l.ID)
 	s.syncWebUIDs(ctx, c)
+	s.customerMailChanged(ctx, c)
 	return "The mail (mailboxes, messages, forwarders) is being imported by EmailZit (job " + res.JobID + "); mailboxes get new passwords there."
 }
 

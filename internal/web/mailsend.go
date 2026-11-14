@@ -38,39 +38,75 @@ func init() {
 	})
 }
 
-// mailMode is how website mail leaves this server: local, emailzit, relay
-// or direct.
-func (s *Server) mailMode(ctx context.Context) string {
-	if localEmailZit() {
-		return "local"
-	}
-	if l := s.emailzitLink(ctx); l.URL != "" && l.Relay != nil {
-		return "emailzit"
-	}
+// defaultRoute is how the website mail of customers without mail on an
+// EmailZit leaves: "relay" (the administrator's SMTP server), "emailzit"
+// (the relay of the EmailZit chosen for them) or "direct".
+func (s *Server) defaultRoute(ctx context.Context) (string, EmailZitLink) {
 	if m := s.mailSettings(ctx); m.WebRelay && m.Host != "" {
-		return "relay"
+		return "relay", EmailZitLink{}
 	}
-	return "direct"
+	if o := s.emailzitOptions(ctx); o.WebDefault != "" {
+		if l, ok := s.emailzitLinkByID(ctx, o.WebDefault); ok && l.Relay != nil {
+			return "emailzit", l
+		}
+	}
+	return "direct", EmailZitLink{}
 }
 
-// applyRelay tells the helper where mail from websites goes.
+// mailRoute is how a customer's website mail leaves: "local" (EmailZit on
+// this server, emailzit-sendmail), "emailzit" (the relay of the customer's
+// EmailZit, or of the one chosen for customers without mail there), "relay"
+// or "direct". own: the link is the customer's own EmailZit.
+func (s *Server) mailRoute(ctx context.Context, c *store.Customer) (route string, l EmailZitLink, own bool) {
+	if cl, ok := s.linkFor(ctx, c); ok {
+		if ll, local := s.localLink(ctx); local && ll.ID == cl.ID {
+			return "local", cl, true
+		}
+		if cl.Relay != nil {
+			return "emailzit", cl, true
+		}
+	}
+	r, dl := s.defaultRoute(ctx)
+	return r, dl, false
+}
+
+// mailMode is the route of customers without mail on an EmailZit (pages
+// that describe the server as a whole).
+func (s *Server) mailMode(ctx context.Context) string {
+	r, _ := s.defaultRoute(ctx)
+	return r
+}
+
+// applyRelay tells the helper where mail from websites goes: the server's
+// own route and the relay login of every linked EmailZit (by link id).
 func (s *Server) applyRelay(ctx context.Context, by string) error {
 	hs := s.hostingSettings(ctx)
-	relay := map[string]any{"mode": "direct", "helo": hs.ServerName}
-	switch s.mailMode(ctx) {
-	case "emailzit":
-		l := s.emailzitLink(ctx)
+	relays := map[string]any{}
+	logins := map[string]map[string]any{}
+	for _, l := range s.emailzitLinks(ctx) {
+		if l.Relay == nil {
+			continue
+		}
 		pw, err := s.store.OpenSecret("emailzit.relay", l.Relay.Password)
 		if err != nil {
-			return err
+			continue
 		}
 		// EmailZit takes the login only after STARTTLS (and so do we)
-		relay = map[string]any{"mode": "emailzit", "host": l.Relay.Host, "port": l.Relay.Port, "security": "starttls", "user": l.Relay.Username, "password": pw, "helo": hs.ServerName}
+		logins[l.ID] = map[string]any{"host": l.Relay.Host, "port": l.Relay.Port, "security": "starttls", "user": l.Relay.Username, "password": pw}
+		relays[l.ID] = logins[l.ID]
+	}
+	relay := map[string]any{"mode": "direct", "helo": hs.ServerName}
+	switch r, dl := s.defaultRoute(ctx); r {
+	case "emailzit":
+		if x, ok := logins[dl.ID]; ok {
+			relay = map[string]any{"mode": "emailzit", "id": dl.ID, "host": x["host"], "port": x["port"], "security": "starttls", "user": x["user"], "password": x["password"], "helo": hs.ServerName}
+		}
 	case "relay":
 		m := s.mailSettings(ctx)
 		pw, _ := s.store.OpenSecret("mail.password", m.Password)
 		relay = map[string]any{"mode": "relay", "host": m.Host, "port": m.Port, "security": m.Security, "user": m.User, "password": pw, "domain": hs.ServerName, "helo": hs.ServerName}
 	}
+	relay["relays"] = relays
 	return s.call(ctx, by, "mail.relay", map[string]any{"relay": relay}, nil)
 }
 
@@ -153,7 +189,7 @@ func (s *Server) syncMailAccount(ctx context.Context, by string, c *store.Custom
 		keys[d] = k
 	}
 	_ = s.store.DeleteDKIMKeys(ctx, c.ID, domains)
-	relay := s.relaySPF(ctx)
+	relay := s.relaySPF(ctx, c)
 	// the records of the zones here
 	for _, z := range zones {
 		s.syncRelaySPF(ctx, by, z, relay)
@@ -173,6 +209,9 @@ func (s *Server) syncMailAccount(ctx context.Context, by string, c *store.Custom
 		}
 	}
 	ma := helper.MailAccount{Domains: domains}
+	if route, l, own := s.mailRoute(ctx, c); route == "emailzit" && own {
+		ma.Relay = l.ID // the customer's own EmailZit; the others take the server's route
+	}
 	if len(domains) > 0 {
 		ma.Primary = domains[0]
 	}
@@ -301,12 +340,13 @@ type websiteMail struct {
 }
 
 func (s *Server) websiteMail(ctx context.Context, by string, c *store.Customer) *websiteMail {
-	d := &websiteMail{Mode: s.mailMode(ctx)}
+	route, _, _ := s.mailRoute(ctx, c)
+	d := &websiteMail{Mode: route}
 	if d.Mode == "direct" || d.Mode == "emailzit" {
 		keys, _ := s.store.DKIMKeys(ctx, c.ID)
 		zones, _ := s.store.Zones(ctx, c.ID)
 		hs := s.hostingSettings(ctx)
-		mech := s.relaySPF(ctx)
+		mech := s.relaySPF(ctx, c)
 		if mech == "" && hs.ServerName != "" {
 			mech = "a:" + hs.ServerName
 		}
@@ -381,7 +421,7 @@ func (s *Server) mailFailureNotices(ctx context.Context) {
 // sendmailFor is EmailZit's sendmail for a customer a local EmailZit knows,
 // else "" (HostZit's own queue).
 func (s *Server) sendmailFor(ctx context.Context, c *store.Customer) string {
-	if localEmailZit() && s.emailzitKnows(ctx, c.UUID) {
+	if route, _, _ := s.mailRoute(ctx, c); route == "local" {
 		return "/usr/sbin/emailzit-sendmail"
 	}
 	return ""
@@ -390,7 +430,7 @@ func (s *Server) sendmailFor(ctx context.Context, c *store.Customer) string {
 // syncLocalEmailZit asks a local EmailZit about every customer (it may have
 // got customers since), so their websites use the right sendmail.
 func (s *Server) syncLocalEmailZit(ctx context.Context) {
-	if !localEmailZit() || s.emailzitLink(ctx).URL == "" {
+	if _, ok := s.localLink(ctx); !ok {
 		return
 	}
 	list, err := s.store.Customers(ctx, store.CustomerFilter{})
@@ -407,11 +447,11 @@ func (s *Server) syncLocalEmailZit(ctx context.Context) {
 
 // relaySPF is the SPF mechanism of EmailZit's relay while website mail
 // goes through it ("" otherwise).
-func (s *Server) relaySPF(ctx context.Context) string {
-	if s.mailMode(ctx) != "emailzit" {
-		return ""
+func (s *Server) relaySPF(ctx context.Context, c *store.Customer) string {
+	if route, l, _ := s.mailRoute(ctx, c); route == "emailzit" && l.Relay != nil {
+		return "a:" + l.Relay.Host
 	}
-	return "a:" + s.emailzitLink(ctx).Relay.Host
+	return ""
 }
 
 // spfWith puts a mechanism into an SPF record, before its "all".

@@ -3,8 +3,10 @@ package web
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,24 +26,32 @@ import (
 	"github.com/max-zit/hostzit/internal/tlsutil"
 )
 
-// The link to EmailZit (zit-hosting/INTEGRATION.md, "Integration plan").
-// The administrator makes a pairing code in EmailZit and pastes it here;
-// the two servers then make each other's tokens with the least rights and
-// the addresses of the other server, so nobody copies a token by hand:
+// Links to EmailZit servers (zit-hosting/INTEGRATION.md: "Integration
+// plan" and "Many HostZit and many EmailZit servers"). A HostZit server can
+// be linked with any number of EmailZit servers and each of them with any
+// number of HostZit servers. The administrator makes a pairing code in
+// EmailZit and pastes it here; the two servers then make each other's
+// tokens with the least rights and the addresses of the other server:
 //
 //   - step 1: POST {emailzit}/api/v1/link/hostzit with the code's secret →
 //     an ezt_ token (customers:read/write, sso:create) and EmailZit's relay
 //     login for the websites' mail;
 //   - step 2: HostZit makes an hzt_ token (dns:mail, only from EmailZit's
 //     addresses) and hands it over with PUT …/link/hostzit/dns-token;
-//   - Unlink on either side revokes both tokens and the relay login.
+//   - Unlink on either side ends that one link.
 //
-// With the link, customers open EmailZit with one click (sso:create),
-// EmailZit writes the mail records into the zones here (P6), and website
-// mail goes through EmailZit: on the same server by emailzit-sendmail in
-// the cages (plus web-uids), on another server through the relay login.
+// A customer (same UUID in both products) has its mail on at most one
+// EmailZit; HostZit finds it by asking (emailzitcust.go). A link can serve
+// all customers of this server, or only customers assigned to it — for an
+// EmailZit that belongs to one client, which must not see or touch the
+// other customers.
 
-const settingEmailZit = "emailzit"
+const (
+	settingEmailZitLinks     = "emailzit_links"
+	settingEmailZitOld       = "emailzit" // the single link of 0.9.x
+	settingEmailZitOptions   = "emailzit_options"
+	settingEmailZitCustomers = "emailzit_customers" // customer UUID → link id
+)
 
 // slugRE is a package slug (the same rule in both products).
 var slugRE = regexp.MustCompile(`^[a-z0-9-]{1,32}$`)
@@ -49,8 +59,9 @@ var slugRE = regexp.MustCompile(`^[a-z0-9-]{1,32}$`)
 // pairingPrefix starts every pairing code of EmailZit.
 const pairingPrefix = "ezlink_"
 
-// EmailZitLink is where EmailZit's API is and what the link holds.
+// EmailZitLink is one linked EmailZit server.
 type EmailZitLink struct {
+	ID       string `json:"id"`
 	URL      string `json:"url"`   // e.g. https://mail.example.com:8444
 	Token    string `json:"token"` // sealed ezt_… token
 	Insecure bool   `json:"insecure,omitempty"`
@@ -78,6 +89,25 @@ type EmailZitLink struct {
 	Relay      *EmailZitRelay `json:"relay,omitempty"`
 	LinkedAt   time.Time      `json:"linked_at,omitempty"`
 	LinkedBy   string         `json:"linked_by,omitempty"`
+
+	// Scope: "" serves all customers of this server (except those assigned
+	// to another link); "assigned" serves only Customers (UUIDs).
+	Scope     string   `json:"scope,omitempty"`
+	Customers []string `json:"customers,omitempty"`
+
+	// State of the last check: "" works, "broken" (EmailZit refuses the
+	// token or the relay login: pair again), "unreachable".
+	State     string    `json:"state,omitempty"`
+	StateMsg  string    `json:"state_msg,omitempty"`
+	CheckedAt time.Time `json:"checked_at,omitempty"`
+}
+
+// Name is how pages call the link.
+func (l EmailZitLink) Name() string {
+	if l.MailHost != "" {
+		return l.MailHost
+	}
+	return urlHost(l.URL)
 }
 
 // EmailZitRelay is EmailZit's relay login for the websites' mail.
@@ -89,12 +119,23 @@ type EmailZitRelay struct {
 	StartTLS bool   `json:"starttls"`
 }
 
+// EmailZitOptions are the choices that concern all links.
+type EmailZitOptions struct {
+	// WebDefault: the link whose relay the websites of customers without
+	// mail in EmailZit use ("" = HostZit sends their mail itself).
+	WebDefault string `json:"web_default,omitempty"`
+	// ImportLink: the EmailZit that takes the mail of cPanel imports.
+	ImportLink string `json:"import_link,omitempty"`
+}
+
 func init() {
 	adminExtra = append(adminExtra, func(s *Server, mux *http.ServeMux, app, write, admin func(string, http.HandlerFunc)) {
 		admin("GET /settings/emailzit", s.handleEmailZit)
-		admin("POST /settings/emailzit", s.handleEmailZitSave)
+		admin("POST /settings/emailzit", s.handleEmailZitOptions)
 		admin("POST /settings/emailzit/pair", s.handleEmailZitPair)
-		admin("POST /settings/emailzit/unlink", s.handleEmailZitUnlink)
+		admin("POST /settings/emailzit/{id}/unlink", s.handleEmailZitUnlink)
+		admin("POST /settings/emailzit/{id}/scope", s.handleEmailZitScope)
+		admin("POST /settings/emailzit/check", s.handleEmailZitCheck)
 	})
 	customerExtra = append(customerExtra, func(s *Server, mux *http.ServeMux, c func(string, http.HandlerFunc)) {
 		c("GET /emailzit", s.handleEmailZitOpen)
@@ -110,11 +151,96 @@ var localEmailZit = func() bool {
 	return err == nil
 }
 
-func (s *Server) emailzitLink(ctx context.Context) EmailZitLink {
-	var l EmailZitLink
-	_ = s.store.GetSetting(ctx, settingEmailZit, &l)
-	return l
+// ---- storage
+
+// emailzitLinks lists the links (the single link of 0.9.x becomes the first).
+func (s *Server) emailzitLinks(ctx context.Context) []EmailZitLink {
+	var list []EmailZitLink
+	_ = s.store.GetSetting(ctx, settingEmailZitLinks, &list)
+	if len(list) == 0 {
+		var old EmailZitLink
+		if err := s.store.GetSetting(ctx, settingEmailZitOld, &old); err == nil && old.URL != "" {
+			old.ID = linkIDFor(old.URL)
+			list = []EmailZitLink{old}
+			if s.store.SetSetting(ctx, settingEmailZitLinks, list) == nil {
+				_ = s.store.SetSetting(ctx, settingEmailZitOld, EmailZitLink{})
+				if old.ImportPackage != "" {
+					o := s.emailzitOptions(ctx)
+					o.ImportLink = old.ID
+					_ = s.store.SetSetting(ctx, settingEmailZitOptions, o)
+				}
+			}
+		}
+	}
+	return list
 }
+
+func (s *Server) saveEmailZitLinks(ctx context.Context, list []EmailZitLink) error {
+	if list == nil {
+		list = []EmailZitLink{}
+	}
+	return s.store.SetSetting(ctx, settingEmailZitLinks, list)
+}
+
+func (s *Server) emailzitLinkByID(ctx context.Context, id string) (EmailZitLink, bool) {
+	for _, l := range s.emailzitLinks(ctx) {
+		if l.ID == id && id != "" {
+			return l, true
+		}
+	}
+	return EmailZitLink{}, false
+}
+
+// updateEmailZitLink changes one link in place.
+func (s *Server) updateEmailZitLink(ctx context.Context, id string, fn func(*EmailZitLink)) error {
+	s.ezMu.Lock()
+	defer s.ezMu.Unlock()
+	list := s.emailzitLinks(ctx)
+	for i := range list {
+		if list[i].ID == id {
+			fn(&list[i])
+			return s.saveEmailZitLinks(ctx, list)
+		}
+	}
+	return store.ErrNotFound
+}
+
+func (s *Server) emailzitOptions(ctx context.Context) EmailZitOptions {
+	var o EmailZitOptions
+	_ = s.store.GetSetting(ctx, settingEmailZitOptions, &o)
+	return o
+}
+
+// linkIDFor is a fixed id for a link migrated from 0.9.x.
+func linkIDFor(u string) string {
+	sum := sha256.Sum256([]byte(normEmailZitURL(u)))
+	return "ez" + hex.EncodeToString(sum[:4])
+}
+
+// normEmailZitURL compares EmailZit addresses: lower-case host, no :443.
+func normEmailZitURL(raw string) string {
+	u, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return strings.ToLower(raw)
+	}
+	h, p := strings.ToLower(u.Hostname()), u.Port()
+	if p == "" || p == "443" {
+		return "https://" + h
+	}
+	return "https://" + net.JoinHostPort(h, p)
+}
+
+// linkTokenPrefix names the hzt_ tokens a pairing makes; a token with this
+// name that belongs to no link any more gets no access (fail closed).
+const linkTokenPrefix = "EmailZit link (" // #nosec G101 -- the name of a token, not a secret
+
+func newLinkID() string {
+	var b [4]byte
+	_, _ = rand.Read(b[:])
+	return "ez" + hex.EncodeToString(b[:])
+}
+
+// ---- calls to EmailZit
 
 // emailzitClient checks EmailZit's certificate the usual way and, when
 // that fails, against the pin of the pairing code.
@@ -152,9 +278,8 @@ func ezRequest(ctx context.Context, cl *http.Client, base, method, path, auth st
 	return resp.StatusCode, b, nil
 }
 
-// emailzitDo calls EmailZit with the link's token.
-func (s *Server) emailzitDo(ctx context.Context, method, path string, body any) (int, []byte, error) {
-	l := s.emailzitLink(ctx)
+// emailzitDo calls one EmailZit with that link's token.
+func (s *Server) emailzitDo(ctx context.Context, l EmailZitLink, method, path string, body any) (int, []byte, error) {
 	if l.URL == "" {
 		return 0, nil, errors.New("EmailZit is not linked")
 	}
@@ -165,11 +290,9 @@ func (s *Server) emailzitDo(ctx context.Context, method, path string, body any) 
 	return ezRequest(ctx, emailzitClient(urlHost(l.URL), l.Pin, l.Insecure, 20*time.Second), l.URL, method, path, "Bearer "+tok, body)
 }
 
-func (s *Server) emailzitCall(ctx context.Context, method, path string, body any) error {
-	if s.emailzitLink(ctx).URL == "" {
-		return nil
-	}
-	st, b, err := s.emailzitDo(ctx, method, path, body)
+// emailzitCall is emailzitDo with an answer of 300 or more as an error.
+func (s *Server) emailzitCall(ctx context.Context, l EmailZitLink, method, path string, body any) error {
+	st, b, err := s.emailzitDo(ctx, l, method, path, body)
 	if err != nil {
 		return err
 	}
@@ -214,67 +337,16 @@ func urlHost(raw string) string {
 	return u.Hostname()
 }
 
-// syncWebUIDs tells a local EmailZit the uid of a hosting account (empty
-// list when the account is gone or not active). Only EmailZit on the same
-// server counts mail by uid; a customer EmailZit does not know is not an
-// error (404 customer_not_found: no mail customer). The answer also decides
-// which sendmail the account's websites use: EmailZit's only for customers
-// EmailZit knows (it refuses senders that are not its mail domains), HostZit's
-// queue for the others.
-func (s *Server) syncWebUIDs(ctx context.Context, c *store.Customer) {
-	if s.emailzitLink(ctx).URL == "" || !localEmailZit() {
-		return
-	}
-	uids := []int{}
-	if c.Status == store.StatusActive {
-		if u, err := hosting.UID(c.Number); err == nil {
-			uids = append(uids, u)
-		}
-	}
-	err := s.emailzitCall(ctx, http.MethodPut, "/api/v1/customers/"+c.UUID+"/web-uids", map[string]any{"uids": uids})
-	var ez *ezError
-	known := err == nil
-	if err != nil && !(errors.As(err, &ez) && ez.Status == http.StatusNotFound) {
-		s.log.Warn("EmailZit web uids not sent", "customer", c.Username, "err", err)
-		return
-	}
-	if known != s.emailzitKnows(ctx, c.UUID) {
-		s.setEmailZitKnows(ctx, c.UUID, known)
-		if err := s.applyCustomer(ctx, "system", c); err != nil {
-			s.log.Warn("website mail of the account not switched", "customer", c.Username, "err", err)
-		}
-	}
-}
-
-const settingEmailZitKnown = "emailzit_known"
-
-// emailzitKnows: a local EmailZit has the customer (same UUID).
-func (s *Server) emailzitKnows(ctx context.Context, uuid string) bool {
-	var m map[string]bool
-	_ = s.store.GetSetting(ctx, settingEmailZitKnown, &m)
-	return m[uuid]
-}
-
-func (s *Server) setEmailZitKnows(ctx context.Context, uuid string, known bool) {
-	var m map[string]bool
-	_ = s.store.GetSetting(ctx, settingEmailZitKnown, &m)
-	if m == nil {
-		m = map[string]bool{}
-	}
-	if known {
-		m[uuid] = true
-	} else {
-		delete(m, uuid)
-	}
-	_ = s.store.SetSetting(ctx, settingEmailZitKnown, m)
-}
-
 // ---- the settings page
 
 type emailzitData struct {
-	L      EmailZitLink
-	Manual bool // linked by hand: address + token typed in
-	Local  bool // EmailZit runs on this server
+	Links []EmailZitLink
+	Opts  EmailZitOptions
+	// Usernames of the customers assigned to each link (by link id).
+	Assigned map[string]string
+	// Counts: customers whose mail is on each link (by link id).
+	Counts map[string]int
+	Local  string // the id of the link to EmailZit on this server
 	// Own are the addresses HostZit tells EmailZit at the pairing.
 	Own []string
 	// OIDCLeft: a sign-in client for EmailZit is still set (no longer used).
@@ -282,30 +354,145 @@ type emailzitData struct {
 }
 
 func (s *Server) handleEmailZit(w http.ResponseWriter, r *http.Request) {
-	l := s.emailzitLink(r.Context())
-	d := &emailzitData{L: l, Manual: l.URL != "" && !l.Paired, Local: localEmailZit(), Own: s.ownAddresses(r.Context()), OIDCLeft: s.oidcClient(r.Context()).ID != ""}
+	ctx := r.Context()
+	d := &emailzitData{Links: s.emailzitLinks(ctx), Opts: s.emailzitOptions(ctx), Assigned: map[string]string{}, Counts: map[string]int{},
+		Own: s.ownAddresses(ctx), OIDCLeft: s.oidcClient(ctx).ID != ""}
+	if l, ok := s.localLink(ctx); ok {
+		d.Local = l.ID
+	}
+	for _, id := range s.customerLinkMap(ctx) {
+		d.Counts[id]++
+	}
+	for _, l := range d.Links {
+		var names []string
+		for _, u := range l.Customers {
+			if c, err := s.store.CustomerByRef(ctx, u); err == nil {
+				names = append(names, c.Username)
+			}
+		}
+		d.Assigned[l.ID] = strings.Join(names, "\n")
+	}
 	s.render(w, r, http.StatusOK, "emailzit", &Page{Title: "EmailZit", Nav: "settings", Data: d})
 }
 
-// handleEmailZitSave keeps the package for cPanel imports.
-func (s *Server) handleEmailZitSave(w http.ResponseWriter, r *http.Request) {
-	l := s.emailzitLink(r.Context())
+// handleEmailZitOptions keeps the choices for all links: the relay of the
+// customers without mail in EmailZit, and the EmailZit (and package) of
+// cPanel imports.
+func (s *Server) handleEmailZitOptions(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	o := EmailZitOptions{WebDefault: r.FormValue("web_default"), ImportLink: r.FormValue("import_link")}
 	pkg := strings.TrimSpace(r.FormValue("import_package"))
 	if pkg != "" && !slugRE.MatchString(pkg) {
 		s.redirectErr(w, r, "/settings/emailzit", "A package slug has lower-case letters, digits and dashes.")
 		return
 	}
-	if l.URL == "" {
-		s.redirectErr(w, r, "/settings/emailzit", "Link EmailZit first.")
-		return
+	if o.WebDefault != "" {
+		if l, ok := s.emailzitLinkByID(ctx, o.WebDefault); !ok || l.Relay == nil || l.Scope == "assigned" {
+			s.redirectErr(w, r, "/settings/emailzit", "Choose an EmailZit that gave a relay login and serves all customers.")
+			return
+		}
 	}
-	l.ImportPackage = pkg
-	if err := s.store.SetSetting(r.Context(), settingEmailZit, l); err != nil {
+	if links := s.emailzitLinks(ctx); o.ImportLink == "" && len(links) == 1 && links[0].Scope != "assigned" {
+		o.ImportLink = links[0].ID // the only EmailZit
+	}
+	if o.ImportLink != "" {
+		if l, ok := s.emailzitLinkByID(ctx, o.ImportLink); !ok || l.Scope == "assigned" {
+			s.redirectErr(w, r, "/settings/emailzit", "cPanel imports need an EmailZit that serves all customers.")
+			return
+		}
+		_ = s.updateEmailZitLink(ctx, o.ImportLink, func(l *EmailZitLink) { l.ImportPackage = pkg })
+	}
+	s.ezMu.Lock()
+	err := s.store.SetSetting(ctx, settingEmailZitOptions, o)
+	s.ezMu.Unlock()
+	if err != nil {
 		s.serverError(w, r, err)
 		return
 	}
-	s.audit(r, "settings.emailzit", "settings", "EmailZit package for cPanel imports %q", pkg)
+	s.audit(r, "settings.emailzit", "settings", "website mail of customers without EmailZit through %q, cPanel imports to %q (package %q)", o.WebDefault, o.ImportLink, pkg)
+	if err := s.applyRelay(ctx, actor(r)); err != nil {
+		s.log.Warn("website mail after the EmailZit options", "err", err)
+	}
+	s.background(ctx, s.syncAllMail)
 	s.redirect(w, r, "/settings/emailzit", "Saved.")
+}
+
+// handleEmailZitScope sets which customers a link serves.
+func (s *Server) handleEmailZitScope(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	id := r.PathValue("id")
+	cur, ok := s.emailzitLinkByID(ctx, id)
+	if !ok {
+		s.notFound(w, r)
+		return
+	}
+	uuids, msg := s.scopeCustomers(r, r.FormValue("scope"), r.FormValue("customers"), id)
+	if msg != "" {
+		s.redirectErr(w, r, "/settings/emailzit", msg)
+		return
+	}
+	if uuids != nil && cur.DNSTokenID == 0 {
+		s.redirectErr(w, r, "/settings/emailzit", "This link was typed in by hand, so HostZit cannot limit its token. Link it again with a pairing code first.")
+		return
+	}
+	if uuids != nil {
+		if o := s.emailzitOptions(ctx); o.WebDefault == id || o.ImportLink == id {
+			s.redirectErr(w, r, "/settings/emailzit", "This EmailZit is chosen for the customers without EmailZit or for cPanel imports. Choose another one there first.")
+			return
+		}
+	}
+	err := s.updateEmailZitLink(ctx, id, func(l *EmailZitLink) {
+		l.Scope, l.Customers = "", nil
+		if uuids != nil {
+			l.Scope, l.Customers = "assigned", uuids
+		}
+	})
+	if err != nil {
+		s.notFound(w, r)
+		return
+	}
+	s.audit(r, "settings.emailzit", "settings", "EmailZit link %s serves %d assigned customers (0 = all)", id, len(uuids))
+	s.background(ctx, s.resolveAllCustomers)
+	s.redirect(w, r, "/settings/emailzit", "Saved.")
+}
+
+// scopeCustomers reads the scope fields of a form: nil for all customers,
+// else the UUIDs of the named customers. A customer already assigned to
+// another link (not self) is refused: two EmailZit servers would get it.
+func (s *Server) scopeCustomers(r *http.Request, scope, names, self string) ([]string, string) {
+	if scope != "assigned" {
+		return nil, ""
+	}
+	ctx := r.Context()
+	links := s.emailzitLinks(ctx)
+	uuids := []string{}
+	for _, name := range netacl.Split(names) {
+		c, err := s.store.CustomerByRef(ctx, name)
+		if err != nil {
+			return nil, translate(s.lang(r, userFrom(r)), "There is no customer %s.", name)
+		}
+		for _, l := range links {
+			if l.ID != self && l.Scope == "assigned" && slices.Contains(l.Customers, c.UUID) {
+				return nil, translate(s.lang(r, userFrom(r)), "%s is assigned to the EmailZit %s already.", c.Username, l.Name())
+			}
+		}
+		if !slices.Contains(uuids, c.UUID) {
+			uuids = append(uuids, c.UUID)
+		}
+	}
+	if len(uuids) == 0 {
+		return nil, "Name at least one customer, or let the link serve all customers."
+	}
+	return uuids, ""
+}
+
+// handleEmailZitCheck checks every link (in the background).
+func (s *Server) handleEmailZitCheck(w http.ResponseWriter, r *http.Request) {
+	s.background(r.Context(), func(ctx context.Context) {
+		s.checkEmailZitLinks(ctx)
+		s.resolveAllCustomers(ctx)
+	})
+	s.redirect(w, r, "/settings/emailzit", "The check runs in the background; reload the page in a minute.")
 }
 
 // ownAddresses are this server's addresses as EmailZit sees them.
@@ -319,6 +506,8 @@ func (s *Server) ownAddresses(ctx context.Context) []string {
 	}
 	return out
 }
+
+// ---- pairing
 
 // pairingCode is what EmailZit puts into the code.
 type pairingCode struct {
@@ -393,6 +582,8 @@ func (s *Server) ownPin(serverName string) string {
 	return tlsutil.SPKIPin(c.Certificate[0])
 }
 
+// handleEmailZitPair links one more EmailZit (or links the same EmailZit
+// again: the link to that address is replaced, the others stay).
 func (s *Server) handleEmailZitPair(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	fail := func(msg string) { s.redirectErr(w, r, "/settings/emailzit", msg) }
@@ -400,6 +591,33 @@ func (s *Server) handleEmailZitPair(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fail(err.Error())
 		return
+	}
+	// the scope is chosen before anything is sent: a new EmailZit is never
+	// told about customers it is not meant to serve
+	var scopeUUIDs []string
+	var existing *EmailZitLink
+	for _, x := range s.emailzitLinks(ctx) {
+		if normEmailZitURL(x.URL) == normEmailZitURL(code.URL) {
+			existing = &x
+		}
+	}
+	if existing != nil && strings.TrimSpace(r.FormValue("customers")) == "" {
+		scopeUUIDs = existing.Customers // linking the same EmailZit again keeps its scope
+		if existing.Scope != "assigned" {
+			scopeUUIDs = nil
+		}
+	} else {
+		var msg string
+		scopeUUIDs, msg = s.scopeCustomers(r, r.FormValue("scope"), r.FormValue("customers"), func() string {
+			if existing != nil {
+				return existing.ID
+			}
+			return ""
+		}())
+		if msg != "" {
+			fail(msg)
+			return
+		}
 	}
 	hs := s.hostingSettings(ctx)
 	n, _ := s.Network(ctx)
@@ -409,8 +627,7 @@ func (s *Server) handleEmailZitPair(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	own := s.ownAddresses(ctx)
-	extra := netacl.Split(r.FormValue("addresses"))
-	if len(extra) > 0 {
+	if extra := netacl.Split(r.FormValue("addresses")); len(extra) > 0 {
 		x, err := store.CleanTokenAddresses(extra)
 		if err != nil {
 			fail(storeErr(err))
@@ -461,12 +678,9 @@ func (s *Server) handleEmailZitPair(w http.ResponseWriter, r *http.Request) {
 		if tokenID != 0 {
 			_ = s.store.DeleteAPITokenByID(context.WithoutCancel(ctx), tokenID)
 		}
-		s.removeAdminAddresses(context.WithoutCancel(ctx), added)
+		s.removeAdminAddresses(context.WithoutCancel(ctx), added, "")
 	}
-	addrs, err := store.CleanTokenAddresses(ans.Addresses)
-	if err != nil || len(addrs) == 0 {
-		addrs = resolveHost(ctx, host)
-	}
+	addrs := emailzitAddresses(ctx, ans.Addresses, host, ans.MailHost)
 	if len(addrs) == 0 {
 		undo(0, nil)
 		fail("EmailZit did not say its addresses and its name does not resolve; HostZit cannot limit its token.")
@@ -480,67 +694,113 @@ func (s *Server) handleEmailZitPair(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	u := userFrom(r)
-	tokID, hzTok, err := s.store.CreateAPIToken(ctx, u.ID, "EmailZit link ("+truncateStr(host, 60)+")", 0, []string{"dns:mail"}, addrs)
+	tokID, hzTok, err := s.store.CreateAPIToken(ctx, u.ID, linkTokenPrefix+truncateStr(host, 60)+")", 0, []string{"dns:mail"}, addrs)
 	if err != nil {
 		undo(0, added)
 		fail(storeErr(err))
 		return
 	}
-	st, b, err = ezRequest(ctx, cl, code.URL, http.MethodPut, "/api/v1/link/hostzit/dns-token", "Bearer "+ezTok, map[string]string{"token": hzTok})
-	if err != nil || st >= 300 {
-		undo(tokID, added)
-		detail := ezErrorCode(b)
-		if err != nil {
-			detail = err.Error()
-		}
-		s.log.Warn("EmailZit pairing step 2", "status", st, "detail", detail)
-		fail(translate(s.lang(r, userFrom(r)), "EmailZit could not use HostZit's token (%s). Check that EmailZit reaches %s and make a new code.", detail, hostzitURL))
-		return
-	}
-	old := s.emailzitLink(ctx)
-	l := EmailZitLink{URL: code.URL, Token: s.store.SealSecret("emailzit.token", ezTok), Paired: true, MailHost: strings.ToLower(truncateStr(ans.MailHost, 253)),
-		Pin: code.Pin, Addresses: addrs, OwnAddresses: own, DNSTokenID: tokID, AdminAdded: added, ImportPackage: old.ImportPackage,
-		LinkedAt: s.now().UTC(), LinkedBy: u.Username}
+	l := EmailZitLink{ID: newLinkID(), URL: code.URL, Token: s.store.SealSecret("emailzit.token", ezTok), Paired: true, MailHost: strings.ToLower(truncateStr(ans.MailHost, 253)),
+		Pin: code.Pin, Addresses: addrs, OwnAddresses: own, DNSTokenID: tokID, AdminAdded: added, LinkedAt: s.now().UTC(), LinkedBy: u.Username}
 	if rl := ans.Relay; rl != nil && rl.Host != "" {
 		if (hosting.ValidDomain(rl.Host) || net.ParseIP(rl.Host) != nil) && rl.Port > 0 && rl.Port < 65536 && rl.Username != "" && len(rl.Username) <= 200 && len(rl.Password) <= 200 && !strings.ContainsAny(rl.Username+rl.Password, "\r\n") {
 			l.Relay = &EmailZitRelay{Host: strings.ToLower(rl.Host), Port: rl.Port, Username: rl.Username, Password: s.store.SealSecret("emailzit.relay", rl.Password), StartTLS: rl.StartTLS}
 		}
 	}
-	if err := s.store.SetSetting(ctx, settingEmailZit, l); err != nil {
+	if scopeUUIDs != nil {
+		l.Scope, l.Customers = "assigned", scopeUUIDs
+	}
+	// the same EmailZit again: that link is replaced (keeping its id and
+	// import package); the other links stay. The old token goes before the
+	// list is saved, so it never outlives its link.
+	s.ezMu.Lock()
+	list := s.emailzitLinks(ctx)
+	var old *EmailZitLink
+	for i := range list {
+		if normEmailZitURL(list[i].URL) == normEmailZitURL(l.URL) {
+			old = &list[i]
+			break
+		}
+	}
+	var oldAdded []string
+	if old != nil {
+		l.ID, l.ImportPackage = old.ID, old.ImportPackage
+		for _, a := range old.AdminAdded {
+			if !slices.Contains(l.AdminAdded, a) && slices.Contains(addrs, a) {
+				l.AdminAdded = append(l.AdminAdded, a)
+			}
+		}
+		if old.DNSTokenID != 0 && old.DNSTokenID != tokID {
+			_ = s.store.DeleteAPITokenByID(ctx, old.DNSTokenID)
+		}
+		oldAdded = old.AdminAdded
+		*old = l
+	} else {
+		list = append(list, l)
+	}
+	err = s.saveEmailZitLinks(ctx, list)
+	s.ezMu.Unlock()
+	if err != nil {
 		undo(tokID, added)
 		s.serverError(w, r, err)
 		return
 	}
-	// what the old link left behind
-	if old.DNSTokenID != 0 && old.DNSTokenID != tokID {
-		_ = s.store.DeleteAPITokenByID(ctx, old.DNSTokenID)
-	}
-	if old.URL != "" && old.URL != l.URL && old.Token != "" {
-		if t, err := s.store.OpenSecret("emailzit.token", old.Token); err == nil {
-			_, _, _ = ezRequest(ctx, emailzitClient(urlHost(old.URL), old.Pin, old.Insecure, 10*time.Second), old.URL, http.MethodDelete, "/api/v1/link/hostzit", "Bearer "+t, nil)
+	// step 2: EmailZit gets HostZit's token (the link exists already, so
+	// the DNS it publishes right away is accepted)
+	st, b, err = ezRequest(ctx, cl, code.URL, http.MethodPut, "/api/v1/link/hostzit/dns-token", "Bearer "+ezTok, map[string]string{"token": hzTok})
+	if err != nil || st >= 300 {
+		detail := ezErrorCode(b)
+		if err != nil {
+			detail = err.Error()
 		}
+		s.log.Warn("EmailZit pairing step 2", "status", st, "detail", detail)
+		_ = s.dropLink(context.WithoutCancel(ctx), actor(r), l)
+		undo(tokID, added)
+		fail(translate(s.lang(r, userFrom(r)), "EmailZit could not use HostZit's token (%s). Check that EmailZit reaches %s and make a new code.", detail, hostzitURL))
+		return
 	}
-	var stale []string
-	for _, a := range old.AdminAdded {
-		if !slices.Contains(added, a) && !slices.Contains(addrs, a) {
-			stale = append(stale, a)
-		}
-	}
-	s.removeAdminAddresses(ctx, stale)
-	s.audit(r, "emailzit.paired", "settings", "paired with EmailZit %s (its token only from %s; HostZit's dns:mail token #%d only from %s; relay %v)",
-		l.URL, strings.Join(own, " "), tokID, strings.Join(addrs, " "), l.Relay != nil)
+	s.removeAdminAddresses(ctx, oldAdded, "")
+	s.audit(r, "emailzit.paired", "settings", "paired with EmailZit %s (link %s; its token only from %s; HostZit's dns:mail token #%d only from %s; relay %v)",
+		l.URL, l.ID, strings.Join(own, " "), tokID, strings.Join(addrs, " "), l.Relay != nil)
 	if err := s.applyRelay(ctx, actor(r)); err != nil {
 		s.log.Warn("website mail after the pairing", "err", err)
 	}
-	// SPF records of the zones get EmailZit's relay
-	go s.syncAllMail(context.WithoutCancel(ctx))
-	if localEmailZit() {
-		list, _ := s.store.Customers(ctx, store.CustomerFilter{})
-		for _, c := range list {
-			s.syncWebUIDs(ctx, c)
+	// which customers are on this EmailZit, then their mail and SPF records
+	s.background(ctx, func(bg context.Context) {
+		s.resolveAllCustomers(bg)
+		s.syncAllMail(bg)
+	})
+	s.redirect(w, r, "/settings/emailzit", "EmailZit is linked.")
+}
+
+// emailzitAddresses are the addresses HostZit allows for EmailZit's token
+// and on the admin port: single addresses only (never a network: a
+// malicious answer could open the admin port to everyone), and, when the
+// EmailZit names resolve, only those of them.
+func emailzitAddresses(ctx context.Context, said []string, host, mailHost string) []string {
+	known := resolveHost(ctx, host)
+	if mailHost != "" && hosting.ValidDomain(mailHost) {
+		for _, a := range resolveHost(ctx, mailHost) {
+			if !slices.Contains(known, a) {
+				known = append(known, a)
+			}
 		}
 	}
-	s.redirect(w, r, "/settings/emailzit", "EmailZit is linked.")
+	var out []string
+	for _, a := range said {
+		ip := net.ParseIP(strings.TrimSpace(a))
+		if ip == nil || ip.IsUnspecified() || ip.IsLoopback() && host != "127.0.0.1" && host != "::1" && host != "localhost" {
+			continue
+		}
+		s := ip.String()
+		if (len(known) == 0 || slices.Contains(known, s)) && !slices.Contains(out, s) && len(out) < 8 {
+			out = append(out, s)
+		}
+	}
+	if len(out) == 0 {
+		out = known
+	}
+	return out
 }
 
 // resolveHost gives the addresses of a host name (or the address itself).
@@ -588,46 +848,83 @@ func (s *Server) allowAdminAddresses(ctx context.Context, addrs []string) ([]str
 	return added, s.SaveNetwork(ctx, n)
 }
 
-// removeAdminAddresses takes back what allowAdminAddresses added.
-func (s *Server) removeAdminAddresses(ctx context.Context, list []string) {
-	if len(list) == 0 {
+// removeAdminAddresses takes back what allowAdminAddresses added, except
+// the addresses another link (not except) still needs.
+func (s *Server) removeAdminAddresses(ctx context.Context, list []string, except string) {
+	var drop []string
+	for _, a := range list {
+		needed := false
+		for _, l := range s.emailzitLinks(ctx) {
+			if l.ID != except && (slices.Contains(l.AdminAdded, a) || slices.Contains(l.Addresses, a)) {
+				needed = true
+			}
+		}
+		if !needed {
+			drop = append(drop, a)
+		}
+	}
+	if len(drop) == 0 {
 		return
 	}
 	n, err := s.Network(ctx)
 	if err != nil {
 		return
 	}
-	n.AdminAllowed = slices.DeleteFunc(n.AdminAllowed, func(a string) bool { return slices.Contains(list, a) })
+	n.AdminAllowed = slices.DeleteFunc(n.AdminAllowed, func(a string) bool { return slices.Contains(drop, a) })
 	if err := s.SaveNetwork(ctx, n); err != nil {
 		s.log.Warn("EmailZit addresses not removed from the admin port", "err", err)
 	}
 }
 
-// dropLink forgets the link here: HostZit's token, the relay login and
-// the admin-port addresses of the pairing go.
+// dropLink forgets one link here: its token, its admin-port addresses, the
+// customers it had and the choices that named it.
 func (s *Server) dropLink(ctx context.Context, by string, l EmailZitLink) error {
-	if err := s.store.SetSetting(ctx, settingEmailZit, EmailZitLink{}); err != nil {
-		return err
-	}
 	if l.DNSTokenID != 0 {
 		_ = s.store.DeleteAPITokenByID(ctx, l.DNSTokenID)
 	}
-	s.removeAdminAddresses(ctx, l.AdminAdded)
+	s.ezMu.Lock()
+	list := slices.DeleteFunc(s.emailzitLinks(ctx), func(x EmailZitLink) bool { return x.ID == l.ID })
+	err := s.saveEmailZitLinks(ctx, list)
+	if err == nil {
+		m := s.customerLinkMap(ctx)
+		for u, id := range m {
+			if id == l.ID {
+				delete(m, u)
+			}
+		}
+		_ = s.store.SetSetting(ctx, settingEmailZitCustomers, m)
+	}
+	s.ezMu.Unlock()
+	if err != nil {
+		return err
+	}
+	s.removeAdminAddresses(ctx, l.AdminAdded, l.ID)
+	s.ezMu.Lock()
+	if o := s.emailzitOptions(ctx); o.WebDefault == l.ID || o.ImportLink == l.ID {
+		if o.WebDefault == l.ID {
+			o.WebDefault = ""
+		}
+		if o.ImportLink == l.ID {
+			o.ImportLink = ""
+		}
+		_ = s.store.SetSetting(ctx, settingEmailZitOptions, o)
+	}
+	s.ezMu.Unlock()
 	if err := s.applyRelay(ctx, by); err != nil {
 		s.log.Warn("website mail after the unlink", "err", err)
 	}
-	go s.syncAllMail(context.WithoutCancel(ctx))
+	s.background(ctx, s.syncAllMail)
 	return nil
 }
 
 func (s *Server) handleEmailZitUnlink(w http.ResponseWriter, r *http.Request) {
-	l := s.emailzitLink(r.Context())
-	if l.URL == "" {
+	l, ok := s.emailzitLinkByID(r.Context(), r.PathValue("id"))
+	if !ok {
 		s.redirect(w, r, "/settings/emailzit", "Not linked.")
 		return
 	}
 	msg := "The link is ended on both sides."
-	st, _, err := s.emailzitDo(r.Context(), http.MethodDelete, "/api/v1/link/hostzit", nil)
+	st, _, err := s.emailzitDo(r.Context(), l, http.MethodDelete, "/api/v1/link/hostzit", nil)
 	if !l.Paired {
 		msg = "The link is ended here. It was typed in by hand: revoke HostZit's token in EmailZit as well."
 	} else if err != nil || (st >= 300 && st != http.StatusNotFound && st != http.StatusUnauthorized) {
@@ -637,72 +934,34 @@ func (s *Server) handleEmailZitUnlink(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
-	s.audit(r, "emailzit.unlink", "settings", "link with EmailZit %s ended", l.URL)
+	s.audit(r, "emailzit.unlink", "settings", "link with EmailZit %s (%s) ended", l.URL, l.ID)
 	s.redirect(w, r, "/settings/emailzit", msg)
 }
 
-// apiLinkDelete: EmailZit ends the link from its side with HostZit's token.
+// apiLinkDelete: an EmailZit ends its link from its side with the hzt_
+// token of that link; the other links stay.
 func (s *Server) apiLinkDelete(w http.ResponseWriter, r *http.Request) {
 	t := apiToken(r)
-	l := s.emailzitLink(r.Context())
 	// the caller is done with its token in any case
 	_ = s.store.DeleteAPITokenByID(r.Context(), t.ID)
-	if l.URL != "" && (!l.Paired || l.DNSTokenID == t.ID) {
+	if l, ok := s.linkOfToken(r.Context(), t.ID); ok {
 		if err := s.dropLink(r.Context(), apiActor(r), l); err != nil {
 			apiError(w, http.StatusInternalServerError, "internal", "internal error")
 			return
 		}
 		s.apiAudit(r, "emailzit.unlink", "settings", "EmailZit %s ended the link", l.URL)
 	} else {
-		s.apiAudit(r, "api.token.delete", "settings", "API token #%d %q revoked by EmailZit's unlink", t.ID, t.Name)
+		s.apiAudit(r, "api.token.delete", "settings", "API token #%d %q revoked by an EmailZit unlink", t.ID, t.Name)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
-// ---- the customer's switch to EmailZit
-
-// handleEmailZitOpen asks EmailZit for a one-time sign-in link of the
-// customer (same UUID in both products) and goes there.
-func (s *Server) handleEmailZitOpen(w http.ResponseWriter, r *http.Request) {
-	c := s.me(w, r)
-	if c == nil {
-		return
-	}
-	note := ""
-	st, b, err := s.emailzitDo(r.Context(), http.MethodPost, "/api/v1/customers/"+url.PathEscape(c.UUID)+"/sso", map[string]any{})
-	switch {
-	case err != nil:
-		s.log.Warn("EmailZit sign-in link", "customer", c.Username, "err", err)
-		note = "EmailZit cannot be reached right now. Try again in a few minutes."
-	case st == http.StatusNotFound:
-		note = "You have no mail service in EmailZit yet. Ask your provider to set it up."
-	case st == http.StatusConflict:
-		note = "Your sign-in to EmailZit is not switched on. Ask your provider to switch it on."
-	case st >= 300:
-		s.log.Warn("EmailZit sign-in link", "customer", c.Username, "status", st, "code", ezErrorCode(b))
-		note = "EmailZit did not open a session. Try again in a few minutes."
-	default:
-		var out struct {
-			URL string `json:"url"`
+// linkOfToken is the link an hzt_ token was handed to.
+func (s *Server) linkOfToken(ctx context.Context, tokenID int64) (EmailZitLink, bool) {
+	for _, l := range s.emailzitLinks(ctx) {
+		if l.DNSTokenID != 0 && l.DNSTokenID == tokenID {
+			return l, true
 		}
-		l := s.emailzitLink(r.Context())
-		if json.Unmarshal(b, &out) == nil && ezLinkTarget(out.URL, l.URL, l.MailHost) {
-			s.audit(r, "emailzit.sso", "customer:"+c.Username, "opened EmailZit with a one-time link")
-			http.Redirect(w, r, out.URL, http.StatusSeeOther)
-			return
-		}
-		note = "EmailZit did not open a session. Try again in a few minutes."
 	}
-	s.redirectErr(w, r, "/", note)
-}
-
-// ezLinkTarget: the one-time link must lead to the linked EmailZit (its
-// panel address or its mail host name), never somewhere else.
-func ezLinkTarget(link, panel, mailHost string) bool {
-	u, err := url.Parse(link)
-	if err != nil || u.Scheme != "https" || u.User != nil {
-		return false
-	}
-	h := strings.ToLower(u.Hostname())
-	return h != "" && (h == strings.ToLower(urlHost(panel)) || mailHost != "" && h == mailHost)
+	return EmailZitLink{}, false
 }

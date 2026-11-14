@@ -54,6 +54,9 @@ type MailAccount struct {
 	// Domains are the domains the account may send from (subdomains too).
 	Domains []string  `json:"domains"`
 	DKIM    []DKIMKey `json:"dkim"`
+	// Relay is the EmailZit link whose relay the account sends through
+	// ("" = the server's own route: direct or the administrator's relay).
+	Relay string `json:"relay,omitempty"`
 }
 
 // DKIMKey is a private signing key of a domain (PKCS#8 PEM).
@@ -806,4 +809,56 @@ func (h *Helper) mailFailures(_ context.Context, _ struct{}) (any, error) {
 		_ = h.Sys.Remove(mailFailuresFile)
 	}
 	return f, nil
+}
+
+// RelayState is the last trouble of a relay (a link id or "smarthost").
+type RelayState struct {
+	Error string    `json:"error"`
+	At    time.Time `json:"at"`
+}
+
+const relayStateFile = mailLogDir + "/relays.json"
+
+// relayState remembers why a relay could not be used (cleared by the next
+// message it takes); the panel shows it and tells the administrator.
+func (h *Helper) relayState(id string, err error) {
+	if id == "" {
+		id = "default"
+	}
+	var se *setupError
+	if err != nil && !errors.As(err, &se) {
+		return // the relay answered about the message itself
+	}
+	st := map[string]RelayState{}
+	if b, e := h.Sys.ReadFile(relayStateFile); e == nil {
+		_ = json.Unmarshal(b, &st)
+	}
+	_, had := st[id]
+	if err == nil {
+		if !had {
+			return
+		}
+		delete(st, id)
+	} else {
+		st[id] = RelayState{Error: truncateText(err.Error(), 300), At: time.Now().UTC()}
+	}
+	b, _ := json.Marshal(st)
+	_ = h.Sys.Mkdir(mailLogDir, 0o700, 0, 0)
+	_ = h.Sys.WriteFile(relayStateFile, b, 0o600, 0, 0)
+}
+
+func truncateText(s string, n int) string {
+	if len(s) > n {
+		s = s[:n]
+	}
+	return strings.ToValidUTF8(s, "")
+}
+
+// mailRelays gives the troubles of the relays.
+func (h *Helper) mailRelays(_ context.Context, _ struct{}) (any, error) {
+	st := map[string]RelayState{}
+	if b, err := h.Sys.ReadFile(relayStateFile); err == nil {
+		_ = json.Unmarshal(b, &st)
+	}
+	return st, nil
 }
