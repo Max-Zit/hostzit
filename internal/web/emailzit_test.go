@@ -288,9 +288,11 @@ func TestEmailZitSwitchAndWebUIDs(t *testing.T) {
 		t.Fatal("EmailZit on another server got", m)
 	case <-time.After(300 * time.Millisecond):
 	}
+	// background jobs of the server read the hook: none may run while it changes
+	e.srv.Wait()
 	old := localEmailZit
 	localEmailZit = func() bool { return true }
-	t.Cleanup(func() { localEmailZit = old })
+	t.Cleanup(func() { e.srv.Wait(); localEmailZit = old })
 	c, _ := e.st.CustomerByRef(ctx, "mailer")
 	e.srv.syncWebUIDs(ctx, c)
 	select {
@@ -433,9 +435,11 @@ func TestRelaySPFAndLocalSendmail(t *testing.T) {
 	}
 
 	// EmailZit on this server: its sendmail only for a customer it knows
+	// background jobs of the server read the hook: none may run while it changes
+	e.srv.Wait()
 	old := localEmailZit
 	localEmailZit = func() bool { return true }
-	t.Cleanup(func() { localEmailZit = old })
+	t.Cleanup(func() { e.srv.Wait(); localEmailZit = old })
 	known.Store(false)
 	pairEmailZit(t, a, f)
 	e.srv.syncWebUIDs(ctx, c)
