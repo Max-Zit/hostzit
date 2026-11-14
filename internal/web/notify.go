@@ -213,11 +213,16 @@ type mailData struct {
 	HasPW    bool
 	Kinds    []noticeChoice
 	Channels ChannelSettings
+	// WebMode and Check: how website mail leaves and the check of direct sending
+	WebMode string
+	Check   *helper.MailCheck
+	Linked  bool
 }
 
 func (s *Server) handleMailSettings(w http.ResponseWriter, r *http.Request) {
 	m := s.mailSettings(r.Context())
-	s.render(w, r, http.StatusOK, "mail", &Page{Title: "Notifications", Nav: "settings", Data: &mailData{M: m, Admins: strings.Join(m.Admins, "\n"), HasPW: m.Password != "", Kinds: noticeChoices(m), Channels: s.channelSettings(r.Context())}})
+	s.render(w, r, http.StatusOK, "mail", &Page{Title: "Notifications", Nav: "settings", Data: &mailData{M: m, Admins: strings.Join(m.Admins, "\n"), HasPW: m.Password != "", Kinds: noticeChoices(m), Channels: s.channelSettings(r.Context()),
+		WebMode: s.mailMode(r.Context()), Check: s.mailCheck(r.Context()), Linked: s.emailzitLink(r.Context()).URL != ""}})
 }
 
 func (s *Server) handleMailSettingsSave(w http.ResponseWriter, r *http.Request) {
@@ -267,20 +272,8 @@ func (s *Server) handleMailTest(w http.ResponseWriter, r *http.Request) {
 	s.redirect(w, r, "/settings/mail", translate(s.lang(r, userFrom(r)), "A test message was sent to %s.", strings.Join(to, ", ")))
 }
 
-// applyRelay tells the helper where mail from websites goes.
-func (s *Server) applyRelay(ctx context.Context, by string) error {
-	m := s.mailSettings(ctx)
-	relay := map[string]any{"host": "", "port": 0}
-	if m.WebRelay && m.Host != "" {
-		pw, _ := s.store.OpenSecret("mail.password", m.Password)
-		dom := s.hostingSettings(ctx).ServerName
-		relay = map[string]any{"host": m.Host, "port": m.Port, "security": m.Security, "user": m.User, "password": pw, "domain": dom}
-	}
-	return s.call(ctx, by, "mail.relay", map[string]any{"relay": relay}, nil)
-}
-
 // noticeKinds can be switched off one by one in the settings.
-var noticeKinds = []string{"disk", "cert", "malware", "limits", "backup", "wordpress", "server", "updates", "approval"}
+var noticeKinds = []string{"disk", "cert", "malware", "limits", "backup", "wordpress", "server", "updates", "approval", "mail"}
 
 // noticeKind maps a notice key ("disk:shop1", "remote-backup" …) to its kind.
 func noticeKind(key string) string {
@@ -370,6 +363,7 @@ var noticeLabels = map[string]string{
 	"disk": "Disk space of an account almost full", "cert": "Certificates not issued or not renewed", "malware": "Malware found",
 	"limits": "Accounts held back by their limits", "backup": "Failed backups (remote and panel)", "wordpress": "Failed automatic WordPress updates",
 	"server": "Services down, server disk almost full, restart needed", "updates": "Waiting security updates", "approval": "Approvals needed (four-eyes)",
+	"mail": "Website mail that could not be delivered",
 }
 
 func noticeChoices(m MailSettings) []noticeChoice {

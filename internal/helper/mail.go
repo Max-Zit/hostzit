@@ -30,7 +30,8 @@ import (
 // "hostzit-helper sendmail": it runs as the account inside its cage and
 // puts the message into the account's spool (/.spool in the cage). The
 // helper picks the spool up, keeps the hourly limit of the account's
-// package and hands the messages to the relay the administrator set.
+// package and sends the messages: itself (maildirect.go), through
+// EmailZit's relay login of the link, or through the administrator's relay.
 
 // SpoolRoot holds one folder per account.
 const SpoolRoot = "/var/spool/hostzit"
@@ -123,6 +124,12 @@ type RelayConfig struct {
 	User     string `json:"user"`
 	Password string `json:"password"`
 	Domain   string `json:"domain"` // envelope senders: <account>@<domain>
+	// Mode: direct (HostZit delivers), emailzit (EmailZit's relay login of
+	// the link) or relay (the administrator's SMTP server); "" = relay
+	// with a host, else direct.
+	Mode string `json:"mode,omitempty"`
+	// Helo is the server name the mailer introduces itself with.
+	Helo string `json:"helo,omitempty"`
 }
 
 const relayFile = "/etc/hostzit/mail-relay.json"
@@ -139,6 +146,12 @@ func (h *Helper) mailRelay(_ context.Context, a relayArgs) (any, error) {
 	}
 	if r.Domain != "" && !hosting.ValidDomain(r.Domain) {
 		return nil, userErr("invalid sender domain")
+	}
+	if r.Mode != "" && r.Mode != "direct" && r.Mode != "relay" && r.Mode != "emailzit" {
+		return nil, userErr("invalid mail mode")
+	}
+	if r.Helo != "" && !hosting.ValidDomain(r.Helo) {
+		return nil, userErr("invalid server name")
 	}
 	b, _ := json.Marshal(r) // #nosec G117 -- the relay password goes into a root-only file (0600) of the helper
 	return nil, h.Sys.WriteFile(relayFile, b, 0o600, 0, 0)
@@ -217,15 +230,27 @@ func (m *mailer) limit(account string) int {
 	return a.Limits.MailPerHour
 }
 
+// mode is how website mail leaves: "direct" (HostZit delivers it itself),
+// "emailzit" (EmailZit's relay login of the link) or "relay" (the SMTP
+// server the administrator set).
+func (r RelayConfig) mode() string {
+	switch {
+	case r.Mode == "emailzit" || r.Mode == "relay" || r.Mode == "direct":
+		return r.Mode
+	case r.Host != "":
+		return "relay"
+	}
+	return "direct"
+}
+
 func (m *mailer) round(ctx context.Context) {
 	b, err := m.h.Sys.ReadFile(relayFile)
 	var relay RelayConfig
-	if err != nil || json.Unmarshal(b, &relay) != nil || relay.Host == "" {
-		// no way out: messages used to stay in the spool for ever without
-		// a word (found on h1); they go after 48 h like failed ones, and
-		// the admin overview says that websites cannot send mail
-		m.expire(48 * time.Hour)
-		return
+	if err == nil {
+		_ = json.Unmarshal(b, &relay)
+	}
+	if relay.mode() != "direct" && relay.Host == "" {
+		relay = RelayConfig{Mode: "direct", Helo: relay.Helo}
 	}
 	accounts, _ := m.h.Sys.ReadDir(SpoolRoot)
 	now := time.Now()
@@ -285,58 +310,100 @@ func (m *mailer) deliver(ctx context.Context, relay RelayConfig, account, dir, i
 		_ = m.h.Sys.Remove(envFile)
 		return
 	}
-	err = sendVia(ctx, relay, account, q, msg)
-	if err == nil {
+	mode := relay.mode()
+	entry := MailLogEntry{At: time.Now().UTC(), ID: id, To: q.To, Subject: q.Subject, Via: mode}
+	done := func(e MailLogEntry) {
+		_ = m.h.Sys.Remove(envFile)
+		_ = m.h.Sys.Remove(emlFile)
+		m.h.recordMail(account, e)
+	}
+	count := func() {
 		m.mu.Lock()
 		m.sent[account] = append(m.sent[account], time.Now())
 		m.mu.Unlock()
+	}
+	var res rcptResult
+	switch mode {
+	case "relay":
+		err = sendVia(ctx, relay, account, "", q, stripBcc(msg))
+		res = wholeResult(q.To, err)
+		if err == nil {
+			res.Host = relay.Host
+		}
+	default:
+		ma := m.account(account)
+		p := prepare(account, ma, q, msg, mode == "direct", time.Now())
+		entry.From = p.Header
+		if p.Refusal != "" {
+			entry.Status, entry.Detail = "refused", p.Refusal
+			done(entry)
+			m.h.logf("mail from %s refused: %s", account, p.Refusal)
+			return
+		}
+		if mode == "emailzit" {
+			err = sendVia(ctx, relay, account, p.From, q, p.Msg)
+			res = wholeResult(q.To, err)
+			if err == nil {
+				res.Host = relay.Host
+			}
+		} else {
+			res = deliverDirect(ctx, helloName(relay.Helo), p.From, q.To, p.Msg)
+		}
+	}
+	if len(res.Sent) > 0 {
+		count()
+		e := entry
+		e.To, e.Status, e.Detail = res.Sent, "sent", res.Host
+		m.h.recordMail(account, e)
+	}
+	for r, why := range res.Bounced {
+		e := entry
+		e.To, e.Status, e.Detail = []string{r}, "bounced", why
+		m.h.recordMail(account, e)
+	}
+	if len(res.Deferred) == 0 {
 		_ = m.h.Sys.Remove(envFile)
 		_ = m.h.Sys.Remove(emlFile)
-		m.h.logf("mail from %s to %d recipients sent", account, len(q.To))
+		m.h.logf("mail from %s: %d sent, %d refused by the receiver", account, len(res.Sent), len(res.Bounced))
 		return
 	}
+	var left []string
+	var last string
+	for _, r := range q.To {
+		if why, ok := res.Deferred[r]; ok {
+			left = append(left, r)
+			last = why
+		}
+	}
+	q.To = left
 	q.Tries++
-	q.LastErr = err.Error()
+	q.LastErr = last
 	q.NextTry = time.Now().Add(time.Duration(q.Tries*q.Tries) * time.Minute)
 	if time.Since(q.At) > 48*time.Hour {
-		_ = m.h.Sys.Remove(envFile)
-		_ = m.h.Sys.Remove(emlFile)
-		m.h.logf("mail from %s dropped after 48 h: %v", account, err)
+		e := entry
+		e.To, e.Status, e.Detail = left, "failed", "not delivered in 48 hours: "+last
+		done(e)
+		m.h.logf("mail from %s dropped after 48 h: %s", account, last)
 		return
 	}
 	nb, _ := json.Marshal(q)
 	_ = m.h.Sys.WriteFile(envFile, nb, 0o600, 0, 0)
 }
 
-// expire drops queued messages older than max when there is no relay.
-func (m *mailer) expire(max time.Duration) {
-	accounts, _ := m.h.Sys.ReadDir(SpoolRoot)
-	for _, acc := range accounts {
-		name := acc.Name()
-		if hosting.ValidAccount(name) != nil {
-			continue
-		}
-		dir := SpoolRoot + "/" + name
-		ents, _ := m.h.Sys.ReadDir(dir)
-		for _, e := range ents {
-			n := e.Name()
-			if !strings.HasSuffix(n, ".json") || strings.HasPrefix(n, ".") {
-				continue
-			}
-			b, err := m.h.Sys.ReadFile(dir + "/" + n)
-			if err != nil {
-				continue
-			}
-			var q queued
-			if json.Unmarshal(b, &q) != nil || time.Since(q.At) <= max {
-				continue
-			}
-			id := strings.TrimSuffix(n, ".json")
-			_ = m.h.Sys.Remove(dir + "/" + n)
-			_ = m.h.Sys.Remove(dir + "/" + id + ".eml")
-			m.h.logf("mail from %s dropped after %s: no mail server is set for websites", name, max)
+// wholeResult: a relay takes or refuses the message for all recipients.
+func wholeResult(rcpts []string, err error) rcptResult {
+	res := rcptResult{Bounced: map[string]string{}, Deferred: map[string]string{}}
+	for _, r := range rcpts {
+		switch {
+		case err == nil:
+			res.Sent = append(res.Sent, r)
+		case permanent(err):
+			res.Bounced[r] = smtpText(err)
+		default:
+			res.Deferred[r] = smtpText(err)
 		}
 	}
+	return res
 }
 
 // stripBcc removes Bcc headers (the recipients are in the envelope).
@@ -369,7 +436,11 @@ func stripBcc(msg []byte) []byte {
 	return out.Bytes()
 }
 
-func sendVia(ctx context.Context, relay RelayConfig, account string, q queued, msg []byte) error {
+// sendVia hands a message to a relay with a login: the administrator's
+// SMTP server (from empty: the envelope sender is <account>@<relay
+// domain>, as before) or EmailZit's relay (from = the prepared sender on
+// the From domain; the message is complete already).
+func sendVia(ctx context.Context, relay RelayConfig, account, from string, q queued, msg []byte) error {
 	addr := net.JoinHostPort(relay.Host, strconv.Itoa(relay.Port))
 	d := net.Dialer{Timeout: 20 * time.Second}
 	var conn net.Conn
@@ -389,6 +460,9 @@ func sendVia(ctx context.Context, relay RelayConfig, account string, q queued, m
 		return err
 	}
 	defer c.Close()
+	if err := c.Hello(helloName(relay.Helo)); err != nil {
+		return err
+	}
 	if relay.Security == "starttls" {
 		if err := c.StartTLS(&tls.Config{ServerName: relay.Host, MinVersion: tls.VersionTLS12}); err != nil {
 			return err
@@ -399,9 +473,13 @@ func sendVia(ctx context.Context, relay RelayConfig, account string, q queued, m
 			return err
 		}
 	}
-	from := account + "@" + relay.Domain
-	if relay.Domain == "" {
-		from = account + "@localhost"
+	head := ""
+	if from == "" {
+		from = account + "@" + relay.Domain
+		if relay.Domain == "" {
+			from = account + "@localhost"
+		}
+		head = "X-HostZit-Account: " + account + "\r\n"
 	}
 	if err := c.Mail(from); err != nil {
 		return err
@@ -418,10 +496,10 @@ func sendVia(ctx context.Context, relay RelayConfig, account string, q queued, m
 	if err != nil {
 		return err
 	}
-	if _, err := w.Write([]byte("X-HostZit-Account: " + account + "\r\n")); err != nil {
+	if _, err := w.Write([]byte(head)); err != nil {
 		return err
 	}
-	if _, err := w.Write(stripBcc(msg)); err != nil {
+	if _, err := w.Write(msg); err != nil {
 		return err
 	}
 	if err := w.Close(); err != nil {

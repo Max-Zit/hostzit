@@ -10,7 +10,7 @@
 <p>Uključite keš stranica, proverite PHP radnike i memoriju paketa i CPU grafik u <b>Potrošnji</b>. Dostignuto ograničenje usporava samo taj nalog, a ne ceo server.</p>
 
 <h2 id="mail">Mejl sa sajta ne stiže</h2>
-<p>Pogledajte red u <b>Bezbednosti</b> (korisnik) — poruke preko ograničenja po satu čekaju; proverite da je relay postavljen u Podešavanja → Obaveštenja sa uključenim „Mejl sa sajtova".</p>
+<p>Pogledajte pod <b>Bezbednost</b> (korisnik): red pokazuje poruke koje čekaju sa poslednjom greškom, a lista ispod šta je poslato, šta je primalac odbio i šta nije poslato. Poruka čija From adresa nije na domenu naloga se ne šalje. Kada HostZit šalje sam, proverite Podešavanja → Obaveštenja → <i>Mejl sa sajtova</i> (odlazni port 25, obrnuti DNS) i da domen ima DKIM zapis sa stranice Bezbednost; kada je EmailZit povezan, ostalo je u njegovom dnevniku isporuke.</p>
 
 <h2 id="locked">Zaključao sam sebe</h2>
 <p>Na serveru: <code>hostzit-server --unblock-ip all</code> i <code>hostzit-server --reset-allowlist</code>, pa restartujte servis. Izgubljen autentifikator: drugi administrator resetuje drugi faktor; sa samo jednim administratorom koristite kod za oporavak.</p>

@@ -214,6 +214,8 @@ type siteData struct {
 	Geo       *geoChoice
 	GeoAction string
 	GeoHelp   string
+	// DNSWarn: the name points at a proxy, or its mail is not at EmailZit
+	DNSWarn []dnsWarning
 }
 
 func (s *Server) showSite(w http.ResponseWriter, r *http.Request, status int, c *store.Customer, x *store.Site, errMsg string) {
@@ -233,6 +235,20 @@ func (s *Server) showSite(w http.ResponseWriter, r *http.Request, status int, c 
 	d.Redirect = strings.Join(lines, "\n")
 	d.ErrorPages, d.MimeTypes = pairsText(x.Extras.ErrorPages), pairsText(x.Extras.MimeTypes)
 	d.Zone, _ = s.store.ZoneFor(r.Context(), x.Domain)
+	{
+		names := append([]string{x.Domain}, x.Aliases...)
+		if x.WWW {
+			names = append(names, "www."+x.Domain)
+		}
+		if len(names) > 6 {
+			names = names[:6]
+		}
+		md := strings.TrimPrefix(x.Domain, "www.")
+		if d.Zone != nil {
+			md = d.Zone.Name
+		}
+		d.DNSWarn = s.dnsWarnings(r.Context(), names, md)
+	}
 	if x.WAF {
 		names := append([]string{x.Domain}, x.Aliases...)
 		if x.WWW {

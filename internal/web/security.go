@@ -61,7 +61,7 @@ func (s *Server) startScan(by string, c *store.Customer) error {
 
 type securityPageData struct {
 	Scan       *ScanResult
-	Queue      []helper.QueueItem
+	Mail       *websiteMail
 	Quarantine []QuarantineItem
 }
 
@@ -72,7 +72,7 @@ func (s *Server) handleMySecurity(w http.ResponseWriter, r *http.Request) {
 	}
 	d := &securityPageData{Scan: s.lastScan(r.Context(), c.ID)}
 	d.Quarantine = s.quarantineList(r.Context(), c)
-	_ = s.call(r.Context(), actor(r), "mail.queue", map[string]string{"account": c.Username}, &d.Queue)
+	d.Mail = s.websiteMail(r.Context(), actor(r), c)
 	s.render(w, r, http.StatusOK, "mysecurity", &Page{Title: "Security", Nav: "security", Customer: c, Data: d})
 }
 

@@ -87,11 +87,8 @@ func (s *Server) handleAdminOverview(w http.ResponseWriter, r *http.Request) {
 	if d.Hosting.ACME == "" {
 		d.Problems = append(d.Problems, "Automatic certificates are off (Settings → Hosting).")
 	}
-	// found on h1: without a mail server for websites their mail stayed in
-	// the queue without a word
-	if m := s.mailSettings(ctx); d.Info != nil && !d.Info.LocalEmailZit && (m.Host == "" || !m.WebRelay) {
-		d.Problems = append(d.Problems, "Websites cannot send mail: set a mail server under Settings → Notifications and switch on mail from websites. Waiting messages are dropped after 48 hours.")
-	}
+	// website mail HostZit sends itself needs port 25 and reverse DNS
+	d.Problems = append(d.Problems, s.mailProblems(ctx)...)
 	for _, x := range sites {
 		if x.ApplyError != "" {
 			d.Problems = append(d.Problems, "Website "+x.Domain+": "+x.ApplyError)

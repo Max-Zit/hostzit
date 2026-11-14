@@ -13,6 +13,10 @@ func (h *Helper) registerMore() {
 	h.ops["ssh.keys"] = op{handle(h.sshKeys), false}
 	h.ops["mail.relay"] = op{handle(h.mailRelay), true}
 	h.ops["mail.queue"] = op{handle(h.mailQueue), false}
+	h.ops["mail.account"] = op{handle(h.mailAccount), false}
+	h.ops["mail.log"] = op{handle(h.mailLog), false}
+	h.ops["mail.check"] = op{handle(h.mailCheck), false}
+	h.ops["mail.failures"] = op{handle(h.mailFailures), false}
 	h.ops["firewall"] = op{handle(h.firewall), true}
 	h.ops["malware.scan"] = op{handle(h.malwareScan), false}
 	for _, f := range moreOps {

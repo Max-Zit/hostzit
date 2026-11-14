@@ -66,9 +66,34 @@ func Create(ctx context.Context, db Dumper, dataDir, tmpDir, serverVersion, pass
 	if err := bw.Flush(); err != nil {
 		return nil, err
 	}
-	files, err := dataFiles(dataDir)
+	listed, err := dataFiles(dataDir)
 	if err != nil {
 		return nil, err
+	}
+	// open the files first: one that vanished since the listing (a
+	// certificate renewal replaces files in tls/) is left out instead of
+	// failing the whole backup, and the manifest names only what is inside
+	type dataFile struct {
+		rel string
+		f   *os.File
+	}
+	var opened []dataFile
+	defer func() {
+		for _, x := range opened {
+			_ = x.f.Close()
+		}
+	}()
+	var files []string
+	for _, rel := range listed {
+		f, err := os.Open(filepath.Join(dataDir, filepath.FromSlash(rel))) // #nosec G304 -- files of our own data directory
+		if errors.Is(err, fs.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		opened = append(opened, dataFile{rel, f})
+		files = append(files, rel)
 	}
 	m := &Manifest{Format: 1, Product: "HostZit", ServerVersion: serverVersion, Created: time.Now().UTC(), Files: files}
 
@@ -92,14 +117,8 @@ func Create(ctx context.Context, db Dumper, dataDir, tmpDir, serverVersion, pass
 	if err := addFile(tw, databaseName, tmp); err != nil {
 		return nil, err
 	}
-	for _, rel := range files {
-		f, err := os.Open(filepath.Join(dataDir, filepath.FromSlash(rel))) // #nosec G304 -- files of our own data directory
-		if err != nil {
-			return nil, err
-		}
-		err = addFile(tw, filesPrefix+rel, f)
-		_ = f.Close()
-		if err != nil {
+	for _, x := range opened {
+		if err := addFile(tw, filesPrefix+x.rel, x.f); err != nil {
 			return nil, err
 		}
 	}
@@ -127,6 +146,9 @@ func dataFiles(dataDir string) ([]string, error) {
 			continue
 		}
 		err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+			if errors.Is(err, fs.ErrNotExist) {
+				return nil // gone while listing
+			}
 			if err != nil {
 				return err
 			}

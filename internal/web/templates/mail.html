@@ -24,7 +24,7 @@
     <label>{{.T "Sender address"}}<input type="email" name="from" value="{{$m.From}}" placeholder="hostzit@example.com"></label>
   </div>
   <label>{{.T "Administrators"}}<textarea name="admins" rows="3" spellcheck="false" placeholder="admin@example.com">{{.Data.Admins}}</textarea><small>{{.T "One address per line."}}</small></label>
-  <label class="check"><input type="checkbox" name="web_relay" {{if $m.WebRelay}}checked{{end}}><span>{{.T "Mail from websites (contact forms, WordPress) also goes through this server, with the hourly limit of each package"}}</span></label>
+  <label class="check"><input type="checkbox" name="web_relay" {{if $m.WebRelay}}checked{{end}}><span>{{.T "Mail from websites (contact forms, WordPress) goes through this SMTP server instead of being delivered by HostZit itself"}}</span></label>
   <label class="check"><input type="checkbox" name="customer" {{if $m.Customer}}checked{{end}}><span>{{.T "Also tell customers about their own account (disk space, certificates, malware, limits, WordPress updates)"}}</span></label>
   <h3 class="mt">{{.T "What to tell"}}</h3>
   <div class="checkgrid">
@@ -32,7 +32,22 @@
   </div>
   <div><button class="primary">{{.T "Save"}}</button></div>
 </section>
+<section class="panel" id="websites">
+  <h2>{{template "icon" "site"}}{{.T "Mail from websites"}}</h2>
+  <p class="small">{{if eq .Data.WebMode "local"}}{{.T "Websites send through EmailZit on this server."}}{{else if eq .Data.WebMode "emailzit"}}{{.T "Websites send through EmailZit's relay (Settings → EmailZit). EmailZit signs the mail with the DKIM key of each domain."}}{{else if eq .Data.WebMode "relay"}}{{.T "Websites send through the SMTP server above."}}{{else}}{{.T "HostZit delivers the websites' mail itself: to the mail servers of the recipients, signed with a DKIM key per domain. The DKIM records are written into the zones of this server; customers see the records for other DNS providers on their Security page."}}{{end}}</p>
+  <p class="small muted">{{.T "Every message must come from an address on a domain of the hosting account, each package has an hourly limit, and customers see what was sent and what failed."}}{{if not .Data.Linked}} {{.T "With EmailZit linked, website mail goes through EmailZit."}}{{end}}</p>
+  {{if eq .Data.WebMode "direct"}}
+  {{with .Data.Check}}
+  <dl class="kv small">
+    <dt>{{$.T "Outgoing port 25"}}</dt><dd>{{if .Port25}}<span class="badge ok"><i></i>{{$.T "open"}}</span>{{else}}<span class="badge bad"><i></i>{{$.T "blocked"}}</span> <span class="err-text">{{.Error}}</span>{{end}}{{with .Port25To}} <span class="muted mono">{{.}}</span>{{end}}</dd>
+    {{range .PTR}}<dt>{{$.T "Reverse DNS"}} <span class="mono">{{.IP}}</span></dt><dd>{{if .OK}}<span class="badge ok"><i></i>{{join .Names ", "}}</span>{{else}}<span class="badge warn"><i></i>{{if .Names}}{{join .Names ", "}}{{else}}{{$.T "none"}}{{end}}</span> <span class="small muted">{{$.T "should be the server name"}}</span>{{end}}</dd>{{end}}
+    <dt>{{$.T "Checked"}}</dt><dd class="muted">{{$.Ago .At}}</dd>
+  </dl>
+  {{else}}<p class="small muted">{{.T "Not checked yet."}}</p>{{end}}
+  {{end}}
+</section>
 </form>
+{{if eq .Data.WebMode "direct"}}<form method="post" action="/settings/mail/check"><button class="secondary">{{template "icon" "refresh"}}{{.T "Check direct sending"}}</button></form>{{end}}
 <form method="post" action="/settings/mail/test"><button class="secondary">{{template "icon" "mail"}}{{.T "Send a test message"}}</button></form>
 <form method="post" action="/settings/mail/channels" class="stack mt">
 <section class="panel">

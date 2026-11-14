@@ -192,6 +192,7 @@ func (s *Server) applyCustomer(ctx context.Context, by string, c *store.Customer
 	err = s.call(ctx, by, "account.apply", a, nil)
 	_ = s.store.MarkCustomerApplied(ctx, c.ID, err)
 	if err == nil {
+		s.syncMailAccount(ctx, by, c)
 		go s.syncWebUIDs(context.WithoutCancel(ctx), c)
 	}
 	return err
@@ -214,6 +215,10 @@ func (s *Server) applySite(ctx context.Context, by string, x *store.Site, firstP
 	}
 	err = s.call(ctx, by, "site.apply", args, nil)
 	_ = s.store.MarkSiteApplied(ctx, x.ID, err)
+	if err == nil {
+		// a new name or alias may send website mail
+		s.syncMailAccount(ctx, by, c)
+	}
 	return err
 }
 
@@ -357,6 +362,7 @@ func (s *Server) addSite(ctx context.Context, by string, c *store.Customer, doma
 			if err := s.applyZone(ctx, by, z); err != nil {
 				return x, fmt.Errorf("the DNS zone was saved but could not be published: %w", err)
 			}
+			s.syncMailAccount(ctx, by, c) // the DKIM record goes into the new zone
 		}
 	}
 	s.kickCerts()
@@ -498,6 +504,10 @@ func (s *Server) Run(ctx context.Context) {
 		}
 	}()
 	time.AfterFunc(time.Minute, func() { s.collectUsage(ctx) })
+	time.AfterFunc(2*time.Minute, func() {
+		s.syncAllMail(ctx)
+		_, _ = s.refreshMailCheck(ctx)
+	})
 	for {
 		select {
 		case <-ctx.Done():
@@ -505,8 +515,11 @@ func (s *Server) Run(ctx context.Context) {
 		case <-usage.C:
 			s.collectUsage(ctx)
 			s.checkNotices(ctx)
+			go s.syncAllMail(ctx)
+			go s.mailFailureNotices(ctx)
 		case <-hourly.C:
 			go s.remoteBackupRound(ctx, false)
+			go func() { _, _ = s.refreshMailCheck(ctx) }()
 			go s.checkServer(ctx)
 			_ = s.store.PurgeSessions(ctx)
 			_ = s.store.PruneUsage(ctx)

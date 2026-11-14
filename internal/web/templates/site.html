@@ -15,6 +15,7 @@
   {{if $s.Cache}}<p><span class="badge ok"><i></i>{{.T "on"}}</span> {{.T "pages are kept %d minutes" $s.CacheMinutes}}</p>{{else}}<p><span class="badge"><i></i>{{.T "off"}}</span></p>{{end}}
 </section>
 
+{{range .Data.DNSWarn}}<div class="flash warn" role="note">{{template "icon" "alert"}}<span>{{if eq .Kind "proxy"}}{{$.T "%s points at a proxy in front of the server (for example Cloudflare with the orange cloud), not at this server. Visitors still reach the website, but HostZit cannot check the name and Let's Encrypt may fail: set the record to DNS only, or make sure the proxy passes /.well-known/acme-challenge/." .Name}}{{else}}{{$.T "Mail for %s goes to %s, not to EmailZit (%s). If its mailboxes should be in EmailZit, the MX record must point at %s." .Name .MX .MailHost .MailHost}}{{end}}</span></div>{{end}}
 <section class="panel">
   <h2>{{template "icon" "lock"}}{{.T "HTTPS certificate"}}</h2>
   {{if eq $s.CertStatus "ok"}}<p><span class="badge ok"><i></i>Let's Encrypt</span> {{.T "valid until %s" (.Time $s.CertNotAfter)}} · <span class="small muted">{{join $s.CertNames ", "}}</span></p>{{if $s.CertError}}<p class="small muted">{{$s.CertError}} · {{.T "It is tried again automatically every few hours."}}</p>{{end}}

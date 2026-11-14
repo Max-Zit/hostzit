@@ -389,6 +389,8 @@ func (h *Helper) accountDelete(ctx context.Context, a accountRef) (any, error) {
 		}
 	}
 	_ = h.systemctl(ctx, "disable", "--now", hosting.CageUnitName(a.Name))
+	// found on h1: the empty slice stayed active after the delete
+	_ = h.systemctl(ctx, "stop", hosting.SliceName(a.Name))
 	_, _ = h.Sys.Run(ctx, nil, "pkill", "-KILL", "-u", a.Name)
 	if err := h.cageUnmount(ctx, a.Name); err != nil {
 		return nil, err
@@ -406,7 +408,8 @@ func (h *Helper) accountDelete(ctx context.Context, a accountRef) (any, error) {
 	if _, ok := h.lookupID(ctx, "group", a.Name); ok {
 		_, _ = h.Sys.Run(ctx, nil, "groupdel", a.Name)
 	}
-	for _, p := range []string{hosting.CageDir(a.Name), hosting.TmpDir(a.Name), hosting.HomeDir(a.Name), hosting.NginxSitesDir + "/" + a.Name, SpoolRoot + "/" + a.Name} {
+	for _, p := range []string{hosting.CageDir(a.Name), hosting.TmpDir(a.Name), hosting.HomeDir(a.Name), hosting.NginxSitesDir + "/" + a.Name, SpoolRoot + "/" + a.Name,
+		mailAccountDir + "/" + a.Name + ".json", mailLogDir + "/" + a.Name + ".jsonl", accountsDir + "/" + a.Name + ".json"} {
 		if err := h.Sys.RemoveAll(p); err != nil {
 			return nil, err
 		}

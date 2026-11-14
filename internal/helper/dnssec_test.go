@@ -112,30 +112,6 @@ func TestSecondariesOnlyNotifyEntered(t *testing.T) {
 	}
 }
 
-// Found on h1: with no relay for websites the messages stayed in the spool
-// for ever. They go after 48 hours, newer ones wait.
-func TestMailWithoutRelayExpires(t *testing.T) {
-	h, _, root, _ := newTest(t)
-	dir := filepath.Join(root, "var/spool/hostzit/shop1")
-	_ = os.MkdirAll(dir, 0o700)
-	for id, at := range map[string]time.Time{"old": time.Now().Add(-49 * time.Hour), "new": time.Now().Add(-time.Hour)} {
-		b, _ := json.Marshal(queued{From: "a@b.test", To: []string{"c@d.test"}, At: at})
-		_ = os.WriteFile(filepath.Join(dir, id+".json"), b, 0o600)
-		_ = os.WriteFile(filepath.Join(dir, id+".eml"), []byte("Subject: x\r\n\r\nx"), 0o600)
-	}
-	m := &mailer{h: h, sent: map[string][]time.Time{}}
-	m.round(t.Context()) // no /etc/hostzit/mail-relay.json at all
-	if _, err := os.Stat(filepath.Join(dir, "old.json")); !os.IsNotExist(err) {
-		t.Fatal("old message kept")
-	}
-	if _, err := os.Stat(filepath.Join(dir, "old.eml")); !os.IsNotExist(err) {
-		t.Fatal("old message body kept")
-	}
-	if _, err := os.Stat(filepath.Join(dir, "new.json")); err != nil {
-		t.Fatal("new message dropped")
-	}
-}
-
 // Found on h1: a malware scan of a real account was killed after the usual
 // 30 minutes of a helper operation (and of a panel job).
 func TestScanTimeoutLonger(t *testing.T) {

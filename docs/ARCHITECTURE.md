@@ -103,7 +103,8 @@ Layers, all on by default in shared mode:
    files; database size counted from MariaDB and added to the account's usage;
    inode limits.
 5. **Network**: outbound SMTP (25/465/587) blocked for account processes
-   except through HostZit's sendmail (rate-limited per account, relays to
+   except through HostZit's sendmail (rate-limited per account, From only on
+   the account's own domains, delivered by HostZit with DKIM or relayed to
    EmailZit or a smarthost) — the classic spam-from-a-hacked-WordPress
    problem; optional egress allow-list; nginx `limit_req` per site.
 6. **Web server**: nginx `disable_symlinks if_not_owner` (symlink attacks
@@ -254,9 +255,12 @@ with EmailZit (section 11).
 
 - One customer in both products, linked by a shared `customer_id` (UUID) that
   the portal (or the first product) assigns; same package concept.
-- One sign-in when both are installed: HostZit is the OpenID Connect provider
-  for customers and admins, EmailZit an OIDC client; 2FA once. Standalone,
-  each product signs in on its own.
+- Linking: one pairing code from EmailZit (ten minutes, one use, URL +
+  secret + certificate pin); the servers exchange least-privilege tokens
+  (`ezt_` customers:read/write + sso:create, `hzt_` dns:mail), each limited to
+  the other server's IPv4 and IPv6 addresses; Unlink on either side revokes
+  both. Customers open EmailZit from HostZit with a one-time link
+  (`POST /api/v1/customers/{uuid}/sso`); each product signs in on its own.
 - Same look, a product switcher in the header, same REST conventions
   (`/api/v1`, Bearer tokens `hzt_`/`ezt_`, JSON errors, cursor pagination, idempotency keys,
   jobs).
@@ -266,6 +270,9 @@ with EmailZit (section 11).
 - On one server: one nginx (HostZit owns nginx.conf, each product its drop-in dir `/etc/nginx/zit.d/<product>/`), ports HostZit 8443/8442 and EmailZit 8444, one PostgreSQL cluster with
   separate databases and roles, own ACME client per product with a shared challenge directory,
   PHP mail through `emailzit-sendmail` (socket bind-mounted into the cages) when EmailZit is installed, else `hostzit-sendmail`; web uids 1 000 000+, mail uids 2 000 000+.
+- Website mail with EmailZit on another server goes through EmailZit's relay
+  login of the link (STARTTLS); without EmailZit HostZit delivers it itself
+  (MX lookup, opportunistic STARTTLS, DKIM per domain, mail log per account).
 
 ## 12. Tests and tools
 

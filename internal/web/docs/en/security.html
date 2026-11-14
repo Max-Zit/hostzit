@@ -12,7 +12,14 @@
 </ul>
 
 <h2 id="mail">Mail from websites</h2>
-<p>Accounts cannot send mail directly (the firewall rejects outgoing SMTP for them). PHP's <code>mail()</code> puts messages into a queue; HostZit sends them through the relay set under Settings → Notifications, with the hourly limit of the package. Customers see their queue under <b>Security</b>. Without a relay (and without EmailZit on the same server) websites cannot send mail: the overview of the admin panel says so, and waiting messages are dropped after 48 hours.</p>
+<p>Accounts cannot reach SMTP ports themselves (the firewall rejects outgoing SMTP for them). PHP's <code>mail()</code> puts messages into a queue, and HostZit sends them with the hourly limit of the package:</p>
+<ul>
+  <li><b>EmailZit on this server</b>: through <code>emailzit-sendmail</code> in every account.</li>
+  <li><b>EmailZit linked on another server</b>: through EmailZit's relay login that came with the pairing (host, port and login from EmailZit, STARTTLS). EmailZit signs the mail with the DKIM key of the domain and shows it to the customer.</li>
+  <li><b>An SMTP server for websites</b> (Settings → Notifications, "Mail from websites goes through this SMTP server"), for example when the provider blocks port 25.</li>
+  <li><b>Otherwise HostZit delivers the mail itself</b>: to the mail servers (MX) of the recipients on port 25, with STARTTLS when they offer it, signed with a DKIM key per domain (selector <code>hz1</code>). For zones on this server HostZit writes the DKIM record itself; for domains whose DNS is elsewhere the customer's Security page shows the TXT record to set. Settings → Notifications shows whether outgoing port 25 is open and whether the reverse DNS of the server's addresses is the server name; the overview warns when not.</li>
+</ul>
+<p>The sender (From) must be an address on a domain of the account (its websites, aliases and zones); other messages are not sent. Customers see the queue and every sent, refused and failed message of the last 30 days under <b>Security</b>; undelivered mail is also a notice ("Website mail that could not be delivered"). Messages that cannot be delivered for 48 hours are dropped.</p>
 
 <h2 id="domains">Whose domain is it?</h2><p>Like in cPanel, customers can add any domain by default. With <b>Customers must show that a domain is theirs</b> (Settings → Sign-in and security) a customer adds a website, an alias or a DNS zone only when DNS shows that the domain is theirs: it already points at this server (A/AAAA record), its name servers are this server's name servers, or the TXT record <code>_hostzit-verify.DOMAIN</code> holds the value the panel shows (it stays the same for that customer and domain). Names below a zone the customer already has need no proof, and administrators (and the REST API) can always add a domain for a customer.</p>
 <h2 id="panel">The panel</h2>

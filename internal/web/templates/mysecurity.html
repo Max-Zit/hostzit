@@ -25,13 +25,39 @@
 </section>{{end}}
 <section class="panel">
   <h2>{{template "icon" "mail"}}{{.T "Mail from your websites"}}</h2>
-  <p class="muted small">{{.T "Contact forms and WordPress send mail through the server's queue; your package allows a number of messages per hour. Messages above the limit wait for the next hour."}}</p>
-  {{if .Data.Queue}}
+  {{$w := .Data.Mail}}
+  <p class="muted small">{{if eq $w.Mode "local"}}{{.T "Contact forms and WordPress send mail through EmailZit on this server."}}{{else if eq $w.Mode "emailzit"}}{{.T "Contact forms and WordPress send mail through EmailZit, the mail service linked to this server; EmailZit signs it for your domain."}}{{else if eq $w.Mode "relay"}}{{.T "Contact forms and WordPress send mail through the mail server of your provider."}}{{else}}{{.T "Contact forms and WordPress send mail directly from this server, signed with the DKIM key of your domain."}}{{end}}
+  {{.T "The sender (From) must be an address on one of your domains. Your package allows a number of messages per hour; messages above the limit wait for the next hour."}}</p>
+  {{if $w.DKIM}}
+  <h3 class="mt">{{.T "DKIM records"}}</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Domain"}}</th><th>{{.T "State"}}</th><th>{{.T "Record"}}</th></tr></thead>
+    <tbody>{{range $w.DKIM}}<tr>
+      <td><b>{{.Domain}}</b></td>
+      <td>{{if .Here}}<span class="badge ok"><i></i>{{$.T "set by HostZit"}}</span>{{else if .Found}}<span class="badge ok"><i></i>{{$.T "found in the DNS"}}</span>{{else}}<span class="badge warn"><i></i>{{$.T "set it at your DNS provider"}}</span>{{end}}</td>
+      <td class="small">{{if .Here}}<span class="mono">{{.Name}}</span>{{else}}<details><summary class="mono">TXT {{.Name}}</summary><pre class="token small">{{.Value}}</pre></details>{{end}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{end}}
+  <h3 class="mt">{{.T "Waiting"}}</h3>
+  {{if $w.Queue}}
   <div class="table-wrap"><table>
     <thead><tr><th>{{.T "To"}}</th><th>{{.T "Subject"}}</th><th class="hide-sm">{{.T "Since"}}</th><th class="hide-sm">{{.T "Last error"}}</th></tr></thead>
-    <tbody>{{range .Data.Queue}}<tr><td class="small">{{join .To ", "}}</td><td class="small">{{.Subject}}</td><td class="hide-sm muted small">{{$.Ago .At}}</td><td class="hide-sm small err-text">{{.LastErr}}</td></tr>{{end}}</tbody>
+    <tbody>{{range $w.Queue}}<tr><td class="small">{{join .To ", "}}</td><td class="small">{{.Subject}}</td><td class="hide-sm muted small">{{$.Ago .At}}</td><td class="hide-sm small err-text">{{.LastErr}}</td></tr>{{end}}</tbody>
   </table></div>
   {{else}}<p><span class="badge ok"><i></i>{{.T "the queue is empty"}}</span></p>{{end}}
+  <h3 class="mt">{{.T "Sent and failed (30 days)"}}</h3>
+  {{if $w.Log}}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{{.T "Time"}}</th><th>{{.T "To"}}</th><th class="hide-sm">{{.T "Subject"}}</th><th>{{.T "Result"}}</th></tr></thead>
+    <tbody>{{range $w.Log}}<tr>
+      <td class="muted small">{{$.Time .At}}</td>
+      <td class="small">{{join .To ", "}}{{with .From}}<br><span class="muted">{{$.T "from"}} {{.}}</span>{{end}}</td>
+      <td class="hide-sm small">{{.Subject}}</td>
+      <td class="small">{{if eq .Status "sent"}}<span class="badge ok"><i></i>{{$.T "sent"}}</span>{{else if eq .Status "bounced"}}<span class="badge bad"><i></i>{{$.T "refused by the receiver"}}</span>{{else if eq .Status "refused"}}<span class="badge bad"><i></i>{{$.T "not sent"}}</span>{{else}}<span class="badge bad"><i></i>{{$.T "not delivered in 48 hours"}}</span>{{end}}{{if ne .Status "sent"}}<br><span class="err-text">{{.Detail}}</span>{{end}}</td>
+    </tr>{{end}}</tbody>
+  </table></div>
+  {{else}}<p class="muted small">{{.T "No messages yet."}}</p>{{end}}
 </section>
 <section class="panel">
   <h2>{{template "icon" "lock"}}{{.T "Always on"}}</h2>
