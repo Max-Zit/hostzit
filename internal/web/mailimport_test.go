@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -21,7 +20,7 @@ func TestCPanelMailToEmailZit(t *testing.T) {
 	var created map[string]string
 	var imported string
 	exists := false
-	ez := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	f := newFakeEZ(t, func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		defer mu.Unlock()
 		switch {
@@ -40,8 +39,7 @@ func TestCPanelMailToEmailZit(t *testing.T) {
 		default:
 			w.WriteHeader(http.StatusOK)
 		}
-	}))
-	defer ez.Close()
+	})
 
 	e := newEnv(t)
 	a := e.setupAdmin()
@@ -61,14 +59,14 @@ func TestCPanelMailToEmailZit(t *testing.T) {
 		t.Fatalf("without EmailZit: %q", n)
 	}
 	// linked without an import package: the report says what to do
-	a.ok("/settings/emailzit", url.Values{"url": {ez.URL}, "token": {"ezt_test_token"}, "insecure": {"on"}})
+	pairEmailZit(t, a, f)
 	if n := e.srv.importMailToEmailZit(ctx, "test", "cpmove-shop.tar.gz", c); !strings.Contains(n, "choose an EmailZit package") {
 		t.Fatalf("without a package: %q", n)
 	}
-	if st, _, loc := a.post("/settings/emailzit", url.Values{"url": {ez.URL}, "insecure": {"on"}, "import_package": {"Bad Slug"}}); st != http.StatusSeeOther || loc != "/settings/emailzit" {
+	if st, _, loc := a.post("/settings/emailzit", url.Values{"import_package": {"Bad Slug"}}); st != http.StatusSeeOther || loc != "/settings/emailzit" {
 		t.Fatalf("bad slug: %d %s", st, loc)
 	}
-	a.ok("/settings/emailzit", url.Values{"url": {ez.URL}, "insecure": {"on"}, "import_package": {"mail-basic"}})
+	a.ok("/settings/emailzit", url.Values{"import_package": {"mail-basic"}})
 	n := e.srv.importMailToEmailZit(ctx, "test", "cpmove-shop.tar.gz", c)
 	mu.Lock()
 	if !strings.Contains(n, "job job-7") || created["id"] != c.UUID || created["username"] != "shop" || created["package"] != "mail-basic" ||

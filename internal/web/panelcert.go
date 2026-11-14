@@ -44,6 +44,7 @@ func (s *Server) LoadPanelCert() {
 // PanelTLS is the TLS configuration of both panels: the CA certificate
 // for its names, the self-signed one otherwise.
 func (s *Server) PanelTLS(selfSigned tls.Certificate) *tls.Config {
+	s.selfPanelCert = &selfSigned
 	cfg := tlsutil.ServerConfig(selfSigned)
 	cfg.GetCertificate = func(h *tls.ClientHelloInfo) (*tls.Certificate, error) {
 		if c := s.panelCert.Load(); c != nil && h.ServerName != "" && c.Leaf != nil && c.Leaf.VerifyHostname(h.ServerName) == nil {

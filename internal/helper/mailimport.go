@@ -2,7 +2,6 @@ package helper
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +13,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/max-zit/hostzit/internal/tlsutil"
 )
 
 // The mail of a cPanel account (maildirs, mailboxes, forwarders) belongs to
@@ -33,6 +34,7 @@ type mailImportArgs struct {
 	URL      string `json:"url"`      // EmailZit, e.g. https://mail.example.com:8444
 	Token    string `json:"token"`    // ezt_… with customers:write (never logged)
 	Insecure bool   `json:"insecure"` // EmailZit has a self-signed certificate
+	Pin      string `json:"pin"`      // SHA-256 of EmailZit's public key from the pairing code
 	Customer string `json:"customer"` // the customer's UUID (the same in both products)
 }
 
@@ -68,7 +70,11 @@ func (h *Helper) importMail(ctx context.Context, a mailImportArgs) (any, error) 
 	}
 	req.Header.Set("Authorization", "Bearer "+a.Token)
 	req.Header.Set("Content-Type", "application/gzip")
-	tr := &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, InsecureSkipVerify: a.Insecure}} // #nosec G402 -- only when the administrator allows a self-signed EmailZit
+	cfg := tlsutil.PinnedConfig(u.Hostname(), a.Pin)
+	if a.Pin == "" && a.Insecure {
+		cfg.InsecureSkipVerify = true // #nosec G402 -- only when the administrator allowed a self-signed EmailZit (old links typed in by hand)
+	}
+	tr := &http.Transport{TLSClientConfig: cfg}
 	resp, err := (&http.Client{Transport: tr}).Do(req)
 	if err != nil {
 		// the address may carry nothing secret, but keep errors short

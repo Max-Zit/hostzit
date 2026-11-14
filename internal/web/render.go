@@ -300,7 +300,13 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, status int, name
 	p.Host = r.Host
 	p.Panel = panelOf(r)
 	if p.User != nil {
-		p.MailURL = s.emailzitLink(r.Context()).URL
+		if l := s.emailzitLink(r.Context()); l.URL != "" {
+			// customers open EmailZit by a one-time link, admins sign in there
+			p.MailURL = l.URL + "/"
+			if panelOf(r) != PanelAdmin {
+				p.MailURL = "/emailzit"
+			}
+		}
 		if p.User.IsAdmin() && panelOf(r) == PanelAdmin {
 			p.Approvals = s.store.PendingApprovals(r.Context())
 		}

@@ -64,12 +64,13 @@
   {{end}}
   {{if .Data.Tokens}}
   <div class="table-wrap"><table>
-    <thead><tr><th>{{.T "Name"}}</th><th class="hide-sm">{{.T "Created"}}</th><th>{{.T "Valid until"}}</th><th class="hide-sm">{{.T "Last used"}}</th><th></th></tr></thead>
+    <thead><tr><th>{{.T "Name"}}</th><th class="hide-sm">{{.T "Created"}}</th><th>{{.T "Valid until"}}</th><th class="hide-sm">{{.T "Last used"}}</th><th class="hide-sm">{{.T "Allowed from"}}</th><th></th></tr></thead>
     <tbody>{{range .Data.Tokens}}<tr>
       <td><b>{{.Name}}</b></td>
       <td class="hide-sm muted">{{$.Time .CreatedAt}}</td>
       <td class="small">{{if .ExpiresAt}}{{$.Time .ExpiresAt}}{{else}}{{$.T "no limit"}}{{end}}</td>
       <td class="hide-sm muted small">{{if .LastUsed}}{{$.Ago .LastUsed}}{{with .LastIP}} · <span class="mono">{{.}}</span>{{end}}{{else}}{{$.T "never"}}{{end}}</td>
+      <td class="hide-sm small">{{if .AllowedIPs}}<span class="mono">{{join .AllowedIPs ", "}}</span>{{else}}<span class="muted">{{$.T "everywhere"}}</span>{{end}}</td>
       <td class="actions"><form method="post" action="/account/tokens/{{.ID}}/delete" data-confirm="{{$.T "Revoke the API token %s? Scripts using it stop working." .Name}}"><button class="ghost sm">{{$.T "Revoke"}}</button></form></td>
     </tr>{{end}}</tbody>
   </table></div>
@@ -79,6 +80,7 @@
     <input name="name" required maxlength="100" placeholder="{{.T "Name, for example Backup script"}}" aria-label="{{.T "Name"}}">
     <label class="inline">{{.T "Valid for (days)"}} <input type="number" name="days" value="365" min="0" max="3650" class="num-sm"></label>
     </div>
+    <label>{{.T "Allowed addresses"}} <small>{{.T "optional"}}</small><textarea name="allowed" rows="2" class="mono" spellcheck="false" placeholder="203.0.113.10&#10;2001:db8::10"></textarea><small>{{.T "The token then works only from these addresses or networks. Enter every address of the other server, IPv4 and IPv6: it may come over either."}}</small></label>
     <div class="row">{{range scopes}}<label class="check"><input type="checkbox" name="scope_{{.}}" {{if ne . "dns:mail"}}checked{{end}}><span class="mono small">{{.}}</span></label>{{end}}</div>
     <div><button class="primary">{{template "icon" "plus"}}{{.T "Create API token"}}</button></div>
   </form>

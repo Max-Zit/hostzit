@@ -4,33 +4,59 @@
 <div class="settings">
 {{template "settingstabs" .}}
 <div class="settings-body">
+{{$l := .Data.L}}
 <section class="panel">
   <h2>{{template "icon" "mail"}}EmailZit</h2>
-  <p class="muted small">{{.T "EmailZit is the mail hosting of MaxZit. Linked, it learns which hosting account each website belongs to, so mail from the websites counts against the right customer, and both panels show a switch to the other."}}</p>
-  <form method="post" action="/settings/emailzit" class="stack">
-    <label>{{.T "Address of the EmailZit panel"}}<input name="url" value="{{.Data.L.URL}}" class="mono" spellcheck="false" placeholder="https://mail.example.com:8444"><small>{{.T "Empty: no link."}}</small></label>
-    <label>{{.T "EmailZit API token"}} <small>{{if .Data.HasToken}}{{.T "saved; empty keeps it"}}{{else}}{{.T "with the scope customers:write"}}{{end}}</small><input type="password" name="token" autocomplete="off" class="mono" placeholder="ezt_…"></label>
-    <label class="check"><input type="checkbox" name="insecure" {{if .Data.L.Insecure}}checked{{end}}><span>{{.T "Accept EmailZit's self-signed certificate"}}</span></label>
-    <label><span>{{.T "EmailZit package for cPanel imports"}} <small>{{.T "optional"}}</small></span><input name="import_package" value="{{.Data.L.ImportPackage}}" class="mono" spellcheck="false" placeholder="mail-basic"><small>{{.T "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit."}}</small></label>
-    <div><button class="primary">{{.T "Save"}}</button></div>
-  </form>
-</section>
-<section class="panel">
-  <h2>{{template "icon" "key"}}{{.T "Sign in to EmailZit with HostZit"}}</h2>
-  <p class="muted small">{{.T "Customers open their mail panel with one click, without a second password: HostZit is the OpenID Connect provider, EmailZit the client."}}</p>
-  {{$c := .Data.Client}}
+  <p class="muted small">{{.T "EmailZit is the mail hosting of MaxZit. Linked, customers open their mail with one click, EmailZit writes the mail records of their domains into the zones here, and the websites send their mail through EmailZit."}}</p>
+  {{if $l.Paired}}
+  <p><span class="badge ok"><i></i>{{.T "Linked"}}</span> {{.T "with"}} <b class="mono">{{or $l.MailHost $l.URL}}</b> {{.T "since"}} {{.Time $l.LinkedAt}}{{with $l.LinkedBy}} ({{.}}){{end}}</p>
   <dl class="kv small">
-    <dt>{{.T "Issuer"}}</dt><dd class="mono">{{.Data.Issuer}}</dd>
-    <dt>{{.T "Discovery"}}</dt><dd class="mono">{{.Data.Issuer}}/.well-known/openid-configuration</dd>
-    {{if $c.ID}}<dt>{{.T "Client ID"}}</dt><dd class="mono">{{$c.ID}}</dd>{{end}}
+    <dt>{{.T "EmailZit panel"}}</dt><dd class="mono"><a href="{{$l.URL}}/" target="_blank" rel="noopener">{{$l.URL}}</a></dd>
+    <dt>{{.T "EmailZit's token works from"}}</dt><dd class="mono">{{join $l.OwnAddresses ", "}}</dd>
+    <dt>{{.T "HostZit's token works from"}}</dt><dd class="mono">{{join $l.Addresses ", "}} <span class="muted">(dns:mail)</span></dd>
+    <dt>{{.T "Mail from websites"}}</dt><dd>{{if .Data.Local}}{{.T "through EmailZit on this server"}}{{else if $l.Relay}}{{.T "through EmailZit's relay"}} <span class="mono">{{$l.Relay.Host}}:{{$l.Relay.Port}}</span>{{else}}{{.T "sent by HostZit itself (EmailZit gave no relay login)"}}{{end}}</dd>
+    {{with $l.AdminAdded}}<dt>{{$.T "Admin port"}}</dt><dd class="small">{{$.T "EmailZit's addresses were allowed to reach the admin port for its API calls:"}} <span class="mono">{{join . ", "}}</span></dd>{{end}}
   </dl>
-  <form method="post" action="/settings/emailzit/sso" class="stack">
-    <label>{{.T "Redirect address of EmailZit"}}<input name="redirect_uri" value="{{$c.RedirectURI}}" class="mono" spellcheck="false" placeholder="https://mail.example.com:8444/sso/oidc/callback"><small>{{.T "As EmailZit shows it in its settings for HostZit sign-in."}}</small></label>
-    {{if $c.ID}}<label class="check"><input type="checkbox" name="new_secret"><span>{{.T "Make a new client secret (EmailZit then needs the new one)"}}</span></label>
-    <label class="check"><input type="checkbox" name="off"><span>{{.T "Switch the sign-in off"}}</span></label>{{end}}
+  {{else if .Data.Manual}}
+  <p><span class="badge warn"><i></i>{{.T "Linked by hand"}}</span> <span class="mono">{{$l.URL}}</span></p>
+  <p class="small muted">{{.T "This link was made by typing in an address and a token. It keeps working; a pairing code below replaces it with tokens that have the least rights and work only between the two servers."}}</p>
+  {{end}}
+  {{if $l.URL}}
+  <form method="post" action="/settings/emailzit/unlink" data-confirm="{{.T "End the link with EmailZit? Both tokens are revoked, customers lose the switch to EmailZit and websites send their mail themselves again."}}"><button class="secondary">{{template "icon" "trash"}}{{.T "Unlink"}}</button></form>
+  {{end}}
+</section>
+
+<section class="panel">
+  <h2>{{template "icon" "key"}}{{if $l.URL}}{{.T "Link again with a pairing code"}}{{else}}{{.T "Link with a pairing code"}}{{end}}</h2>
+  <ol class="small">
+    <li>{{.T "In EmailZit: Settings → HostZit → Make a pairing code. It works once, for ten minutes."}}</li>
+    <li>{{.T "Paste the whole code here and press Link."}}</li>
+  </ol>
+  <form method="post" action="/settings/emailzit/pair" class="stack">
+    <label>{{.T "Pairing code"}}<textarea name="code" rows="3" class="mono" spellcheck="false" autocomplete="off" required placeholder="ezlink_…"></textarea></label>
+    <p class="small muted">{{.T "HostZit tells EmailZit these addresses of this server; EmailZit's token and relay login work only from them:"}} <span class="mono">{{if .Data.Own}}{{join .Data.Own ", "}}{{else}}{{.T "none set (Settings → Hosting)"}}{{end}}</span></p>
+    <label><span>{{.T "Other outgoing addresses of this server"}} <small>{{.T "optional"}}</small></span><input name="addresses" class="mono" spellcheck="false" placeholder="2001:db8::25"><small>{{.T "Only when this server reaches EmailZit from an address that is not listed above, for example behind NAT."}}</small></label>
+    <div><button class="primary">{{template "icon" "link"}}{{.T "Link"}}</button></div>
+  </form>
+</section>
+
+{{if $l.URL}}
+<section class="panel">
+  <h2>{{template "icon" "upload"}}{{.T "cPanel imports"}}</h2>
+  <form method="post" action="/settings/emailzit" class="stack">
+    <label><span>{{.T "EmailZit package for cPanel imports"}} <small>{{.T "optional"}}</small></span><input name="import_package" value="{{$l.ImportPackage}}" class="mono" spellcheck="false" placeholder="mail-basic"><small>{{.T "With a package (its slug in EmailZit), a cPanel import also moves the mailboxes, mail and forwarders to EmailZit."}}</small></label>
     <div><button class="primary">{{.T "Save"}}</button></div>
   </form>
 </section>
+{{end}}
+
+{{if .Data.OIDCLeft}}
+<section class="panel">
+  <h2>{{template "icon" "key"}}{{.T "Old sign-in client"}}</h2>
+  <p class="small muted">{{.T "An OpenID Connect client for EmailZit is still set. Customers now open EmailZit with a one-time link, so the client is not needed. Switch it off."}}</p>
+  <form method="post" action="/settings/emailzit/sso"><input type="hidden" name="off" value="on"><button class="secondary">{{.T "Switch the sign-in off"}}</button></form>
+</section>
+{{end}}
 </div>
 </div>
 {{end}}

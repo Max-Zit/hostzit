@@ -44,8 +44,10 @@ func TestOIDCProvider(t *testing.T) {
 	if strings.Contains(a.page("/settings/emailzit"), secret) {
 		t.Fatal("the client secret is shown again")
 	}
-	if !strings.Contains(page, "https://host1.hostzit.test:8443/.well-known/openid-configuration") {
-		t.Error("issuer not shown")
+	// the settings page no longer sets the client up (customers open
+	// EmailZit by a one-time link); a client left from before can be switched off
+	if !strings.Contains(a.page("/settings/emailzit"), "Old sign-in client") {
+		t.Error("no way to switch the old client off")
 	}
 
 	// discovery

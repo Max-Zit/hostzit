@@ -534,7 +534,7 @@ func (s *Server) importMailToEmailZit(ctx context.Context, by, file string, c *s
 	var res struct {
 		JobID string `json:"job_id"`
 	}
-	if err := s.call(ctx, by, "import.mail", map[string]any{"file": file, "url": l.URL, "token": tok, "insecure": l.Insecure, "customer": c.UUID}, &res); err != nil {
+	if err := s.call(ctx, by, "import.mail", map[string]any{"file": file, "url": l.URL, "token": tok, "insecure": l.Insecure, "pin": l.Pin, "customer": c.UUID}, &res); err != nil {
 		return "Mail was not moved: " + storeErr(err)
 	}
 	s.syncWebUIDs(ctx, c)

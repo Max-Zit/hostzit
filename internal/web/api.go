@@ -13,6 +13,7 @@ import (
 
 	"github.com/max-zit/hostzit/internal/auth"
 	"github.com/max-zit/hostzit/internal/hosting"
+	"github.com/max-zit/hostzit/internal/netacl"
 	"github.com/max-zit/hostzit/internal/store"
 )
 
@@ -56,7 +57,7 @@ func apiFail(w http.ResponseWriter, err error) {
 func (s *Server) apiHandler() http.Handler {
 	mux := http.NewServeMux()
 	need := func(scope string, pattern string, h http.HandlerFunc) { mux.Handle(pattern, s.apiAuth(scope, h)) }
-	mux.HandleFunc("GET /api/v1/zit/info", s.apiInfo)
+	mux.HandleFunc("GET /api/v1/zit/info", s.apiInfoChecked)
 	need("customers:read", "GET /api/v1/server/status", s.apiStatus)
 	need("customers:read", "GET /api/v1/packages", s.apiPackages)
 	need("customers:read", "GET /api/v1/customers", s.apiCustomers)
@@ -101,6 +102,14 @@ func (s *Server) apiAuth(scope string, next http.HandlerFunc) http.Handler {
 		if errors.Is(err, store.ErrBadToken) {
 			s.guard.fail(r.Context(), ip, "", "API token")
 			apiError(w, http.StatusUnauthorized, "unauthorized", "invalid API token")
+			return
+		}
+		if errors.Is(err, store.ErrTokenAddress) {
+			// a valid token from the wrong address: not counted as a failed
+			// sign-in, or a server whose second address is missing would
+			// block itself
+			s.log.Warn("API token used from an address it does not allow", "token", t.Name, "ip", ip)
+			apiError(w, http.StatusForbidden, "forbidden_address", "the token may not be used from this address")
 			return
 		}
 		if err != nil {
@@ -695,12 +704,13 @@ func (s *Server) handleAPITokenCreate(w http.ResponseWriter, r *http.Request) {
 			scopes = append(scopes, sc)
 		}
 	}
-	id, tok, err := s.store.CreateAPIToken(r.Context(), u.ID, r.FormValue("name"), formInt(r, "days"), scopes)
+	allowed := netacl.Split(r.FormValue("allowed"))
+	id, tok, err := s.store.CreateAPIToken(r.Context(), u.ID, r.FormValue("name"), formInt(r, "days"), scopes, allowed)
 	if err != nil {
 		s.showAccount(w, r, http.StatusBadRequest, &accountData{}, storeErr(err))
 		return
 	}
-	s.audit(r, "api.token.create", "user:"+u.Username, "API token #%d %q created (%s)", id, r.FormValue("name"), strings.Join(scopes, " "))
+	s.audit(r, "api.token.create", "user:"+u.Username, "API token #%d %q created (%s)%s", id, r.FormValue("name"), strings.Join(scopes, " "), tokenFrom(allowed))
 	s.showAccount(w, r, http.StatusOK, &accountData{NewToken: tok}, "")
 }
 
@@ -721,3 +731,38 @@ func (s *Server) handleAPITokenDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 var apiExtra []func(s *Server, need func(scope, pattern string, h http.HandlerFunc))
+
+// tokenFrom describes a token's address list for the audit log.
+func tokenFrom(allowed []string) string {
+	if len(allowed) == 0 {
+		return ""
+	}
+	return ", only from " + strings.Join(allowed, " ")
+}
+
+// apiInfoChecked answers /zit/info without a token, as before, but checks
+// a token that is sent: the other product tests a new token with it
+// (EmailZit at the pairing), so a wrong one must not pass.
+func (s *Server) apiInfoChecked(w http.ResponseWriter, r *http.Request) {
+	if tok, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer "); ok {
+		ip := clientIP(r)
+		if until := s.guard.blocked(r.Context(), ip); !until.IsZero() {
+			apiError(w, http.StatusTooManyRequests, "rate_limited", "too many failed attempts from this address")
+			return
+		}
+		_, _, err := s.store.UserByAPIToken(r.Context(), strings.TrimSpace(tok), ip)
+		switch {
+		case errors.Is(err, store.ErrBadToken):
+			s.guard.fail(r.Context(), ip, "", "API token")
+			apiError(w, http.StatusUnauthorized, "unauthorized", "invalid API token")
+			return
+		case errors.Is(err, store.ErrTokenAddress):
+			apiError(w, http.StatusForbidden, "forbidden_address", "the token may not be used from this address")
+			return
+		case err != nil:
+			apiError(w, http.StatusInternalServerError, "internal", "internal error")
+			return
+		}
+	}
+	s.apiInfo(w, r)
+}

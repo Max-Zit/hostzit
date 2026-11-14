@@ -71,9 +71,12 @@ type Server struct {
 	acmeMu sync.Mutex
 	// panelCert is the CA certificate of the panels (nil: self-signed only).
 	panelCert atomic.Pointer[tls.Certificate]
-	jobs      sync.WaitGroup
-	applyMu   sync.Map // customer id → *sync.Mutex (one change at a time per account)
-	csp       cspCache
+	// selfPanelCert is the self-signed certificate of the panels (its pin
+	// goes to EmailZit at the pairing when there is no CA certificate).
+	selfPanelCert *tls.Certificate
+	jobs          sync.WaitGroup
+	applyMu       sync.Map // customer id → *sync.Mutex (one change at a time per account)
+	csp           cspCache
 }
 
 // New creates the server.
