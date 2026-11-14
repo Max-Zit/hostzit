@@ -544,6 +544,45 @@ func TestManyEmailZitLinks(t *testing.T) {
 	if !e.hp.called(`mail.relay`) {
 		e.srv.applyRelay(ctx, "test")
 	}
+	// a customer EmailZit A takes later is found by A's DNS write, and its
+	// website mail goes through A at once (lab J6: it waited for the resync)
+	a.ok("/customers/new", url.Values{"username": {"custlate"}, "package": {"1"}, "domain": {"custlate.example.com"}, "dns": {"on"}, "password": {"custlate password 123"}})
+	late, _ := e.st.CustomerByRef(ctx, "custlate")
+	e.srv.Wait()
+	onA.Store(late.UUID, true)
+	e.hp.mu.Lock()
+	e.hp.calls = nil
+	e.hp.mu.Unlock()
+	fa.mu.Lock()
+	dnsA0 := fa.dnsTok
+	fa.mu.Unlock()
+	req, _ := http.NewRequest("PUT", e.admin.URL+"/api/v1/dns/zones/custlate.example.com/owned/emailzit",
+		strings.NewReader(`{"customer_id":"`+late.UUID+`","records":[{"name":"@","type":"MX","ttl":3600,"content":"10 mail.a.example."}]}`))
+	req.Header.Set("Authorization", "Bearer "+dnsA0)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		t.Fatalf("EmailZit A's records for custlate: %d", resp.StatusCode)
+	}
+	e.srv.Wait()
+	if l, _ := e.srv.linkFor(ctx, late); l.ID != la.ID {
+		t.Fatalf("custlate is on %q, want %q", l.ID, la.ID)
+	}
+	lateRelay := ""
+	e.hp.mu.Lock()
+	for _, c := range e.hp.calls {
+		if strings.HasPrefix(c, `mail.account {"account":"custlate"`) && strings.Contains(c, `"relay":"`+la.ID+`"`) {
+			lateRelay = la.ID
+		}
+	}
+	e.hp.mu.Unlock()
+	if lateRelay != la.ID {
+		t.Fatal("custlate's website mail does not go through EmailZit A after A's DNS write")
+	}
 	// the switch opens each customer's own EmailZit
 	for n, f := range map[string]*fakeEZ{"custa": fa, "custb": fb} {
 		p := e.client(e.panel.URL)
@@ -606,9 +645,9 @@ func TestManyEmailZitLinks(t *testing.T) {
 	}
 
 	// EmailZit B ends its link: A stays
-	req, _ := http.NewRequest("DELETE", e.admin.URL+"/api/v1/link/emailzit", nil)
+	req, _ = http.NewRequest("DELETE", e.admin.URL+"/api/v1/link/emailzit", nil)
 	req.Header.Set("Authorization", "Bearer "+dnsB)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err = http.DefaultClient.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		t.Fatal(err, resp.StatusCode)
 	}

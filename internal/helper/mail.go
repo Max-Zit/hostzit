@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/max-zit/hostzit/internal/hosting"
+	"github.com/max-zit/hostzit/internal/tlsutil"
 )
 
 // Mail from websites. Account processes cannot reach SMTP ports (the
@@ -124,6 +125,10 @@ type RelayConfig struct {
 	User     string `json:"user"`
 	Password string `json:"password"`
 	Domain   string `json:"domain"` // envelope senders: <account>@<domain>
+	// Pin is the SHA-256 of the public key of EmailZit's certificate (from
+	// the pairing code): besides a chain the system trusts, the relay may
+	// show that key (EmailZit's own self-signed certificate).
+	Pin string `json:"pin,omitempty"`
 	// Mode: direct (HostZit delivers), emailzit (EmailZit's relay login of
 	// the link) or relay (the administrator's SMTP server); "" = relay
 	// with a host, else direct.
@@ -497,6 +502,14 @@ type setupError struct {
 
 func (e *setupError) Error() string { return "relay " + e.stage + ": " + e.err.Error() }
 
+// relayTLS checks the relay's certificate: a chain the system trusts for
+// its host name, or (EmailZit's relay) the key pinned at the pairing.
+func relayTLS(relay RelayConfig) *tls.Config {
+	cfg := tlsutil.PinnedConfig(relay.Host, relay.Pin)
+	cfg.ServerName = relay.Host
+	return cfg
+}
+
 // sendVia hands a message to a relay with a login: the administrator's
 // SMTP server (from empty: the envelope sender is <account>@<relay
 // domain>, as before) or EmailZit's relay (from = the prepared sender on
@@ -507,7 +520,7 @@ func sendVia(ctx context.Context, relay RelayConfig, account, from string, q que
 	var conn net.Conn
 	var err error
 	if relay.Security == "tls" {
-		conn, err = tls.DialWithDialer(&d, "tcp", addr, &tls.Config{ServerName: relay.Host, MinVersion: tls.VersionTLS12})
+		conn, err = tls.DialWithDialer(&d, "tcp", addr, relayTLS(relay))
 	} else {
 		conn, err = d.DialContext(ctx, "tcp", addr)
 	}
@@ -525,7 +538,7 @@ func sendVia(ctx context.Context, relay RelayConfig, account, from string, q que
 		return &setupError{"greeting", err}
 	}
 	if relay.Security == "starttls" {
-		if err := c.StartTLS(&tls.Config{ServerName: relay.Host, MinVersion: tls.VersionTLS12}); err != nil {
+		if err := c.StartTLS(relayTLS(relay)); err != nil {
 			return &setupError{"STARTTLS", err}
 		}
 	}

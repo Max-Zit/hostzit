@@ -92,14 +92,16 @@ func (s *Server) applyRelay(ctx context.Context, by string) error {
 			continue
 		}
 		// EmailZit takes the login only after STARTTLS (and so do we)
-		logins[l.ID] = map[string]any{"host": l.Relay.Host, "port": l.Relay.Port, "security": "starttls", "user": l.Relay.Username, "password": pw}
+		// the pin of the pairing code: a relay with EmailZit's own (self-signed)
+		// certificate is accepted like its API
+		logins[l.ID] = map[string]any{"host": l.Relay.Host, "port": l.Relay.Port, "security": "starttls", "user": l.Relay.Username, "password": pw, "pin": l.Pin}
 		relays[l.ID] = logins[l.ID]
 	}
 	relay := map[string]any{"mode": "direct", "helo": hs.ServerName}
 	switch r, dl := s.defaultRoute(ctx); r {
 	case "emailzit":
 		if x, ok := logins[dl.ID]; ok {
-			relay = map[string]any{"mode": "emailzit", "id": dl.ID, "host": x["host"], "port": x["port"], "security": "starttls", "user": x["user"], "password": x["password"], "helo": hs.ServerName}
+			relay = map[string]any{"mode": "emailzit", "id": dl.ID, "host": x["host"], "port": x["port"], "security": "starttls", "user": x["user"], "password": x["password"], "pin": x["pin"], "helo": hs.ServerName}
 		}
 	case "relay":
 		m := s.mailSettings(ctx)

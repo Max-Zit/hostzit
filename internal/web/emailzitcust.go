@@ -329,6 +329,11 @@ func (s *Server) apiScopeAllows(r *http.Request, customerUUID string, write bool
 		return false
 	}
 	nl, ok := s.resolveCustomer(ctx, c)
+	if ok {
+		// the customer's mail is on nl from now on: its website mail and the
+		// SPF of its zones follow at once (not only at the next resync)
+		s.background(ctx, func(bg context.Context) { s.customerMailChanged(bg, c) })
+	}
 	return ok && nl.ID == l.ID
 }
 
