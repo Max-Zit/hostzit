@@ -189,12 +189,12 @@ func addrDomain(a string) string {
 
 // prepared is a message ready for direct delivery or EmailZit's relay.
 type prepared struct {
-	From     string // envelope sender
-	Header   string // address in the From header
-	Msg      []byte
-	Refusal  string // not sent: why
-	Domain   string
-	Signed   string // DKIM d= when signed
+	From    string // envelope sender
+	Header  string // address in the From header
+	Msg     []byte
+	Refusal string // not sent: why
+	Domain  string
+	Signed  string // DKIM d= when signed
 }
 
 // prepare checks the sender and completes the message: From (when
