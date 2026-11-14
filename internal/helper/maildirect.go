@@ -144,12 +144,15 @@ func NewDKIMKey() (priv, record string, err error) {
 	return string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der})), "v=DKIM1; k=rsa; p=" + base64.StdEncoding.EncodeToString(pub), nil
 }
 
-func (m *mailer) account(account string) MailAccount {
-	var ma MailAccount
-	if b, err := m.h.Sys.ReadFile(mailAccountDir + "/" + account + ".json"); err == nil {
-		_ = json.Unmarshal(b, &ma)
+// account is what the panel told the mailer about an account; known is
+// false until the panel has sent it (right after an update, before the
+// first sync), and then nothing may be judged by the domains yet.
+func (m *mailer) account(account string) (ma MailAccount, known bool) {
+	b, err := m.h.Sys.ReadFile(mailAccountDir + "/" + account + ".json")
+	if err != nil {
+		return ma, false
 	}
-	return ma
+	return ma, json.Unmarshal(b, &ma) == nil
 }
 
 // covers reports whether domain is d or below it.

@@ -492,6 +492,8 @@ func (s *Server) Run(ctx context.Context) {
 		time.Sleep(2 * time.Second)
 		_ = s.applyFirewall(ctx, "system")
 		_ = s.applyRelay(ctx, "system")
+		// the mailer judges senders by the accounts' domains: send them first
+		s.syncAllMail(ctx)
 		_ = s.applyBrute(ctx, "system")
 		_ = s.applyGeo(ctx, "system")
 		// zones the DNS server refused before (e.g. records repaired by an update)
@@ -504,10 +506,7 @@ func (s *Server) Run(ctx context.Context) {
 		}
 	}()
 	time.AfterFunc(time.Minute, func() { s.collectUsage(ctx) })
-	time.AfterFunc(2*time.Minute, func() {
-		s.syncAllMail(ctx)
-		_, _ = s.refreshMailCheck(ctx)
-	})
+	time.AfterFunc(2*time.Minute, func() { _, _ = s.refreshMailCheck(ctx) })
 	for {
 		select {
 		case <-ctx.Done():

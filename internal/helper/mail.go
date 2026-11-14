@@ -331,7 +331,18 @@ func (m *mailer) deliver(ctx context.Context, relay RelayConfig, account, dir, i
 			res.Host = relay.Host
 		}
 	default:
-		ma := m.account(account)
+		ma, known := m.account(account)
+		if !known {
+			// found on h1: right after the update the queued messages were
+			// refused because the panel had not sent the domains yet
+			if time.Since(q.At) < 48*time.Hour {
+				q.NextTry = time.Now().Add(time.Minute)
+				q.LastErr = "waiting for the domains of the account from the panel"
+				nb, _ := json.Marshal(q)
+				_ = m.h.Sys.WriteFile(envFile, nb, 0o600, 0, 0)
+				return
+			}
+		}
 		p := prepare(account, ma, q, msg, mode == "direct", time.Now())
 		entry.From = p.Header
 		if p.Refusal != "" {

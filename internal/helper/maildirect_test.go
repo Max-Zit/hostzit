@@ -318,3 +318,38 @@ func TestWebsiteMailThroughEmailZit(t *testing.T) {
 		t.Fatalf("%+v", log)
 	}
 }
+
+// Found on h1: right after the update the queued messages were refused,
+// because the panel had not sent the account's domains yet. They wait now.
+func TestWebsiteMailWaitsForTheAccount(t *testing.T) {
+	h, _, root, _ := newTest(t)
+	f := newFakeMX(t)
+	useFakeMX(t, f)
+	_ = os.MkdirAll(filepath.Join(root, "etc/hostzit/accounts"), 0o700)
+	_ = os.WriteFile(filepath.Join(root, "etc/hostzit/accounts/shop1.json"), []byte(`{"name":"shop1","number":1,"limits":{"mail_per_hour":10}}`), 0o600)
+	queueMail(t, root, "shop1", "c1", queued{To: []string{"ok@dest.test"}, At: time.Now(), Subject: "Early"}, "From: info@shop.test\nSubject: Early\n\nx\n")
+	m := &mailer{h: h, sent: map[string][]time.Time{}}
+	m.round(t.Context())
+	if log := mailLogOf(t, h, "shop1"); len(log) != 0 {
+		t.Fatalf("judged before the panel sent the domains: %+v", log)
+	}
+	var q []QueueItem
+	_ = json.Unmarshal(call(t, h, "mail.queue", mailQueueArgs{Account: "shop1"}).Result, &q)
+	if len(q) != 1 || !strings.Contains(q[0].LastErr, "waiting") {
+		t.Fatalf("queue %+v", q)
+	}
+	if r := call(t, h, "mail.account", mailAccountArgs{Account: "shop1", Mail: MailAccount{Primary: "shop.test", Domains: []string{"shop.test"}}}); !r.OK {
+		t.Fatal(r.Error)
+	}
+	// the next try (a minute later)
+	b, _ := os.ReadFile(filepath.Join(root, "var/spool/hostzit/shop1/c1.json"))
+	var x queued
+	_ = json.Unmarshal(b, &x)
+	x.NextTry = time.Time{}
+	b, _ = json.Marshal(x)
+	_ = os.WriteFile(filepath.Join(root, "var/spool/hostzit/shop1/c1.json"), b, 0o600)
+	m.round(t.Context())
+	if log := mailLogOf(t, h, "shop1"); len(log) != 1 || log[0].Status != "sent" {
+		t.Fatalf("%+v", log)
+	}
+}
