@@ -235,6 +235,10 @@ func prepare(account string, ma MailAccount, q queued, msg []byte, sign bool, no
 	if pm.Header.Get("Date") == "" {
 		add = append(add, "Date: "+now.Format(time.RFC1123Z))
 	}
+	if pm.Header.Get("Mime-Version") == "" {
+		// receivers score a message without it as suspicious
+		add = append(add, "MIME-Version: 1.0")
+	}
 	if pm.Header.Get("Message-Id") == "" {
 		var rb [12]byte
 		_, _ = rand.Read(rb[:])

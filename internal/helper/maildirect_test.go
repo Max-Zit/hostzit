@@ -258,6 +258,9 @@ func TestWebsiteMailDirect(t *testing.T) {
 		t.Fatalf("%d messages delivered:\n%s", len(msgs), got)
 	}
 	verifyDKIM(t, []byte(msgs[0]), record)
+	if !strings.Contains(msgs[1], "MIME-Version: 1.0") {
+		t.Fatal("no MIME-Version added")
+	}
 	if !strings.Contains(msgs[0], "Message-ID: <") || !strings.Contains(msgs[0], "Date: ") || !strings.Contains(msgs[0], "X-HostZit-Account: shop1") {
 		t.Fatal(msgs[0])
 	}
