@@ -745,6 +745,15 @@ func (s *Server) handleEmailZitPair(w http.ResponseWriter, r *http.Request) {
 		s.serverError(w, r, err)
 		return
 	}
+	// EmailZit's addresses may be blocked by the sign-in guard (its calls
+	// with a token revoked by hand): the pairing proved them, so the block
+	// goes before EmailZit tests the new token
+	for _, a := range addrs {
+		if n, err := s.store.Unblock(ctx, a); err == nil && n > 0 {
+			s.audit(r, "login.unblock", "ip:"+a, "block lifted by the pairing with EmailZit %s", l.URL)
+		}
+		s.guard.success(a, "")
+	}
 	// step 2: EmailZit gets HostZit's token (the link exists already, so
 	// the DNS it publishes right away is accepted)
 	st, b, err = ezRequest(ctx, cl, code.URL, http.MethodPut, "/api/v1/link/hostzit/dns-token", "Bearer "+ezTok, map[string]string{"token": hzTok})

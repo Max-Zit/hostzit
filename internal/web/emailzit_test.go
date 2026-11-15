@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -709,5 +710,48 @@ func TestPairAssignedLearnsNothing(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusNotFound {
 		t.Fatal("a pairing token without its link still works", resp.StatusCode)
+	}
+}
+
+// A link whose HostZit token is revoked by hand shows "not working" at once
+// (h1 ↔ e1, 2026-11-14: the token was revoked with old ones, EmailZit's
+// calls were refused until the sign-in guard blocked it); the token list
+// marks such a token and warns. Pairing again lifts a sign-in block of
+// EmailZit's addresses before EmailZit tests the new token.
+func TestEmailZitLinkTokenRevoked(t *testing.T) {
+	e := newEnv(t)
+	a := e.setupAdmin()
+	ctx := context.Background()
+	f := newFakeEZ(t, nil)
+	pairEmailZit(t, a, f)
+	l := firstLink(e)
+	if l.DNSTokenID == 0 {
+		t.Fatal("the link has no token id")
+	}
+	if _, body, _ := a.get("/account"); !strings.Contains(body, "link with EmailZit") || !strings.Contains(body, "This token belongs to the link with EmailZit") ||
+		!strings.Contains(body, fmt.Sprintf(`action="/account/tokens/%d/delete"`, l.DNSTokenID)) {
+		t.Fatal("the token list does not mark the link's token")
+	}
+	a.ok(fmt.Sprintf("/account/tokens/%d/delete", l.DNSTokenID), url.Values{})
+	if l := firstLink(e); l.State != "broken" || l.StateMsg != msgLinkTokenGone {
+		t.Fatalf("after the revoke: %q %q", l.State, l.StateMsg)
+	}
+	e.srv.checkEmailZitLinks(ctx) // EmailZit itself still answers: the link stays broken
+	if l := firstLink(e); l.State != "broken" {
+		t.Fatalf("after the check: %q", l.State)
+	}
+	if _, body, _ := a.get("/settings/emailzit"); !strings.Contains(body, "not working") {
+		t.Fatal("the page does not show the broken link")
+	}
+	// EmailZit's address was blocked meanwhile; the new pairing lifts it
+	if _, err := e.st.BlockIP(ctx, "127.0.0.1", func(int) time.Duration { return time.Hour }, "API token"); err != nil {
+		t.Fatal(err)
+	}
+	a.ok("/settings/emailzit/pair", url.Values{"code": {f.code()}})
+	if until, _ := e.st.BlockedUntil(ctx, "127.0.0.1"); !until.IsZero() {
+		t.Fatal("the pairing kept EmailZit's address blocked until", until)
+	}
+	if n := firstLink(e); n.DNSTokenID == l.DNSTokenID || n.State != "" {
+		t.Fatalf("after the new pairing: token %d (was %d), state %q", n.DNSTokenID, l.DNSTokenID, n.State)
 	}
 }

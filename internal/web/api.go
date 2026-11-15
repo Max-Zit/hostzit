@@ -733,6 +733,7 @@ func (s *Server) handleAPITokenDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.audit(r, "api.token.delete", "user:"+u.Username, "API token #%d %q revoked", id, name)
+	s.linkTokenRevoked(r.Context(), id)
 	s.redirect(w, r, "/account#api", "API token revoked.")
 }
 

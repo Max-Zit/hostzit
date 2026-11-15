@@ -43,6 +43,8 @@ func uiTexts(t *testing.T) map[string]bool {
 			}
 		}
 	}
+	// the state of an EmailZit link whose HostZit token was revoked
+	out[msgLinkTokenGone] = true
 	// Composed elsewhere: password policy, device kinds, metric names.
 	out["the password must be between 12 and 256 characters"] = true
 	out["The name is already used."] = true

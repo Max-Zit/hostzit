@@ -346,6 +346,10 @@ func (s *Server) checkEmailZitLinks(ctx context.Context) {
 	var relays map[string]helper.RelayState
 	_ = s.call(ctx, "system", "mail.relays", struct{}{}, &relays)
 	for _, l := range s.emailzitLinks(ctx) {
+		if s.linkTokenGone(ctx, l) {
+			s.setLinkState(ctx, l, "broken", msgLinkTokenGone)
+			continue
+		}
 		state, msg := "", ""
 		c, cancel := context.WithTimeout(ctx, 20*time.Second)
 		st, _, err := s.emailzitDo(c, l, http.MethodGet, "/api/v1/customers/00000000-0000-0000-0000-000000000000", nil)
@@ -359,17 +363,57 @@ func (s *Server) checkEmailZitLinks(ctx context.Context) {
 		if rs, ok := relays[l.ID]; ok && state == "" && strings.Contains(rs.Error, "sign-in") && rs.At.After(l.LinkedAt) {
 			state, msg = "broken", "EmailZit's relay refuses HostZit's login. Make a new pairing code in EmailZit and link again."
 		}
-		was := l.State
-		_ = s.updateEmailZitLink(ctx, l.ID, func(x *EmailZitLink) {
-			if x.LinkedAt.Equal(l.LinkedAt) { // not paired again meanwhile
-				x.State, x.StateMsg, x.CheckedAt = state, msg, s.now().UTC()
-			}
-		})
-		if state != "" && state != was {
-			s.notify(ctx, "mail-link:"+l.ID, nil, "The link to EmailZit "+l.Name()+" does not work",
-				"HostZit cannot use its link to EmailZit "+l.Name()+": "+msg+"\n\nWebsite mail of its customers waits in the queue (up to 48 hours). Settings → EmailZit shows the link.\n")
+		s.setLinkState(ctx, l, state, msg)
+	}
+}
+
+// msgLinkTokenGone is shown on the page (translated) and in the notice.
+const msgLinkTokenGone = "HostZit's token for this EmailZit was revoked (My account → API tokens), so EmailZit can no longer write the mail records or check senders. Make a new pairing code in EmailZit and link again."
+
+// linkTokenGone reports whether HostZit's own token of a paired link no
+// longer exists (revoked by hand under My account → API tokens).
+func (s *Server) linkTokenGone(ctx context.Context, l EmailZitLink) bool {
+	if !l.Paired || l.DNSTokenID == 0 {
+		return false
+	}
+	ok, err := s.store.APITokenExists(ctx, l.DNSTokenID)
+	return err == nil && !ok
+}
+
+// setLinkState records the result of a check of a link and tells the
+// administrators when it newly stops working.
+func (s *Server) setLinkState(ctx context.Context, l EmailZitLink, state, msg string) {
+	_ = s.updateEmailZitLink(ctx, l.ID, func(x *EmailZitLink) {
+		if x.LinkedAt.Equal(l.LinkedAt) { // not paired again meanwhile
+			x.State, x.StateMsg, x.CheckedAt = state, msg, s.now().UTC()
+		}
+	})
+	if state != "" && state != l.State {
+		s.notify(ctx, "mail-link:"+l.ID, nil, "The link to EmailZit "+l.Name()+" does not work",
+			"HostZit cannot use its link to EmailZit "+l.Name()+": "+msg+"\n\nWebsite mail of its customers waits in the queue (up to 48 hours). Settings → EmailZit shows the link.\n")
+	}
+}
+
+// linkTokenRevoked marks at once the link whose HostZit token was revoked
+// by hand.
+func (s *Server) linkTokenRevoked(ctx context.Context, tokenID int64) {
+	for _, l := range s.emailzitLinks(ctx) {
+		if l.DNSTokenID == tokenID && s.linkTokenGone(ctx, l) {
+			s.setLinkState(ctx, l, "broken", msgLinkTokenGone)
 		}
 	}
+}
+
+// linkTokenNames are the tokens of the EmailZit links by id (for the token
+// list: revoking one stops its link).
+func (s *Server) linkTokenNames(ctx context.Context) map[int64]string {
+	out := map[int64]string{}
+	for _, l := range s.emailzitLinks(ctx) {
+		if l.DNSTokenID != 0 {
+			out[l.DNSTokenID] = l.Name()
+		}
+	}
+	return out
 }
 
 // askedRecently reports whether a customer may be asked about now (and

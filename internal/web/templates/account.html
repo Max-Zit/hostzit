@@ -66,12 +66,12 @@
   <div class="table-wrap"><table>
     <thead><tr><th>{{.T "Name"}}</th><th class="hide-sm">{{.T "Created"}}</th><th>{{.T "Valid until"}}</th><th class="hide-sm">{{.T "Last used"}}</th><th class="hide-sm">{{.T "Allowed from"}}</th><th></th></tr></thead>
     <tbody>{{range .Data.Tokens}}<tr>
-      <td><b>{{.Name}}</b></td>
+      <td><b>{{.Name}}</b>{{with index $.Data.LinkTokens .ID}} <span class="badge"><i></i>{{$.T "link with EmailZit %s" .}}</span>{{end}}</td>
       <td class="hide-sm muted">{{$.Time .CreatedAt}}</td>
       <td class="small">{{if .ExpiresAt}}{{$.Time .ExpiresAt}}{{else}}{{$.T "no limit"}}{{end}}</td>
       <td class="hide-sm muted small">{{if .LastUsed}}{{$.Ago .LastUsed}}{{with .LastIP}} · <span class="mono">{{.}}</span>{{end}}{{else}}{{$.T "never"}}{{end}}</td>
       <td class="hide-sm small">{{if .AllowedIPs}}<span class="mono">{{join .AllowedIPs ", "}}</span>{{else}}<span class="muted">{{$.T "everywhere"}}</span>{{end}}</td>
-      <td class="actions"><form method="post" action="/account/tokens/{{.ID}}/delete" data-confirm="{{$.T "Revoke the API token %s? Scripts using it stop working." .Name}}"><button class="ghost sm">{{$.T "Revoke"}}</button></form></td>
+      <td class="actions">{{$tid := .ID}}{{with index $.Data.LinkTokens .ID}}<form method="post" action="/account/tokens/{{$tid}}/delete" data-confirm="{{$.T "This token belongs to the link with EmailZit %s: revoking it stops that link (mail records and the sender check of website mail). To end the link, use Settings → EmailZit → Unlink instead. Revoke it anyway?" .}}"><button class="ghost sm">{{$.T "Revoke"}}</button></form>{{else}}<form method="post" action="/account/tokens/{{.ID}}/delete" data-confirm="{{$.T "Revoke the API token %s? Scripts using it stop working." .Name}}"><button class="ghost sm">{{$.T "Revoke"}}</button></form>{{end}}</td>
     </tr>{{end}}</tbody>
   </table></div>
   {{end}}

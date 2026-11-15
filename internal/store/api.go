@@ -155,6 +155,14 @@ func (s *Store) DeleteAPIToken(ctx context.Context, userID, id int64) (string, e
 	return name, notFound(err)
 }
 
+// APITokenExists reports whether the token with id is still there (an
+// EmailZit link checks its own token).
+func (s *Store) APITokenExists(ctx context.Context, id int64) (bool, error) {
+	var ok bool
+	err := s.db.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM api_tokens WHERE id=$1)`, id).Scan(&ok)
+	return ok, err
+}
+
 // DeleteAPITokenByID revokes a token whatever its user (the EmailZit link
 // keeps the id of the token it handed over).
 func (s *Store) DeleteAPITokenByID(ctx context.Context, id int64) error {
