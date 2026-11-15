@@ -337,6 +337,44 @@ func (s *Server) apiScopeAllows(r *http.Request, customerUUID string, write bool
 	return ok && nl.ID == l.ID
 }
 
+// proofAllowed reports whether an EmailZit may publish the relay proof of
+// a domain of this customer (EmailZit 0.11.1): every link that may write
+// the customer's zones, and the link that relays the website mail of the
+// customers without EmailZit for such a customer. EmailZit asks only the
+// latter in practice: a customer it has needs no proof.
+func (s *Server) proofAllowed(r *http.Request, customerUUID string) bool {
+	if s.apiScopeAllows(r, customerUUID, true) {
+		return true
+	}
+	t := apiToken(r)
+	if t == nil {
+		return true
+	}
+	ctx := r.Context()
+	l, ok := s.linkOfToken(ctx, t.ID)
+	if !ok || l.Scope == "assigned" || s.emailzitOptions(ctx).WebDefault != l.ID {
+		return false
+	}
+	return inScope(l, customerUUID, s.emailzitLinks(ctx)) && s.customerLinkMap(ctx)[customerUUID] == ""
+}
+
+// dropRelayProofs removes the relay proofs from every zone when the link
+// that relays the website mail of the customers without EmailZit changes:
+// they were published for that link only, and a customer cannot delete a
+// record that EmailZit manages.
+func (s *Server) dropRelayProofs(ctx context.Context, by string) {
+	zones, err := s.store.DeleteOwnerRecords(ctx, proofOwner)
+	if err != nil {
+		s.log.Warn("removing EmailZit's relay proofs", "err", err)
+		return
+	}
+	for _, z := range zones {
+		if err := s.applyZone(ctx, by, z); err != nil {
+			s.log.Warn("zone after removing EmailZit's relay proof", "zone", z.Name, "err", err)
+		}
+	}
+}
+
 // ---- the health of the links
 
 // checkEmailZitLinks asks every EmailZit whether it still takes HostZit's

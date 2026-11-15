@@ -245,8 +245,9 @@ func CleanRecord(r Record, zone string) (Record, error) {
 	return r, nil
 }
 
-// emailzitNames are the names EmailZit may manage (agreed in INTEGRATION.md P6).
-var emailzitNames = regexp.MustCompile(`^(@|_dmarc|[a-z0-9_-]+\._domainkey|_mta-sts|_smtp\._tls|mail|autoconfig|autodiscover|mta-sts|webmail|_imaps\._tcp|_submissions\._tcp|_submission\._tcp|_pop3s\._tcp|_autodiscover\._tcp|_acme-challenge\.(mail|autoconfig|autodiscover|mta-sts|webmail))$`)
+// emailzitNames are the names EmailZit may manage (agreed in INTEGRATION.md P6;
+// _emailzit is its domain proof since EmailZit 0.11.1, a TXT record only).
+var emailzitNames = regexp.MustCompile(`^(@|_emailzit|_dmarc|[a-z0-9_-]+\._domainkey|_mta-sts|_smtp\._tls|mail|autoconfig|autodiscover|mta-sts|webmail|_imaps\._tcp|_submissions\._tcp|_submission\._tcp|_pop3s\._tcp|_autodiscover\._tcp|_acme-challenge\.(mail|autoconfig|autodiscover|mta-sts|webmail))$`)
 
 // AllowedForEmailZit checks a record EmailZit wants to publish.
 func AllowedForEmailZit(r Record) error {

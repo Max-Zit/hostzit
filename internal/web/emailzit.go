@@ -403,11 +403,15 @@ func (s *Server) handleEmailZitOptions(w http.ResponseWriter, r *http.Request) {
 		_ = s.updateEmailZitLink(ctx, o.ImportLink, func(l *EmailZitLink) { l.ImportPackage = pkg })
 	}
 	s.ezMu.Lock()
+	old := s.emailzitOptions(ctx).WebDefault
 	err := s.store.SetSetting(ctx, settingEmailZitOptions, o)
 	s.ezMu.Unlock()
 	if err != nil {
 		s.serverError(w, r, err)
 		return
+	}
+	if old != "" && old != o.WebDefault {
+		s.dropRelayProofs(ctx, actor(r))
 	}
 	s.audit(r, "settings.emailzit", "settings", "website mail of customers without EmailZit through %q, cPanel imports to %q (package %q)", o.WebDefault, o.ImportLink, pkg)
 	if err := s.applyRelay(ctx, actor(r)); err != nil {
@@ -909,9 +913,10 @@ func (s *Server) dropLink(ctx context.Context, by string, l EmailZitLink) error 
 	}
 	s.removeAdminAddresses(ctx, l.AdminAdded, l.ID)
 	s.ezMu.Lock()
+	wasDefault := false
 	if o := s.emailzitOptions(ctx); o.WebDefault == l.ID || o.ImportLink == l.ID {
 		if o.WebDefault == l.ID {
-			o.WebDefault = ""
+			o.WebDefault, wasDefault = "", true
 		}
 		if o.ImportLink == l.ID {
 			o.ImportLink = ""
@@ -919,6 +924,9 @@ func (s *Server) dropLink(ctx context.Context, by string, l EmailZitLink) error 
 		_ = s.store.SetSetting(ctx, settingEmailZitOptions, o)
 	}
 	s.ezMu.Unlock()
+	if wasDefault {
+		s.dropRelayProofs(ctx, by)
+	}
 	if err := s.applyRelay(ctx, by); err != nil {
 		s.log.Warn("website mail after the unlink", "err", err)
 	}

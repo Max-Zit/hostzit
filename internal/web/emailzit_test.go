@@ -755,3 +755,125 @@ func TestEmailZitLinkTokenRevoked(t *testing.T) {
 		t.Fatalf("after the new pairing: token %d (was %d), state %q", n.DNSTokenID, l.DNSTokenID, n.State)
 	}
 }
+
+// EmailZit 0.11.1: its mail records carry the _emailzit proof of the domain,
+// and its relay asks the HostZit of a website domain without mail there to
+// publish _emailzit.<domain> before it takes that domain's website mail.
+// The link that relays the mail of the customers without EmailZit may
+// publish exactly that record for them (also for a name inside a zone), it
+// never replaces EmailZit's mail records, and it goes when that link stops
+// being the relay.
+func TestEmailZitRelayProof(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	a := e.setupAdmin()
+	fa := newFakeEZ(t, nil)
+	fb := newFakeEZ(t, nil)
+	fb.secret, fb.token = "pairing-secret-b", "ezt_token_b"
+	var onA sync.Map
+	fa.knows = func(u string) bool { _, ok := onA.Load(u); return ok }
+	fb.knows = func(string) bool { return false }
+	pairEmailZit(t, a, fa)
+	a.ok("/settings/emailzit/pair", url.Values{"code": {fb.code()}})
+	links := e.srv.emailzitLinks(ctx)
+	if len(links) != 2 {
+		t.Fatalf("links %+v", links)
+	}
+	la := links[0]
+	a.ok("/packages/new", url.Values{"name": {"P"}, "slug": {"p"}, "max_sites": {"3"}, "max_dbs": {"1"}, "max_zones": {"3"}, "disk_mb": {"100"}, "inodes": {"0"},
+		"cpu_percent": {"0"}, "memory_mb": {"0"}, "processes": {"0"}, "io_weight": {"100"}, "php_workers": {"2"}, "php_memory_mb": {"128"}, "upload_mb": {"8"}, "mail_per_hour": {"10"}})
+	cust := map[string]*store.Customer{}
+	for _, n := range []string{"cmail", "cnone"} {
+		a.ok("/customers/new", url.Values{"username": {n}, "package": {"1"}, "domain": {n + ".example.com"}, "dns": {"on"}, "password": {n + " password 123"}})
+		cust[n], _ = e.st.CustomerByRef(ctx, n)
+	}
+	onA.Store(cust["cmail"].UUID, true)
+	e.srv.Wait()
+	a.ok("/settings/emailzit", url.Values{"web_default": {la.ID}})
+	if e.srv.emailzitOptions(ctx).WebDefault != la.ID {
+		t.Fatal("the relay of the customers without EmailZit is not set")
+	}
+	fa.mu.Lock()
+	dnsA := fa.dnsTok
+	fa.mu.Unlock()
+	fb.mu.Lock()
+	dnsB := fb.dnsTok
+	fb.mu.Unlock()
+	put := func(tok, zone, body string) int {
+		t.Helper()
+		req, _ := http.NewRequest("PUT", e.admin.URL+"/api/v1/dns/zones/"+zone+"/owned/emailzit", strings.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+tok)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	proof := func(uuid, value string) string {
+		return `{"customer_id":"` + uuid + `","records":[{"name":"_emailzit","type":"TXT","ttl":300,"content":"emailzit-relay=` + value + `"}]}`
+	}
+	recs := func(zone, owner string) map[string]string {
+		t.Helper()
+		z, err := e.st.ZoneByName(ctx, zone)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rows, _ := e.st.Records(ctx, z.ID)
+		out := map[string]string{}
+		for _, x := range rows {
+			if x.Owner == owner {
+				out[x.Name+" "+x.Type] = x.Content
+			}
+		}
+		return out
+	}
+	// the mail records of a customer on EmailZit A, with the domain's proof
+	if st := put(dnsA, "cmail.example.com", `{"customer_id":"`+cust["cmail"].UUID+`","records":[{"name":"_emailzit","type":"TXT","ttl":3600,"content":"emailzit-verify=abc"},{"name":"@","type":"MX","ttl":3600,"content":"10 mail.example.test."}]}`); st != http.StatusOK {
+		t.Fatalf("EmailZit A's records with _emailzit: %d", st)
+	}
+	if got := recs("cmail.example.com", "emailzit"); got["_emailzit TXT"] == "" || got["@ MX"] == "" {
+		t.Fatalf("EmailZit A's records: %v", got)
+	}
+	// the relay proof of a customer without EmailZit, in the zone and for a name in it
+	if st := put(dnsA, "cnone.example.com", proof(cust["cnone"].UUID, "one")); st != http.StatusOK {
+		t.Fatalf("proof of cnone.example.com: %d", st)
+	}
+	if st := put(dnsA, "shop.cnone.example.com", proof(cust["cnone"].UUID, "two")); st != http.StatusOK {
+		t.Fatalf("proof of shop.cnone.example.com: %d", st)
+	}
+	if st := put(dnsA, "cnone.example.com", proof(cust["cnone"].UUID, "three")); st != http.StatusOK {
+		t.Fatalf("second proof of cnone.example.com: %d", st)
+	}
+	got := recs("cnone.example.com", proofOwner)
+	if len(got) != 2 || !strings.Contains(got["_emailzit TXT"], "emailzit-relay=three") || !strings.Contains(got["_emailzit.shop TXT"], "emailzit-relay=two") {
+		t.Fatalf("proofs in cnone.example.com: %v", got)
+	}
+	// only that record: other records for a customer without EmailZit are refused
+	if st := put(dnsA, "cnone.example.com", `{"customer_id":"`+cust["cnone"].UUID+`","records":[{"name":"@","type":"MX","ttl":3600,"content":"10 mail.example.test."}]}`); st != http.StatusNotFound {
+		t.Fatalf("the relay wrote an MX for a customer without EmailZit: %d", st)
+	}
+	if st := put(dnsA, "cnone.example.com", proof(cust["cmail"].UUID, "x")); st != http.StatusForbidden {
+		t.Fatalf("a proof naming another customer: %d", st)
+	}
+	// an EmailZit that is not the relay of those customers may not
+	if st := put(dnsB, "cnone.example.com", proof(cust["cnone"].UUID, "b")); st != http.StatusNotFound {
+		t.Fatalf("EmailZit B wrote a proof for cnone: %d", st)
+	}
+	// a proof never replaces EmailZit's mail records
+	if st := put(dnsA, "cmail.example.com", proof(cust["cmail"].UUID, "m")); st != http.StatusOK {
+		t.Fatalf("proof of cmail.example.com: %d", st)
+	}
+	if got := recs("cmail.example.com", "emailzit"); got["@ MX"] == "" || !strings.Contains(got["_emailzit TXT"], "emailzit-verify=abc") {
+		t.Fatalf("the proof replaced EmailZit's records: %v", got)
+	}
+	// another relay for the customers without EmailZit: the proofs go
+	a.ok("/settings/emailzit", url.Values{"web_default": {""}})
+	if got := recs("cnone.example.com", proofOwner); len(got) != 0 {
+		t.Fatalf("proofs left after the relay changed: %v", got)
+	}
+	if st := put(dnsA, "cnone.example.com", proof(cust["cnone"].UUID, "late")); st != http.StatusNotFound {
+		t.Fatalf("proof after the relay changed: %d", st)
+	}
+}

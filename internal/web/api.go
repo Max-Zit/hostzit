@@ -649,17 +649,25 @@ func (s *Server) apiOwned(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) apiOwnedPut(w http.ResponseWriter, r *http.Request) {
-	z, owner := s.ownedZone(w, r)
-	if z == nil {
-		return
-	}
 	var in struct {
 		CustomerID string           `json:"customer_id"`
 		Records    []hosting.Record `json:"records"`
 	}
+	var inErr error
 	if r.Method == http.MethodPut {
-		if err := readJSON(r, &in); err != nil {
-			apiError(w, http.StatusBadRequest, "invalid", err.Error())
+		inErr = readJSON(r, &in)
+		if inErr == nil && relayProof(in.Records) {
+			s.apiRelayProof(w, r, in.CustomerID, in.Records[0])
+			return
+		}
+	}
+	z, owner := s.ownedZone(w, r)
+	if z == nil {
+		return
+	}
+	if r.Method == http.MethodPut {
+		if inErr != nil {
+			apiError(w, http.StatusBadRequest, "invalid", inErr.Error())
 			return
 		}
 		c, err := s.store.CustomerByID(r.Context(), z.CustomerID)
@@ -698,6 +706,82 @@ func (s *Server) apiOwnedPut(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"zone": z.Name, "records": len(in.Records)})
+}
+
+// proofOwner owns the proof records EmailZit's relay asks for (EmailZit
+// 0.11.1): _emailzit.<domain> of a website domain that has no mail on that
+// EmailZit. They are kept apart from EmailZit's mail records, so a proof
+// never replaces those, and one domain's proof never another's.
+const proofOwner = "emailzit-proof"
+
+// relayProof reports whether a write of EmailZit is the proof its relay
+// asks for: exactly one _emailzit TXT record with a value EmailZit chose.
+func relayProof(recs []hosting.Record) bool {
+	if len(recs) != 1 {
+		return false
+	}
+	x := recs[0]
+	return strings.EqualFold(strings.TrimSpace(x.Name), "_emailzit") && strings.EqualFold(strings.TrimSpace(x.Type), "TXT") &&
+		strings.HasPrefix(strings.Trim(strings.TrimSpace(x.Content), `"`), "emailzit-relay=")
+}
+
+// apiRelayProof publishes the proof record EmailZit's relay asks for before
+// it takes the website mail of a domain without mail there: the public DNS
+// then shows that this server holds the domain. The domain is a zone or any
+// name in one (websites send from the subdomains of their domains too), and
+// the record goes to _emailzit.<domain> in that zone. Allowed for the links
+// that may write the customer's zones, and for the link that relays the
+// website mail of the customers without EmailZit — for those customers, and
+// for this one record only.
+func (s *Server) apiRelayProof(w http.ResponseWriter, r *http.Request, customerID string, rec hosting.Record) {
+	ctx := r.Context()
+	if r.PathValue("owner") != "emailzit" {
+		apiError(w, http.StatusForbidden, "forbidden", "unknown owner")
+		return
+	}
+	name, err := hosting.NormalizeDomain(r.PathValue("zone"))
+	if err != nil {
+		apiError(w, http.StatusBadRequest, "invalid", err.Error())
+		return
+	}
+	z, err := s.store.ZoneFor(ctx, name)
+	if err != nil {
+		apiError(w, http.StatusNotFound, "not_found", "the zone is not hosted here")
+		return
+	}
+	c, err := s.store.CustomerByID(ctx, z.CustomerID)
+	if err != nil || !s.proofAllowed(r, c.UUID) {
+		apiError(w, http.StatusNotFound, "not_found", "the zone is not hosted here")
+		return
+	}
+	if !strings.EqualFold(c.UUID, customerID) {
+		apiError(w, http.StatusForbidden, "forbidden", "the zone belongs to another customer")
+		return
+	}
+	rel := "_emailzit"
+	if name != z.Name {
+		rel += "." + strings.TrimSuffix(name, "."+z.Name)
+	}
+	clean, err := hosting.CleanRecord(hosting.Record{Name: rel, Type: "TXT", TTL: rec.TTL, Content: strings.TrimSpace(rec.Content)}, z.Name)
+	if err != nil {
+		apiError(w, http.StatusBadRequest, "invalid", err.Error())
+		return
+	}
+	conflicts, err := s.store.ReplaceOwnedName(ctx, z, proofOwner, clean.Name, []hosting.Record{clean})
+	if err != nil {
+		apiFail(w, err)
+		return
+	}
+	if err := s.applyZone(ctx, apiActor(r), z); err != nil {
+		apiError(w, http.StatusBadGateway, "internal", storeErr(err))
+		return
+	}
+	s.apiAudit(r, "dns.proof", "zone:"+z.Name, "EmailZit's relay proof %s published", hosting.FQDN(clean.Name, z.Name))
+	if len(conflicts) > 0 {
+		writeJSON(w, http.StatusConflict, map[string]any{"error": apiErr{Code: "record_conflict", Message: "the customer has own records with these names"}, "conflicts": conflicts})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"zone": z.Name, "records": 1})
 }
 
 // ---- tokens on the account page

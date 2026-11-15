@@ -485,6 +485,46 @@ func (s *Store) DeleteRecord(ctx context.Context, zoneID, id int64) error {
 // in a zone; records the customer made at the same name and type win and
 // are reported as conflicts.
 func (s *Store) ReplaceOwnedRecords(ctx context.Context, z *Zone, owner string, recs []hosting.Record) (conflicts []hosting.Record, err error) {
+	return s.replaceOwned(ctx, z, owner, "", recs)
+}
+
+// DeleteOwnerRecords removes the records of an owner from every zone and
+// returns the zones that changed (the caller applies them).
+func (s *Store) DeleteOwnerRecords(ctx context.Context, owner string) ([]*Zone, error) {
+	if owner == "" {
+		return nil, errors.New("owner missing")
+	}
+	zones, err := s.queryZones(ctx, `z.id IN (SELECT zone_id FROM records WHERE owner=$1)`, owner)
+	if err != nil || len(zones) == 0 {
+		return nil, err
+	}
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, `DELETE FROM records WHERE owner=$1`, owner); err != nil {
+		return nil, err
+	}
+	for _, z := range zones {
+		if _, err := tx.Exec(ctx, `UPDATE zones SET changed_at=$2, applied=false WHERE id=$1`, z.ID, s.now()); err != nil {
+			return nil, err
+		}
+	}
+	return zones, tx.Commit(ctx)
+}
+
+// ReplaceOwnedName replaces only the records of an owner at one name of a
+// zone (the relative name as CleanRecord gives it), e.g. the proof record
+// of one website domain, and leaves the owner's other names alone.
+func (s *Store) ReplaceOwnedName(ctx context.Context, z *Zone, owner, name string, recs []hosting.Record) (conflicts []hosting.Record, err error) {
+	if name == "" {
+		return nil, fmt.Errorf("no record name for the owner %q", owner)
+	}
+	return s.replaceOwned(ctx, z, owner, name, recs)
+}
+
+func (s *Store) replaceOwned(ctx context.Context, z *Zone, owner, name string, recs []hosting.Record) (conflicts []hosting.Record, err error) {
 	if owner == "" {
 		return nil, errors.New("owner missing")
 	}
@@ -493,13 +533,21 @@ func (s *Store) ReplaceOwnedRecords(ctx context.Context, z *Zone, owner string, 
 		return nil, err
 	}
 	defer tx.Rollback(ctx)
-	if _, err := tx.Exec(ctx, `DELETE FROM records WHERE zone_id=$1 AND owner=$2`, z.ID, owner); err != nil {
+	if name == "" {
+		_, err = tx.Exec(ctx, `DELETE FROM records WHERE zone_id=$1 AND owner=$2`, z.ID, owner)
+	} else {
+		_, err = tx.Exec(ctx, `DELETE FROM records WHERE zone_id=$1 AND owner=$2 AND name=$3`, z.ID, owner, name)
+	}
+	if err != nil {
 		return nil, err
 	}
 	for _, r := range recs {
 		c, err := hosting.CleanRecord(r, z.Name)
 		if err != nil {
 			return nil, err
+		}
+		if name != "" && c.Name != name {
+			return nil, fmt.Errorf("record %q outside the name %q", c.Name, name)
 		}
 		var own int
 		if err := tx.QueryRow(ctx, `SELECT count(*) FROM records WHERE zone_id=$1 AND owner='' AND name=$2 AND (type=$3 OR type='CNAME' OR $3='CNAME')`, z.ID, c.Name, c.Type).Scan(&own); err != nil {
