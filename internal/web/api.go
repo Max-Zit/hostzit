@@ -700,12 +700,68 @@ func (s *Server) apiOwnedPut(w http.ResponseWriter, r *http.Request) {
 		apiError(w, http.StatusBadGateway, "internal", storeErr(err))
 		return
 	}
+	conflicts = s.dropCoveredSPF(r.Context(), z, conflicts)
 	s.apiAudit(r, "dns.owned", "zone:"+z.Name, "%s published %d records (%d conflicts)", owner, len(in.Records), len(conflicts))
 	if len(conflicts) > 0 {
 		writeJSON(w, http.StatusConflict, map[string]any{"error": apiErr{Code: "record_conflict", Message: "the customer has own records with these names"}, "conflicts": conflicts})
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"zone": z.Name, "records": len(in.Records)})
+}
+
+// dropCoveredSPF leaves EmailZit's SPF record out of the conflicts when the
+// customer's own SPF already names everything it asks for. HostZit keeps the
+// zone's SPF and adds EmailZit's relay to it itself (syncRelaySPF), so the
+// record is not written, but nothing is missing either, and EmailZit should
+// not show a conflict for a domain that works (joint test J1 on h1 ↔ e1).
+func (s *Server) dropCoveredSPF(ctx context.Context, z *store.Zone, conflicts []hosting.Record) []hosting.Record {
+	if len(conflicts) == 0 {
+		return conflicts
+	}
+	rows, err := s.store.Records(ctx, z.ID)
+	if err != nil {
+		return conflicts
+	}
+	var own []string
+	for _, r := range rows {
+		if v := unquoteTXT(r.Content); r.Owner == "" && r.Name == "@" && r.Type == "TXT" && strings.HasPrefix(v, "v=spf1") {
+			own = append(own, v)
+		}
+	}
+	if len(own) != 1 {
+		return conflicts // no SPF or several: a real conflict
+	}
+	var out []hosting.Record
+	for _, c := range conflicts {
+		if c.Name == "@" && c.Type == "TXT" && spfCovers(own[0], unquoteTXT(c.Content)) {
+			continue
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+// spfCovers reports whether the SPF record have names every mechanism of
+// the SPF record want, apart from its "all".
+func spfCovers(have, want string) bool {
+	hf, wf := strings.Fields(strings.ToLower(have)), strings.Fields(strings.ToLower(want))
+	if len(hf) == 0 || hf[0] != "v=spf1" || len(wf) == 0 || wf[0] != "v=spf1" {
+		return false
+	}
+	got := map[string]bool{}
+	for _, m := range hf[1:] {
+		got[strings.TrimPrefix(m, "+")] = true
+	}
+	for _, m := range wf[1:] {
+		m = strings.TrimPrefix(m, "+")
+		if strings.TrimLeft(m, "~-?") == "all" {
+			continue
+		}
+		if !got[m] {
+			return false
+		}
+	}
+	return true
 }
 
 // proofOwner owns the proof records EmailZit's relay asks for (EmailZit

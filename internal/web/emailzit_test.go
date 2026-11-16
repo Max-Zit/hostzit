@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/max-zit/hostzit/internal/hosting"
 	"github.com/max-zit/hostzit/internal/store"
 	"github.com/max-zit/hostzit/internal/tlsutil"
 )
@@ -836,6 +837,31 @@ func TestEmailZitRelayProof(t *testing.T) {
 	if got := recs("cmail.example.com", "emailzit"); got["_emailzit TXT"] == "" || got["@ MX"] == "" {
 		t.Fatalf("EmailZit A's records: %v", got)
 	}
+	// EmailZit's SPF where the customer's own SPF already names what it asks
+	// for is no conflict: HostZit keeps the zone's SPF and adds the relay
+	// itself (J1 on h1 ↔ e1 showed EmailZit a conflict for a working domain)
+	if recs("cmail.example.com", "")["@ TXT"] == "" {
+		zm, err := e.st.ZoneByName(ctx, "cmail.example.com")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := e.st.AddRecord(ctx, zm, hosting.Record{Name: "@", Type: "TXT", TTL: 3600, Content: "v=spf1 a mx ~all"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	withSPF := func(spf string) int {
+		return put(dnsA, "cmail.example.com", `{"customer_id":"`+cust["cmail"].UUID+`","records":[{"name":"_emailzit","type":"TXT","ttl":3600,"content":"emailzit-verify=abc"},`+
+			`{"name":"@","type":"MX","ttl":3600,"content":"10 mail.example.test."},{"name":"@","type":"TXT","ttl":3600,"content":"`+spf+`"}]}`)
+	}
+	if st := withSPF("v=spf1 mx ~all"); st != http.StatusOK {
+		t.Fatalf("EmailZit's SPF that the customer's SPF covers: %d", st)
+	}
+	if st := withSPF("v=spf1 include:other.test ~all"); st != http.StatusConflict {
+		t.Fatalf("EmailZit's SPF that the customer's SPF does not cover: %d", st)
+	}
+	if got := recs("cmail.example.com", "")["@ TXT"]; !strings.Contains(got, "v=spf1 a mx") || strings.Contains(got, "include:other.test") {
+		t.Fatalf("the customer's SPF: %s", got)
+	}
 	// the relay proof of a customer without EmailZit, in the zone and for a name in it
 	if st := put(dnsA, "cnone.example.com", proof(cust["cnone"].UUID, "one")); st != http.StatusOK {
 		t.Fatalf("proof of cnone.example.com: %d", st)
@@ -898,5 +924,24 @@ func TestEmailZitRelayProof(t *testing.T) {
 	}
 	if st := put(dnsA, "cnone.example.com", proof(cust["cnone"].UUID, "late")); st != http.StatusNotFound {
 		t.Fatalf("proof after the relay changed: %d", st)
+	}
+}
+
+func TestSPFCovers(t *testing.T) {
+	for _, c := range []struct {
+		have, want string
+		ok         bool
+	}{
+		{"v=spf1 a mx a:e1.maxzit.com ~all", "v=spf1 mx ~all", true},
+		{"v=spf1 +a +mx -all", "v=spf1 mx ~all", true},
+		{"v=spf1 a ~all", "v=spf1 mx ~all", false},
+		{"v=spf1 mx ~all", "v=spf1 mx include:x.test ~all", false},
+		{"v=spf1 MX ~all", "v=spf1 mx", true},
+		{"not spf", "v=spf1 mx ~all", false},
+		{"v=spf1 mx ~all", "something else", false},
+	} {
+		if got := spfCovers(c.have, c.want); got != c.ok {
+			t.Errorf("spfCovers(%q, %q) = %v", c.have, c.want, got)
+		}
 	}
 }
