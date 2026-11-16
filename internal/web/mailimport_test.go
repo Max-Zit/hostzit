@@ -84,4 +84,13 @@ func TestCPanelMailToEmailZit(t *testing.T) {
 		t.Error("not imported for an existing customer")
 	}
 	mu.Unlock()
+	// "—" chosen with the only EmailZit: it stays "—" (found on h1, the page
+	// put the link back) and imports keep their mail here
+	a.ok("/settings/emailzit", url.Values{"import_link": {""}, "import_package": {""}})
+	if o := e.srv.emailzitOptions(ctx); o.ImportLink != "" {
+		t.Fatalf("\"—\" for cPanel imports became %q", o.ImportLink)
+	}
+	if n := e.srv.importMailToEmailZit(ctx, "test", "cpmove-shop.tar.gz", c); !strings.Contains(n, "choose an EmailZit package") {
+		t.Fatalf("after \"—\": %q", n)
+	}
 }

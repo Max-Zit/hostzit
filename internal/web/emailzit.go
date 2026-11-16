@@ -392,8 +392,9 @@ func (s *Server) handleEmailZitOptions(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if links := s.emailzitLinks(ctx); o.ImportLink == "" && len(links) == 1 && links[0].Scope != "assigned" {
-		o.ImportLink = links[0].ID // the only EmailZit
+	links := s.emailzitLinks(ctx)
+	if o.ImportLink == "" && pkg != "" && len(links) == 1 && links[0].Scope != "assigned" {
+		o.ImportLink = links[0].ID // a package for the only EmailZit
 	}
 	if o.ImportLink != "" {
 		if l, ok := s.emailzitLinkByID(ctx, o.ImportLink); !ok || l.Scope == "assigned" {
@@ -401,6 +402,15 @@ func (s *Server) handleEmailZitOptions(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_ = s.updateEmailZitLink(ctx, o.ImportLink, func(l *EmailZitLink) { l.ImportPackage = pkg })
+	} else {
+		// "—": cPanel imports keep their mail here. A package left on a link
+		// would still take it to the only EmailZit (importMailToEmailZit),
+		// and the page would show that link again (found on h1).
+		for _, l := range links {
+			if l.ImportPackage != "" {
+				_ = s.updateEmailZitLink(ctx, l.ID, func(x *EmailZitLink) { x.ImportPackage = "" })
+			}
+		}
 	}
 	s.ezMu.Lock()
 	old := s.emailzitOptions(ctx).WebDefault
