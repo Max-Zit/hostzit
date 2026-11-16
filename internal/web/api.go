@@ -767,6 +767,14 @@ func (s *Server) apiRelayProof(w http.ResponseWriter, r *http.Request, customerI
 		apiError(w, http.StatusBadRequest, "invalid", err.Error())
 		return
 	}
+	// EmailZit asks again every few minutes while it waits for the public
+	// DNS, and again when a proof is a week old. The same record changes
+	// nothing then: no new serial, so the secondaries do not transfer the
+	// zone again at the moment EmailZit looks the record up (J3 on h1 ↔ e1).
+	if z.Applied && z.ApplyError == "" && s.proofPublished(ctx, z, clean) {
+		writeJSON(w, http.StatusOK, map[string]any{"zone": z.Name, "records": 1})
+		return
+	}
 	conflicts, err := s.store.ReplaceOwnedName(ctx, z, proofOwner, clean.Name, []hosting.Record{clean})
 	if err != nil {
 		apiFail(w, err)
@@ -782,6 +790,31 @@ func (s *Server) apiRelayProof(w http.ResponseWriter, r *http.Request, customerI
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"zone": z.Name, "records": 1})
+}
+
+// proofPublished reports whether the zone holds exactly this proof record
+// under that name and no record of the customer's own competes with it.
+func (s *Server) proofPublished(ctx context.Context, z *store.Zone, want hosting.Record) bool {
+	rows, err := s.store.Records(ctx, z.ID)
+	if err != nil {
+		return false
+	}
+	n := 0
+	for _, r := range rows {
+		if r.Name != want.Name {
+			continue
+		}
+		switch {
+		case r.Owner == proofOwner:
+			if r.Type != want.Type || r.Content != want.Content || r.TTL != want.TTL {
+				return false
+			}
+			n++
+		case r.Owner == "" && (r.Type == want.Type || r.Type == "CNAME"):
+			return false
+		}
+	}
+	return n == 1
 }
 
 // ---- tokens on the account page

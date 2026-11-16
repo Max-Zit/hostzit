@@ -850,6 +850,29 @@ func TestEmailZitRelayProof(t *testing.T) {
 	if len(got) != 2 || !strings.Contains(got["_emailzit TXT"], "emailzit-relay=three") || !strings.Contains(got["_emailzit.shop TXT"], "emailzit-relay=two") {
 		t.Fatalf("proofs in cnone.example.com: %v", got)
 	}
+	// the same proof again (EmailZit asks again while it waits) changes
+	// nothing: the record stays and the zone is not published again
+	proofRow := func() (int64, bool) {
+		t.Helper()
+		z, err := e.st.ZoneByName(ctx, "cnone.example.com")
+		if err != nil {
+			t.Fatal(err)
+		}
+		rows, _ := e.st.Records(ctx, z.ID)
+		for _, x := range rows {
+			if x.Owner == proofOwner && x.Name == "_emailzit" {
+				return x.ID, z.Applied
+			}
+		}
+		return 0, z.Applied
+	}
+	before, _ := proofRow()
+	if st := put(dnsA, "cnone.example.com", proof(cust["cnone"].UUID, "three")); st != http.StatusOK {
+		t.Fatalf("the same proof again: %d", st)
+	}
+	if after, applied := proofRow(); after != before || !applied {
+		t.Fatalf("the same proof was written again: record %d → %d, applied %v", before, after, applied)
+	}
 	// only that record: other records for a customer without EmailZit are refused
 	if st := put(dnsA, "cnone.example.com", `{"customer_id":"`+cust["cnone"].UUID+`","records":[{"name":"@","type":"MX","ttl":3600,"content":"10 mail.example.test."}]}`); st != http.StatusNotFound {
 		t.Fatalf("the relay wrote an MX for a customer without EmailZit: %d", st)
