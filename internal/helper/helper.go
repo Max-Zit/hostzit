@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -30,12 +31,31 @@ type Helper struct {
 	PDNS PDNS
 	// PeerCheck replaces the SO_PEERCRED check (tests).
 	PeerCheck func(net.Conn) error
+	// StopGrace is how long the operations in flight may still run when
+	// Serve is stopped (0 = DefaultStopGrace).
+	StopGrace time.Duration
 
 	// mu serialises changes of the system configuration (nginx tests and
 	// reloads, systemd, users); read-only operations run in parallel.
 	mu  sync.Mutex
 	ops map[string]op
+	// stopping: Serve was stopped, nothing new starts
+	stopping atomic.Bool
 }
+
+// DefaultStopGrace: a stop of the helper (an update restarts it, a reboot
+// stops it) lets the operations in flight finish, so a change is never cut
+// between writing its files, testing them and reloading the service. A cut
+// there made the change count as failed and be rolled back under a service
+// that was already starting: EmailZit 0.11.4 removed a new server's first
+// main.cf under a starting postfix that way. systemd stops only the main
+// process (KillMode=mixed in hostzit-helper.service), so the programs of
+// an operation keep running too. Longer operations (a malware scan, a
+// backup) are cancelled when the grace ends.
+const DefaultStopGrace = 20 * time.Second
+
+// errStopping answers what would start while the helper stops.
+var errStopping = errors.New("the helper is restarting; try again in a moment")
 
 type op struct {
 	fn     func(ctx context.Context, args json.RawMessage) (any, error)
@@ -87,9 +107,17 @@ func (h *Helper) Do(ctx context.Context, req Request) Response {
 	if !ok {
 		return Response{Error: ErrUnknownOp.Error() + " " + req.Op}
 	}
+	if h.stopping.Load() {
+		return Response{Error: errStopping.Error()}
+	}
 	if o.change {
 		h.mu.Lock()
 		defer h.mu.Unlock()
+		// a change that waited for the one before it does not start once
+		// the helper stops: it has changed nothing yet
+		if h.stopping.Load() {
+			return Response{Error: errStopping.Error()}
+		}
 	}
 	start := time.Now()
 	res, err := o.fn(ctx, req.Args)
@@ -111,18 +139,52 @@ func (h *Helper) Do(ctx context.Context, req Request) Response {
 	return Response{OK: true, Result: raw}
 }
 
-// Serve answers connections until the listener closes.
+// Serve answers connections until ctx ends or the listener closes. Then
+// it takes no new connection or operation, lets the operations in flight
+// finish within the stop grace (their context ends with it) and returns
+// once they did, or a little after the grace at the latest.
 func (h *Helper) Serve(ctx context.Context, l net.Listener) error {
+	opCtx, cancelOps := context.WithCancel(context.WithoutCancel(ctx))
+	defer cancelOps()
+	stopListen := context.AfterFunc(ctx, func() { _ = l.Close() })
+	defer stopListen()
+	var running sync.WaitGroup
+	var inFlight atomic.Int64
+	var err error
 	for {
-		c, err := l.Accept()
-		if err != nil {
-			if ctx.Err() != nil || errors.Is(err, net.ErrClosed) {
-				return nil
+		c, aerr := l.Accept()
+		if aerr != nil {
+			if ctx.Err() == nil && !errors.Is(aerr, net.ErrClosed) {
+				err = aerr
 			}
-			return err
+			break
 		}
-		go h.serveConn(ctx, c)
+		running.Add(1)
+		inFlight.Add(1)
+		go func() {
+			defer running.Done()
+			defer inFlight.Add(-1)
+			h.serveConn(opCtx, c)
+		}()
 	}
+	h.stopping.Store(true)
+	grace := h.StopGrace
+	if grace <= 0 {
+		grace = DefaultStopGrace
+	}
+	if n := inFlight.Load(); n > 0 {
+		h.logf("stopping: waiting up to %s for %d operation(s) in flight", grace, n)
+	}
+	ends := time.AfterFunc(grace, cancelOps)
+	defer ends.Stop()
+	done := make(chan struct{})
+	go func() { running.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(grace + 10*time.Second):
+		h.logf("stopping with %d operation(s) still running", inFlight.Load())
+	}
+	return err
 }
 
 func (h *Helper) checkPeer(c net.Conn) error {

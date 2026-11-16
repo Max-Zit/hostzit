@@ -7,6 +7,11 @@ Before=hostzit-server.service
 ExecStart=/usr/lib/hostzit/hostzit-helper
 Restart=on-failure
 RestartSec=2s
+# A stop reaches only the helper itself: it finishes the operations in
+# flight (up to 20 seconds) with their programs (nginx -t, systemctl,
+# networkctl), so an update or a reboot never cuts a change in half.
+KillMode=mixed
+TimeoutStopSec=45s
 RuntimeDirectory=hostzit
 RuntimeDirectoryMode=0750
 RuntimeDirectoryPreserve=yes

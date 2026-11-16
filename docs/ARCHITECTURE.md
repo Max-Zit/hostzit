@@ -19,7 +19,7 @@ that a bug in a web page cannot become root.
 | Component | What it is |
 |---|---|
 | `hostzit-server` | Go, one binary: admin panel, customer panel, REST API, schedulers (certificates, usage, updates). Runs as the unprivileged `hostzit` user. PostgreSQL for its own data. |
-| `hostzit-helper` | Go, root. The only privileged part. Listens on a Unix socket, accepts a short allow-list of typed operations, validates every argument again, renders system configuration from its own templates, applies it atomically and checks it (`nginx -t`, `php-fpm -t`, `named-checkzone`-like checks) before reloading. |
+| `hostzit-helper` | Go, root. The only privileged part. Listens on a Unix socket, accepts a short allow-list of typed operations, validates every argument again, renders system configuration from its own templates, applies it atomically and checks it (`nginx -t`, `php-fpm -t`, `named-checkzone`-like checks) before reloading. A stop (update, reboot) lets the operations in flight finish for up to 20 s (`KillMode=mixed`), so a change is never cut between its files, its test and its reload, and nothing new starts meanwhile. |
 | `hostzit-cage` | Go, small. Starts a process **as an account and inside that account's cage** (section 3): SSH/SFTP sessions, cron jobs, WP-CLI, the file manager worker, Git later. |
 | Nginx | Front web server for all sites (HTTP/1.1, HTTP/2, HTTP/3/QUIC), TLS, static files, limits. Debian package. |
 | PHP-FPM | Several PHP versions side by side (Debian + the sury.org repository, to confirm). **One FPM master per account and PHP version**, so each account has its own processes, cgroup and mount namespace. |

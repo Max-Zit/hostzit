@@ -185,13 +185,21 @@ func (h *Helper) systemNetwork(ctx context.Context, c NetworkConfig) (any, error
 		rerr = h.waitGateway(ctx, c.Gateway)
 	}
 	if rerr != nil {
+		// the previous settings come back also when the operation ended
+		// because the helper stops: with ctx the two commands would not
+		// run, and the server would keep the new address with the old file
+		back, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Minute)
+		defer cancel()
 		if oldErr == nil {
 			_ = h.Sys.WriteFile(NetworkFile, old, 0o644, 0, 0)
 		} else {
 			_ = h.Sys.Remove(NetworkFile)
 		}
-		_, _ = h.Sys.Run(ctx, nil, "networkctl", "reload")
-		_, _ = h.Sys.Run(ctx, nil, "networkctl", "reconfigure", iface)
+		_, _ = h.Sys.Run(back, nil, "networkctl", "reload")
+		_, _ = h.Sys.Run(back, nil, "networkctl", "reconfigure", iface)
+		if ctx.Err() != nil {
+			return nil, userErr("the change of the network was interrupted (the helper restarted); the previous settings are back")
+		}
 		return nil, userErr(fmt.Sprintf("the new settings did not work (%v); the previous ones are back", rerr))
 	}
 	return map[string]string{"interface": iface}, nil
