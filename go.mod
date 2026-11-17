@@ -8,8 +8,8 @@ require (
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/fergusstrange/embedded-postgres v1.34.0
 	github.com/go-jose/go-jose/v4 v4.1.9
-	github.com/jackc/pgx/v5 v5.12.0
-	github.com/oschwald/maxminddb-golang/v2 v2.9.0
+	github.com/jackc/pgx/v5 v5.13.0
+	github.com/oschwald/maxminddb-golang/v2 v2.9.1
 	github.com/pkg/sftp v1.13.12
 	golang.org/x/crypto v0.59.0
 	golang.org/x/net v0.62.0
