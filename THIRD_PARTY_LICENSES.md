@@ -11,11 +11,11 @@ Its programs contain the following components under their own licenses, all comp
 | github.com/go-jose/go-jose/v4 | v4.1.9 | Apache-2.0 |
 | github.com/jackc/pgpassfile | v1.0.0 | MIT |
 | github.com/jackc/pgservicefile | v0.0.0-20240606120523-5a60cdf6a761 | MIT |
-| github.com/jackc/pgx/v5 | v5.12.0 | MIT |
+| github.com/jackc/pgx/v5 | v5.13.0 | MIT |
 | github.com/jackc/puddle/v2 | v2.2.3 | MIT |
 | github.com/kr/fs | v0.1.0 | BSD-3-Clause |
 | github.com/lib/pq | v1.10.9 | MIT |
-| github.com/oschwald/maxminddb-golang/v2 | v2.9.0 | ISC |
+| github.com/oschwald/maxminddb-golang/v2 | v2.9.1 | ISC |
 | github.com/pkg/sftp | v1.13.12 | BSD-2-Clause |
 | github.com/xi2/xz | v0.0.0-20171230120015-48954b6210f8 | Public domain |
 | golang.org/x/crypto | v0.59.0 | BSD-3-Clause |
@@ -556,7 +556,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## github.com/jackc/pgx/v5 v5.12.0 (MIT)
+## github.com/jackc/pgx/v5 v5.13.0 (MIT)
 
 ```
 Copyright (c) 2013-2021 Jack Christensen
@@ -655,7 +655,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-## github.com/oschwald/maxminddb-golang/v2 v2.9.0 (ISC)
+## github.com/oschwald/maxminddb-golang/v2 v2.9.1 (ISC)
 
 ```
 ISC License
