@@ -92,6 +92,7 @@
 <section class="panel">
   <h2>{{template "icon" "trash"}}{{.T "Delete now"}}</h2>
   <p class="muted">{{.T "Deletes the account, all websites, files, databases and DNS zones at once. This cannot be undone."}}</p>
+  {{with .Data.EmailZit}}<p class="muted">{{$.T "The customer's mail is on EmailZit %s and stays there: end the customer in EmailZit too." .}}</p>{{end}}
   <form method="post" action="/customers/{{$c.ID}}/delete" class="row"><input name="confirm" required placeholder="{{$c.Username}}" aria-label="{{.T "Type the account name to confirm."}}" autocomplete="off"><button class="danger">{{.T "Delete everything"}}</button></form>
 </section>
 {{end}}

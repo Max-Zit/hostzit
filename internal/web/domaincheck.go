@@ -12,7 +12,10 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/publicsuffix"
+
 	"github.com/max-zit/hostzit/internal/auth"
+	"github.com/max-zit/hostzit/internal/hosting"
 	"github.com/max-zit/hostzit/internal/store"
 )
 
@@ -70,6 +73,34 @@ func pageErr(lang string, err error) string {
 		return oe.text(lang)
 	}
 	return translate(lang, err.Error())
+}
+
+// providerName refuses, for a customer, the server's own domain and every
+// name below it: the registered domain of the server's host name and of its
+// name servers (example.com for host1.example.com). cPanel does the same
+// with subdomains of its host name. A record the provider forgot (an old
+// test name still pointing here, a delegation to these name servers) would
+// otherwise let any customer take the name over, and the ownership check
+// would even pass. A zone the customer already holds still counts, and an
+// administrator can add such a name for a customer.
+func (s *Server) providerName(ctx context.Context, c *store.Customer, dom string) error {
+	if z, err := s.store.ZoneFor(ctx, dom); err == nil && z.CustomerID == c.ID {
+		return nil
+	}
+	hs := s.hostingSettings(ctx)
+	for _, h := range append([]string{hs.ServerName}, hs.Nameservers...) {
+		if h == "" || net.ParseIP(h) != nil {
+			continue
+		}
+		base, err := publicsuffix.EffectiveTLDPlusOne(strings.ToLower(h))
+		if err != nil {
+			continue
+		}
+		if hosting.IsSubdomainOf(dom, base) {
+			return errors.New("names under the server's own domain can only be added by an administrator")
+		}
+	}
+	return nil
 }
 
 // checkOwnership is nil when the check is off, the domain is below a zone

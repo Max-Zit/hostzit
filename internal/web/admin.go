@@ -201,6 +201,8 @@ type customerData struct {
 	Package  *store.Package
 	User     *store.User
 	PHP      []string
+	// EmailZit: the EmailZit the customer's mail is on ("" for none)
+	EmailZit string
 }
 
 func (s *Server) loadCustomer(w http.ResponseWriter, r *http.Request) *store.Customer {
@@ -240,6 +242,7 @@ func (s *Server) handleCustomer(w http.ResponseWriter, r *http.Request) {
 	d.Package, _ = s.store.PackageByID(ctx, c.PackageID)
 	d.History = s.history(r, c, d.Package, "/customers/"+strconv.FormatInt(c.ID, 10))
 	d.User, _ = s.store.UserByID(ctx, c.UserID)
+	d.EmailZit = s.customerEmailZit(ctx, c.UUID)
 	s.render(w, r, http.StatusOK, "customer", &Page{Title: c.Username, Nav: "customers", Crumb: "Customers", CrumbURL: "/customers", Data: d})
 }
 

@@ -223,12 +223,15 @@ type SecuritySettings struct {
 	Customer2FA   bool `json:"customer_2fa"` // customers must use two-factor sign-in too
 	// FourEyes: deleting/terminating customers and deleting packages need a second administrator.
 	FourEyes bool `json:"four_eyes"`
-	// DomainCheck: customers prove that a domain is theirs (DNS) before adding it.
+	// DomainCheck: customers prove that a domain is theirs (DNS) before adding
+	// it. On by default, like cPanel (no "remote domains" for customers).
 	DomainCheck bool `json:"domain_check"`
 }
 
-// DefaultSecurity: short admin sessions, customers may choose 2FA.
-var DefaultSecurity = SecuritySettings{SessionHours: 8, IdleMinutes: 30, MaxAttempts: 5, WindowMinutes: 15, BlockMinutes: 30}
+// DefaultSecurity: short admin sessions, customers may choose 2FA, domains
+// are checked. A server that never saved these settings gets the check on
+// with 0.10.4; one that saved it off keeps it off.
+var DefaultSecurity = SecuritySettings{SessionHours: 8, IdleMinutes: 30, MaxAttempts: 5, WindowMinutes: 15, BlockMinutes: 30, DomainCheck: true}
 
 // Validate checks the ranges.
 func (x SecuritySettings) Validate() error {

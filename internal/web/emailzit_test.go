@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -943,5 +944,53 @@ func TestSPFCovers(t *testing.T) {
 		if got := spfCovers(c.have, c.want); got != c.ok {
 			t.Errorf("spfCovers(%q, %q) = %v", c.have, c.want, got)
 		}
+	}
+}
+
+// Deleting a customer forgets which EmailZit it was on (also in an
+// "assigned" link's list), the hourly run drops entries of customers deleted
+// before, and the customer page reminds the administrator that the mail
+// stays in EmailZit.
+func TestDeletedCustomerLeavesNoEmailZitEntry(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	f := newFakeEZ(t, func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNotFound) })
+	a := e.setupAdmin()
+	pairEmailZit(t, a, f)
+	a.ok("/packages/new", url.Values{"name": {"P"}, "slug": {"p"}, "max_sites": {"1"}, "max_dbs": {"1"}, "max_zones": {"1"}, "disk_mb": {"100"}, "inodes": {"0"},
+		"cpu_percent": {"0"}, "memory_mb": {"0"}, "processes": {"0"}, "io_weight": {"100"}, "php_workers": {"2"}, "php_memory_mb": {"128"}, "upload_mb": {"8"}, "mail_per_hour": {"0"}})
+	a.ok("/customers/new", url.Values{"username": {"gone"}, "package": {"1"}, "password": {"gone password 12"}})
+	e.srv.Wait()
+	c, err := e.st.CustomerByRef(ctx, "gone")
+	if err != nil {
+		t.Fatal(err)
+	}
+	links := e.srv.emailzitLinks(ctx)
+	if len(links) != 1 {
+		t.Fatalf("links: %v", links)
+	}
+	id := links[0].ID
+	links[0].Scope = "assigned"
+	links[0].Customers = []string{c.UUID, "other-uuid"}
+	if err := e.srv.saveEmailZitLinks(ctx, links); err != nil {
+		t.Fatal(err)
+	}
+	e.srv.setCustomerLink(ctx, c.UUID, id)
+	e.srv.setCustomerLink(ctx, "stale-uuid", id) // a customer deleted before 0.10.4
+	loc := "/customers/" + strconv.FormatInt(c.ID, 10)
+	if p := a.page(loc); !strings.Contains(p, "mail is on EmailZit") {
+		t.Fatal("the delete form does not say that the mail stays in EmailZit")
+	}
+	a.ok(loc+"/delete", url.Values{"confirm": {"gone"}})
+	if _, ok := e.srv.customerLinkMap(ctx)[c.UUID]; ok {
+		t.Fatal("the deleted customer is still mapped to its EmailZit")
+	}
+	l, _ := e.srv.emailzitLinkByID(ctx, id)
+	if slices.Contains(l.Customers, c.UUID) || !slices.Contains(l.Customers, "other-uuid") {
+		t.Fatalf("assigned customers: %v", l.Customers)
+	}
+	e.srv.resolveAllCustomers(ctx)
+	if _, ok := e.srv.customerLinkMap(ctx)["stale-uuid"]; ok {
+		t.Fatal("the hourly run kept the entry of a customer that is gone")
 	}
 }

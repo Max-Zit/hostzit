@@ -146,6 +146,12 @@ func (s *Server) resolveAllCustomers(ctx context.Context) {
 		return
 	}
 	skip := map[string]bool{}
+	known := make(map[string]bool, len(list))
+	for _, c := range list {
+		known[c.UUID] = true
+	}
+	// customers deleted before 0.10.4 (or while a write failed) leave nothing behind
+	s.forgetCustomers(ctx, func(uuid string) bool { return known[uuid] })
 	for _, c := range list {
 		if ctx.Err() != nil {
 			return
@@ -473,6 +479,46 @@ func (s *Server) background(ctx context.Context, fn func(context.Context)) {
 		defer s.jobs.Done()
 		fn(context.WithoutCancel(ctx))
 	}()
+}
+
+// forgetCustomers drops every customer keep refuses (customers that no
+// longer exist) from the map of who is on which EmailZit and from the
+// customer lists of "assigned" links.
+// HostZit never touches the mail itself: EmailZit is a product of its own,
+// so the administrator ends the customer there (the delete form says so).
+func (s *Server) forgetCustomers(ctx context.Context, keep func(uuid string) bool) {
+	s.ezMu.Lock()
+	defer s.ezMu.Unlock()
+	m := s.customerLinkMap(ctx)
+	n := len(m)
+	for uuid := range m {
+		if !keep(uuid) {
+			delete(m, uuid)
+		}
+	}
+	if len(m) != n {
+		_ = s.store.SetSetting(ctx, settingEmailZitCustomers, m)
+	}
+	list := s.emailzitLinks(ctx)
+	changed := false
+	for i := range list {
+		before := len(list[i].Customers)
+		list[i].Customers = slices.DeleteFunc(list[i].Customers, func(u string) bool { return !keep(u) })
+		changed = changed || len(list[i].Customers) != before
+	}
+	if changed {
+		_ = s.saveEmailZitLinks(ctx, list)
+	}
+}
+
+// customerEmailZit names the EmailZit a customer's mail is on ("" for none).
+func (s *Server) customerEmailZit(ctx context.Context, uuid string) string {
+	if id := s.customerLinkMap(ctx)[uuid]; id != "" {
+		if l, ok := s.emailzitLinkByID(ctx, id); ok {
+			return l.Name()
+		}
+	}
+	return ""
 }
 
 // setCustomerLink records (id != "") or forgets (id == "") a customer's

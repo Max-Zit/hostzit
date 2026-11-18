@@ -450,7 +450,11 @@ func (s *Server) deleteAccount(ctx context.Context, by string, c *store.Customer
 	}
 	c.Status = store.StatusTerminated
 	s.syncWebUIDs(ctx, c)
-	return s.store.DeleteCustomer(ctx, c.ID)
+	if err := s.store.DeleteCustomer(ctx, c.ID); err != nil {
+		return err
+	}
+	s.forgetCustomers(ctx, func(uuid string) bool { return uuid != c.UUID })
+	return nil
 }
 
 // runJob runs work in the background and records it as a job.

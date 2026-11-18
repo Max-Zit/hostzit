@@ -134,7 +134,7 @@ func (s *Server) handleSiteCreate(w http.ResponseWriter, r *http.Request) {
 		fail(err.Error())
 		return
 	}
-	if err := s.domainAllowed(r.Context(), c, dom); err != nil {
+	if err := s.domainAllowed(r, c, dom); err != nil {
 		fail(pageErr(s.lang(r, userFrom(r)), err))
 		return
 	}
@@ -152,10 +152,19 @@ func (s *Server) handleSiteCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 // domainAllowed refuses names below another customer's zone (one customer
-// must not serve a subdomain of another customer's domain) and the
-// server's own names.
-func (s *Server) domainAllowed(ctx context.Context, c *store.Customer, dom string) error {
+// must not serve a subdomain of another customer's domain), the server's
+// own names and names under the server's own domain, and asks for the
+// ownership proof. An administrator working in the customer's panel is
+// held only to the first two, like WHM's root.
+func (s *Server) domainAllowed(r *http.Request, c *store.Customer, dom string) error {
+	ctx := r.Context()
 	if err := s.nameTaken(ctx, c.ID, dom); err != nil {
+		return err
+	}
+	if x := sessionFrom(r); x != nil && x.ActingAdmin != "" {
+		return nil // an administrator working in the panel adds any free name, like WHM
+	}
+	if err := s.providerName(ctx, c, dom); err != nil {
 		return err
 	}
 	return s.checkOwnership(ctx, c, dom)
@@ -324,7 +333,7 @@ func (s *Server) handleSiteUpdate(w http.ResponseWriter, r *http.Request) {
 			s.showSite(w, r, http.StatusBadRequest, c, x, err.Error())
 			return
 		}
-		if err := s.domainAllowed(r.Context(), c, n); err != nil {
+		if err := s.domainAllowed(r, c, n); err != nil {
 			s.showSite(w, r, http.StatusBadRequest, c, x, n+": "+pageErr(s.lang(r, userFrom(r)), err))
 			return
 		}

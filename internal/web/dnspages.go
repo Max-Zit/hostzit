@@ -37,7 +37,7 @@ func (s *Server) handleZoneCreate(w http.ResponseWriter, r *http.Request) {
 		s.redirectErr(w, r, "/dns", err.Error())
 		return
 	}
-	if err := s.domainAllowed(r.Context(), c, dom); err != nil {
+	if err := s.domainAllowed(r, c, dom); err != nil {
 		s.redirectErr(w, r, "/dns", pageErr(s.lang(r, userFrom(r)), err))
 		return
 	}

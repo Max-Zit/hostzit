@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -124,10 +125,60 @@ func TestDomainOwnershipCheck(t *testing.T) {
 	if z, err := e.st.ZoneByName(ctx, "stranger.example"); err == nil {
 		t.Fatalf("zone created without proof: %v", z)
 	}
-	// off: everything goes, as before
+	// the server's own domain (hostzit.test, from host1.hostzit.test and
+	// ns1.hostzit.test) stays the administrator's, even when a forgotten
+	// record points here and the proof would pass
+	fr.ip["old.hostzit.test"] = []net.IPAddr{{IP: net.ParseIP("192.0.2.10")}}
+	for _, dom := range []string{"old.hostzit.test", "hostzit.test"} {
+		if st, body := addSite(dom); st != http.StatusBadRequest || !strings.Contains(body, "own domain can only be added by an administrator") {
+			t.Fatalf("%s: %d\n%s", dom, st, body)
+		}
+	}
+	// off: everything else goes, as before
 	x.DomainCheck = false
 	_ = e.st.SetSetting(ctx, settingSecurity, x)
 	if st, _ := addSite("anything.example.io"); st != http.StatusSeeOther {
 		t.Fatalf("check off: %d", st)
+	}
+	if st, _ := addSite("old.hostzit.test"); st != http.StatusBadRequest {
+		t.Fatalf("server's own domain with the check off: %d", st)
+	}
+	// an administrator working in the customer's panel adds such names
+	x.DomainCheck = true
+	_ = e.st.SetSetting(ctx, settingSecurity, x)
+	st, _, sso := a.post("/customers/"+strconv.FormatInt(cust.ID, 10)+"/login", url.Values{})
+	if st != http.StatusSeeOther || !strings.Contains(sso, "/sso/") {
+		t.Fatalf("open the customer panel: %d %s", st, sso)
+	}
+	d := e.client(e.panel.URL)
+	if st, _, _ := d.get(mustURL(sso).Path); st != http.StatusSeeOther {
+		t.Fatal("sso link refused")
+	}
+	for _, dom := range []string{"old.hostzit.test", "unproven.example.org"} {
+		if st, body, _ := d.post("/sites/new", url.Values{"domain": {dom}}); st != http.StatusSeeOther {
+			t.Fatalf("administrator in the panel, %s: %d\n%s", dom, st, body)
+		}
+	}
+	// but not a name of the server itself
+	if st, _, _ := d.post("/sites/new", url.Values{"domain": {"www.host1.hostzit.test"}}); st != http.StatusBadRequest {
+		t.Fatalf("administrator added a name of the server: %d", st)
+	}
+}
+
+// A server that never saved its security settings checks domains, like
+// cPanel; one that saved the check off keeps it off.
+func TestDomainCheckOnByDefault(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	if !e.srv.security(ctx).DomainCheck {
+		t.Fatal("the check is off on a new server")
+	}
+	x := DefaultSecurity
+	x.DomainCheck = false
+	if err := e.st.SetSetting(ctx, settingSecurity, x); err != nil {
+		t.Fatal(err)
+	}
+	if e.srv.security(ctx).DomainCheck {
+		t.Fatal("a saved \"off\" was not kept")
 	}
 }
